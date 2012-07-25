@@ -1,0 +1,11 @@
+NAME=Backups/camping-0.9.8-`date +%Y-%m-%d_%H.%M`.tgz
+if [ "$1" ]; then
+  P=$( dirname $0 )
+  DB=db.$1
+else
+  P=$HOME
+  DB=.camping.db
+fi
+tar -C $P -cvzf $NAME $DB
+echo Backupped to $NAME
+ls -l $NAME

@@ -1,0 +1,31 @@
+- Users
+	- some users can add accounts
+- Add remote repositories
+	- sync movements to a remote repository
+	
+Think
+	* What to do about a movement that includes an account not available to
+	that user?
+
+JOLI
+	* Edition des comptes en cliquant dedans
+	
+Performance:
+	/movement/list:
+			Before making it better
+		Sorting movements: 0.06-0.08
+		Writing accounts: 1.05-1.2
+		Preparing edit: 0.50-0.65
+		Sorting a year: 0.29-0.37
+		Movements: 1.60-1.65
+		Total: 3.6-3.8
+	
+			Kicking Markaby out of loops:
+		Sorting movements: 0.04-0.07
+		Writing accounts: 0.25-0.50
+		Preparing edit: 0.30-0.50
+		Sorting a year: 0.30-0.32
+		Movements: 0.25-0.35
+		Total: 1.15-1.50
+		
+			Improvement: Down to 30%-50%

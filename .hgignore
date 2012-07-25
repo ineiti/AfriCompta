@@ -1,0 +1,5 @@
+Backups/.*
+Test/.*
+.*db
+camping-1.5.old
+nohup.out
