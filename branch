@@ -1,0 +1,7 @@
+#!/bin/bash
+if echo $( hg branches ) | grep -q -v $1; then
+  echo Branch $1 doesnt exist, creating
+  hg branch $1
+  git branch $1
+fi
+git checkout $1

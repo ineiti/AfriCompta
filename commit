@@ -1,0 +1,2 @@
+hg commit -m "$@"
+git commit -a -m "$@"
