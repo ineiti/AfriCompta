@@ -34,7 +34,7 @@ module Compta::Controllers
     def postForm( path, hash )
       debug 5, "Starting postForm with path #{path}"
       Net::HTTP.post_form( URI.parse( @remote.url + "/merge/#{path}" ), 
-      { "user" => @remote.name, "pass" => @remote.pass }.merge( hash ) )
+				{ "user" => @remote.name, "pass" => @remote.pass }.merge( hash ) )
       debug 5, "Ending postForm with path #{path}"
     end
     
@@ -98,7 +98,7 @@ module Compta::Controllers
         "#{@movement_index_stop}"
       movements = []
       Movement.find(:all, :conditions => 
-                    {:index => @movement_index_start..@movement_index_stop } ).each{ |m|
+					{:index => @movement_index_start..@movement_index_stop } ).each{ |m|
         debug 2, "Rem: Sending #{m.to_s}"
         movements.push( m.to_json )
       }
@@ -213,21 +213,21 @@ module Compta::Controllers
             if not mov
               # This movement is only available on the remote system
               mov_rem = Movement.new(:desc=>desc, :value=>value, :date=>date,
-                                     :global_id=>global_id, :src=>accountGet(src),
-                                     :dst=>accountGet(dst))
+								:global_id=>global_id, :src=>accountGet(src),
+								:dst=>accountGet(dst))
               @movements_only_remote.push( mov_rem )
       	    else
       	      # Movement is on both systems
       	      if mov.desc != desc or
-      	         mov.value.to_s != value or
-      	         mov.date.to_s != date or
-                 mov.account_src.path != accountGet(src) or
-                 mov.account_dst.path != accountGet(dst)
+									mov.value.to_s != value or
+									mov.date.to_s != date or
+									mov.account_src.path != accountGet(src) or
+									mov.account_dst.path != accountGet(dst)
 
       	        # The movements differ! Which shouldn't happen.
                 mov_rem = Movement.new(:desc=>desc, :value=>value, :date=>date,
-                                       :global_id=>global_id, :src=>accountGet(src),
-                                       :dst=>accountGet(dst))
+									:global_id=>global_id, :src=>accountGet(src),
+									:dst=>accountGet(dst))
                 mov.src = mov.account_src.path
                 mov.dst = mov.account_dst.path
       	        @movements_mixed.push( [ mov, mov_rem ] )
@@ -254,12 +254,7 @@ module Compta::Controllers
       else
         @movements_only_local = []
       end
-      
-      #
-      # Get all users to display nicely who did what
-      @users = getForm( "users_get" )
-      debug 2, "Users is: #{@users}"
-    end
+		end
     
     # Execute the desired action
     def doCheckFix( path, arg )
@@ -290,16 +285,16 @@ module Compta::Controllers
         if location == "remote"
           debug 5, "#{location} #{@remote.url} /merge/#{@type}_#{@action} #{@remote.name}"
           case @action
-            when "delete"
+					when "delete"
             # Deleting is simple
             postForm( "#{@type}_#{@action}", {"global_id" => global_id})
-            when "copy", "push", "pull"
+					when "copy", "push", "pull"
             # Copying is more complicated
             case @type
-              when "account"
+						when "account"
               account = Account.from_s( getForm("accounts_get_one/#{global_id}") )
               debug 2, "Account is #{account.to_s}"
-              when "movement"
+						when "movement"
               movement = Movement.from_s( getForm("movements_get_one/#{global_id}") )
               debug 2, "Movement is #{movement.to_s}"
             end
@@ -308,15 +303,15 @@ module Compta::Controllers
           debug 2, "#{location} #{@type}_#{@action} #{global_id}"
           element = nil
           case @type
-            when "account"
+					when "account"
             element = Account.find_by_global_id( global_id )
-            when "movement"
+					when "movement"
             element = Movement.find_by_global_id( global_id )
           end
           case @action
-            when "delete"
+					when "delete"
             element.delete
-            when "copy", "push", "pull"
+					when "copy", "push", "pull"
             if @type == "movement"
               # TODO: put all movements in an array
               postForm( "movements_put", {"movements" => [ element ].to_s } )
@@ -332,25 +327,25 @@ module Compta::Controllers
       fillGlobal
       path, arg = p.split("/")
       case path
-        when "list"
+			when "list"
         render :remote_list
-        when "add"
+			when "add"
         @remote = Remote.new( :url => "http://localhost:3301", :name => "ineiti", :pass => "lasj" )
         render :remote_edit
-        when "delete"
+			when "delete"
         Remote.destroy( arg )
         fillGlobal
         render :remote_list        
-        when "edit"
+			when "edit"
         @remote = Remote.find_by_id( arg )
         render :remote_edit
-        when "check"
+			when "check"
         doCheck( path, arg )
         render :remote_check
-        when "merge"
+			when "merge"
         doMerge( path, arg )
         render :remote_merge
-        when "copied"
+			when "copied"
         doCopied( path, arg )
         render :remote_edit
       end
@@ -358,13 +353,13 @@ module Compta::Controllers
     def post( p )
       path, arg = p.split("/")
       case path
-        when "edit"
+			when "edit"
         r = Remote.find_or_initialize_by_id( input.rid )
         r.set( input.url, input.name, input.pass )
         r.save
         fillGlobal
         render :remote_list
-        when /check_fix.*/
+			when /check_fix.*/
         doCheckFix( path, arg )
         render :remote_check_fix
       end
@@ -395,9 +390,9 @@ module Compta::Views
       }
     end
     p { 
-    a "Add remote", :href=> "/remote/add"
-    text( "-" )
-    a "Home", :href=>"/"
+			a "Add remote", :href=> "/remote/add"
+			text( "-" )
+			a "Home", :href=>"/"
     }
   end
   
@@ -449,7 +444,7 @@ module Compta::Views
         tr {
           td {
             text( "<input type=checkbox name=#{counter}_#{str}_#{es[0].global_id}" +
-                  " checked>" ) 
+								" checked>" ) 
             strong str
             counter += 1
           }
@@ -474,7 +469,7 @@ module Compta::Views
       end
       table :border=>1 do
         form :action => "/remote/check_fix_#{str}/#{@remote.id.to_s}", 
-        :method => "post", :name => str do
+					:method => "post", :name => str do
           if local
             put_entry( remote, "remote", fields_remote )
             put_entry( local, "local", fields_local )
@@ -507,16 +502,16 @@ module Compta::Views
     ul { 
       li {
         put_table( @accounts_only_remote, @accounts_only_local, "account",
-        ["name", "total", "", "global_id"], ["path", "total", "", "global_id"] )
+					["name", "total", "", "global_id"], ["path", "total", "", "global_id"] )
       }
       li {
         put_table( @movements_only_remote, @movements_only_local, "movement",
-        ["date", "value", "desc", "", "src", "dst", "", "global_id"], 
-        ["date", "value", "desc", "", "src", "dst", "", "global_id"] )
+					["date", "value", "desc", "", "src", "dst", "", "global_id"], 
+					["date", "value", "desc", "", "src", "dst", "", "global_id"] )
       }
       li {
         put_table( @movements_mixed, nil, "mixed",
-        ["date", "value", "desc", "", "src", "dst", "", "global_id"], nil)
+					["date", "value", "desc", "", "src", "dst", "", "global_id"], nil)
       }
     }
     a "Home", :href=>"/"

@@ -87,11 +87,11 @@ module Compta::Models
     end
     
     def to_json
-      ActiveSupport::JSON.encode( to_s )
+      ActiveSupport::JSON.encode( :str => to_s )
     end
     
     def Movement.from_json( str )
-      Movement.from_s( ActiveSupport::JSON.decode( str ) )
+      Movement.from_s( ActiveSupport::JSON.decode( str )['str'] )
     end
     
     def Movement.from_s( str )
