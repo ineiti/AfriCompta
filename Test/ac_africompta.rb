@@ -273,8 +273,8 @@ class TC_AfriCompta < Test::Unit::TestCase
 				:account_id=>[2],
 				:global_id=>"5544436cf81115c6faf577a7e2307e92-8",
 				:name=>"Cashbox",
-				:id=>5,
-				:index=>6}, box.to_hash )
+				:id=>6,
+				:index=>7}, box.to_hash )
 		assert_equal "Root::Cash::Cashbox", box.path
 		assert_equal( -1, @cash.multiplier )
 		assert_equal( -1, box.multiplier )
@@ -288,8 +288,14 @@ class TC_AfriCompta < Test::Unit::TestCase
 				:account_id=>[2],
 				:global_id=>"5544436cf81115c6faf577a7e2307e92-8",
 				:name=>"Cashbox",
-				:id=>5,
-				:index=>8}, box.to_hash )
+				:id=>6,
+				:index=>9}, box.to_hash )
+		
+		course = Accounts.create_path("Root::Income::Course", "course")
+		assert_equal "Root::Income::Course", course.get_path
+
+		ccard = Accounts.create_path("Credit::Card", "credit-card")
+		assert_equal "Credit::Card", ccard.get_path
 	end
 	
 	def test_users

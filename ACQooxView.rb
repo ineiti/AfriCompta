@@ -53,4 +53,7 @@ class SQLiteAC < SQLite
 end
 
 require 'ACaccess'
-Dir["Entities/*.rb"].each{|f| require(f)}
+Dir[File.dirname(__FILE__) + "/Entities/*.rb"].each{|f| 
+	require(f)
+	dputs 2, "Adding #{f}"
+}

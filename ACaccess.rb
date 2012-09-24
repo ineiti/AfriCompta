@@ -125,12 +125,7 @@ class ACaccess < RPCQooxdooPath
 		when /account_get_id/
 			account = input['account']
 			dputs 2, "account_get_id with path #{account}"
-			Accounts.search_all.to_a.each{|a|
-				if a.global_id and a.path =~ /#{account}/
-					dputs 2, "Found #{a.inspect}, a.id is #{a.id}"
-					return a.id.to_s
-				end
-			}
+			Accounts.get_id_by_path( account )
 			dputs 2, "didn't find anything"
 			return nil
 

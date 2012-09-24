@@ -12,20 +12,42 @@ class Accounts < Entities
 		value_entity_account :account_id
   end
     
-	def self.create( name, desc, parent, global_id )
-		a = super( :name => name, :desc => desc, :account_id => parent.id,
-			:global_id => global_id.to_s )
-		a.total = "0"
-		# TODO: u_l.save?
+	def self.create( name, desc, parent, global_id = "" )
 		if parent
-			a.multiplier = parent.multiplier
+		  if parent.class != Account
+				parent = Accounts.match_by_index( parent ).first
+			end
+  		a = super( :name => name, :desc => desc, :account_id => parent.id,
+	  		:global_id => global_id.to_s, :multiplier => parent.multiplier )
 		else
-			a.multiplier = 1
+  		a = super( :name => name, :desc => desc, :account_id => 0,
+	  		:global_id => global_id.to_s, :multiplier => 1 )
 		end
+		a.total = "0"
 		a.new_index
+		if global_id == ""
+			a.global_id = Users.find_by_name('local').full + "-" + self.id.to_s
+		end
 		a.save
 		dputs 2, "Created account #{a.name}"
 		a
+	end
+	
+	def self.create_path( path, desc )
+		elements = path.split( "::" )
+		last_id = nil
+		elements.each{|e|
+			t = Accounts.match_by_name( e ).select{|a|
+				dputs 0, "Account_id is #{a.account_id}"
+				if a.account_id == last_id
+					last_id = a
+				end
+			}
+			if t == []
+				last_id = Accounts.create( e, desc, last_id )
+			end
+		}
+		last_id
 	end
 
 	# Gets an account from a string, if it doesn't exist yet, creates it.
@@ -59,6 +81,24 @@ class Accounts < Entities
 		dputs 2, "Saved account #{name} with index #{our_a.index} and global_id #{our_a.global_id}"
 		return our_a
 	end
+	
+	def self.get_by_path( p )
+		self.search_all.to_a.each{|a|
+			if a.global_id and a.path =~ /#{p}/
+				dputs 3, "Found #{a.inspect}, a.id is #{a.id}"
+				return a
+			end
+		}
+		return nil
+	end
+
+	def self.get_id_by_path( p )
+		if a = get_by_path( p )
+			return a.id.to_s
+		else
+			return nil
+		end
+	end
 end
 
 class Account < Entity
@@ -85,6 +125,10 @@ class Account < Entity
 		else
 			return self.name + sep
 		end
+	end
+	
+	def get_path( sep = "::", p = "", first = true )
+		path( sep, p, first )
 	end
     
 	def new_index()
