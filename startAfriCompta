@@ -1,0 +1,48 @@
+#!/bin/bash
+echo startafricompta
+DB=~/.camping
+
+# Initialize variables
+cd `dirname $0`
+export DIR=$( pwd )
+. ./rubylib
+echo $RUBYLIB
+
+if [ "$1" = "std" ]; then
+  OUT=std
+  shift
+fi
+ARGS=""
+if [ "$1" ]; then
+  ARGS="--database db.$1"
+  DB=$1
+  shift
+fi
+if [ "$1" ]; then
+  ARGS="$ARGS -p $1"
+fi
+
+# Backing up the DB
+./backup_bdd $DB
+
+# Closing old instance
+pkill -9 -f compta.rb
+
+# Starting either in konsole-mode or in nohup
+if [ "$OUT" = "std" ]; then
+  ./camping $ARGS compta.rb &
+else
+  nohup ./camping $ARGS compta.rb &
+fi
+
+# Depending on where we are, "open" or "firefox"
+if echo "$MACHTYPE" | grep -q apple; then
+  sleep 2
+  open http://localhost:3301
+else
+  zenity --info --text="Un peu de patience" &
+  sleep 10
+  killall zenity
+
+  firefox http://localhost:3301
+fi

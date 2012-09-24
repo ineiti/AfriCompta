@@ -1,0 +1,12 @@
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Icon[fr_FR]=/usr/share/icons/Humanity/actions/48/gtk-edit.svg
+Name[fr_FR]=AfriCompta
+Exec=/home/nelbe/AfriCompta/startAfriCompta nelbe
+Comment[fr_FR]=Nouveaux comptes
+Name=AfriCompta
+Comment=Nouveaux comptes
+Icon=start

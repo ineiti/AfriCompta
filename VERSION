@@ -1,0 +1,137 @@
+Sometime
+	+ Change the movement/list-description field so it automatically
+	 takes the optimum width... Javascript-magic...
+	+ Use YAML instead of to_s and from_s -> take care about id's of
+	 the objects...
+	+ Archive accounts and movements and hide them
+	+ Put money from multiple into multiple accounts, but only once into any
+	 tree!
+	+ UNDO
+
+? - 1.3
+	+ Present transactions
+? - 1.2
+	+ Interface for Josue
+? - 1.1
+	+ Better user-authentification
+		+ Jobs for users
+? - 1.0
+	+ Fixed bugs
+? - 
+	+ Open / close trees in account-view
+	+ Good <titles>
+	+ Delete accounts and merge them
+	  + add "status" field with bits
+	  + delete eventual dependant movements
+100421 - 0.9.8
+	+ added a movements_put to the code, so that a lot of movements don't
+	 block the server
+	+ removed several errors
+090601 - 0.9.7
+	+ Deleted the menu for chosing accounts, too slow
+090519 - 0.9.6
+	+ add menu for chosing accoun - it's slow, very slow!t
+	+ translation to french
+	+ Test for bad movements in own menu
+	+ merged report_c and report_a
+	+ Debug-level on 1
+	+ ledger - "grand livre" - first try
+081103 - 0.9.5
+	+ Fixed "changed"-method for ActiveRecord 2.1.x
+	+ Fixed wrong starting account in "report"-view
+081028 - 0.9.4
+	+ Speed up merge
+		- Accounts and Movements get a changed "revision":
+		 it is a global (one for Accounts and one for Movements)
+		 counter that increases steadily. If something is changed,
+		 the counter gets increased by one.
+		  Remote.account_index and Remote.movement_index point to the
+		 last Account and Movement transferred, while
+		  User.account_index and User.movement_index do the same on
+		 the server side
+		  User('local').account_index and User('local').movement_index
+		 point to the actual index used in the local database
+081009 - 0.9.3
+	* account-edit: only propagate multiplier if changed
+	* Only show range of time in accounts
+	* Insert checkboxes on movements and allow moving/deleting
+080717 - 0.9.2
+	* Merging works again when root-account is not id==0
+	* Cleanup "bypass_markaby" in movement.rb::movement_list
+080514 - 0.9.1
+	* Speed up movement-listing (wget: 3.0s -> 0.95s)
+	* Kick account-listing with totals and replace with a
+	 combobox
+	* Fix delete movement (still shown till next update)
+	* Report: Add all sub-accounts in the total of each month,
+	  including the name of the direct child
+080221 - 0.9
+	* Throw away user-restriction on accounts - 
+	 has to be re-evaluated in version 1.1
+	* Sort accounts alphabetically in lists
+	* Multiplier for accounts: +1 or -1
+	* When adding account, take multiplier of parent
+	 account
+	* Keep last account in "new movement"
+	* Monthly and yearly sums
+	* Speed: setting multipliers in merge-mode doesn't need to go
+	 recursif!
+080213 - 0.8.5
+	* Merge accounts
+		* Put a revision in the accounts, so they
+		 can be changed, too
+		* Allow for accounts to be merged back and
+		 forth
+080212 - 0.8.4
+	* Merge transactions
+		* If both change the transaction, the one
+		 who does the second merge looses!
+		* Only negativ revisions are to be sent,
+		 not revision == 0!
+	* Movement
+		* /movement/list needs to take into account
+		 the $ of the sub-accounts
+	* Interface
+		* More nice interface
+080201 - 0.8.3
+	* Merge transactions
+		* Deleted transactions (value == 0)
+080130 - 0.8.2
+	* Merge transactions
+		* Movements get the global_id of the accounts
+		* Fix the problem of who's older... or newer, btw.
+		 using a "version"-string
+		* Only send new movements to the other side
+080120 - 0.8.1
+	* Movements
+		* Editing, Deleting
+080119 - 0.8
+	* Add movements
+		* Date, Amount, src, dst
+		* Adding
+080116 - 0.7.1
+	* sync to a remote repository
+		* Check for authentification
+		* Add and update accounts
+	* added user "local" with random-md5-hashed string
+	  for unique representation of database
+		* user "local" is not shown for editing
+	* added unique account-ids Account.global_id based
+	  on the user "local"
+		* create global_id only upon creation of Account
+		  and not when editing
+	* Verify account-viewing when root-account is missing
+080114 - 0.7
+	* Add remote repositories
+080109 - 0.6
+	* Users
+		* Users and Accounts
+		* Users have passwords
+		* Accounts has_and_belongs_to_many Users
+		* Edit of Users
+	* Accounts
+		* Edit of Users
+	* General cleaning up
+080105 - 0.5
+	* Accounts work:
+		* It's possible to list, add and delete

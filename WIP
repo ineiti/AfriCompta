@@ -1,0 +1,17 @@
+101227
+	* big transmissions in put/get are now split up, so that there is no
+	 timeout anymore
+	* Better remote.rb::checkIt, which also looks for different accounts
+
+091215
+	* Fixed the counter, check is OK
+
+091214
+	Problem with checking-in remote accounts, because the order is not kept,
+	and then the children come before the parents.
+	remote.rb::remote_check::put_entry puts in a counter, which should be used
+	in remote.rb::doCheckFix to sort the accounts.
+	
+	TODO:
+	* the counter is not at the start, but in the middle
+	* the movements also have the counter, which should be taken out
