@@ -34,7 +34,7 @@ class Movements < Entities
 		if not ( our_m = self.find_by_global_id(global_id) )
 			dputs 3, "New movement"
 			our_m = self.create( desc, date, value, 
-				a_src.id, a_dst.id )
+				a_src, a_dst )
 			our_m.global_id = global_id
 		else
 			dputs 2, "Overwriting movement #{global_id}"
@@ -45,13 +45,15 @@ class Movements < Entities
 		return our_m
 	end
 
-	def self.create( desc, date, value, source, dest )
+	def create( desc, date, value, source, dest )
 		return nil if source == dest
 		t = super( :desc => desc, :date => date, :value => 0, 
-			:account_src_id => source, :account_dst_id => dest )
+			:account_src_id => source.id, :account_dst_id => dest.id )
 		t.save
 		t.value = value
 		t.global_id = Users.find_by_name("local").full + "-" + t.id.to_s
+		t.new_index
+		dputs 0, t.to_json
 		t
 	end
 end

@@ -14,6 +14,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		@cash = Accounts.find_by_name( "Cash" )
 		@income = Accounts.find_by_name( "Income" )
 		@outcome = Accounts.find_by_name( "Outcome" )
+		@local = Users.find_by_name( 'local' )
   end
 
   def teardown
@@ -23,7 +24,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		movs = Movements.search_all
 		assert_equal 4, movs.length
 		accs = Accounts.search_all
-		assert_equal 4, accs.length
+		assert_equal 5, accs.length
 		users = Users.search_all
 		assert_equal 2, users.length
 		
@@ -63,7 +64,15 @@ class TC_AfriCompta < Test::Unit::TestCase
 			m.to_hash.delete_if{|k,v| k == :date
 			} }
 			
-		assert_equal [{:id=>1,
+		assert_equal [{:global_id=>"5544436cf81115c6faf577a7e2307e92-5",
+				:multiplier=>-1.0,
+				:total=>"0",
+				:desc=>"Full description",
+				:account_id=>[1],
+				:name=>"Lending",
+				:index=>9,
+				:id=>5},
+			{:id=>1,
 				:multiplier=>1.0,
 				:total=>"0",
 				:desc=>"Full description",
@@ -86,7 +95,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 				:account_id=>[1],
 				:name=>"Income",
 				:global_id=>"5544436cf81115c6faf577a7e2307e92-3",
-				:index=>3},
+				:index=>8},
 			{:id=>4,
 				:multiplier=>1.0,
 				:total=>"-60.0",
@@ -94,12 +103,12 @@ class TC_AfriCompta < Test::Unit::TestCase
 				:account_id=>[1],
 				:name=>"Outcome",
 				:global_id=>"5544436cf81115c6faf577a7e2307e92-4",
-				:index=>4}], 
+				:index=>10}], 
 			accs.collect{|a| a.to_hash}
 		
 		assert_equal [{:full=>"5544436cf81115c6faf577a7e2307e92",
 				:pass=>"152020265102732202950475079275867584513",
-				:account_index=>6,
+				:account_index=>11,
 				:movement_index=>5,
 				:name=>"local",
 				:id=>1},
@@ -182,18 +191,24 @@ class TC_AfriCompta < Test::Unit::TestCase
 		newmov = Movements.from_json mov_json
 		assert_equal( 950.0, @cash.total )
 		assert_equal( 100.0, newmov.value )
+		
+		assert_equal 8, @local.movement_index
+		
+		Movements.create( 'test_mov', '2012-02-29', 100.0, @cash, @outcome )
+		assert_equal 9, @local.movement_index
 	end
 	
 	def test_account
 		tree = []
 		@root.get_tree{|a| tree.push a.name }
-		assert_equal "Root-Cash-Income-Outcome", tree.join("-")
+		assert_equal "Root-Lending-Cash-Income-Outcome", tree.join("-")
 		
+		assert_equal "Root", @root.path
 		assert_equal "Root::Outcome", @outcome.path
 		
-		assert_equal 4, @outcome.index
+		assert_equal 10, @outcome.index
 		@outcome.new_index
-		assert_equal 6, @outcome.index
+		assert_equal 11, @outcome.index
 		
 		foo = Users.create( "foo", "foo bar", "foobar" )
 		box = Accounts.create( "Cashbox", "Running cash", @cash, 
@@ -257,9 +272,9 @@ class TC_AfriCompta < Test::Unit::TestCase
 		assert_equal( -1, @cash.multiplier )
 		assert_equal( -1, box.multiplier )
 		
-		assert_equal 6, Accounts.search_all.length
+		assert_equal 7, Accounts.search_all.length
 		box.delete
-		assert_equal 5, Accounts.search_all.length
+		assert_equal 6, Accounts.search_all.length
 	end
 	
 	def test_accounts
@@ -274,7 +289,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 				:global_id=>"5544436cf81115c6faf577a7e2307e92-8",
 				:name=>"Cashbox",
 				:id=>6,
-				:index=>7}, box.to_hash )
+				:index=>11}, box.to_hash )
 		assert_equal "Root::Cash::Cashbox", box.path
 		assert_equal( -1, @cash.multiplier )
 		assert_equal( -1, box.multiplier )
@@ -289,7 +304,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 				:global_id=>"5544436cf81115c6faf577a7e2307e92-8",
 				:name=>"Cashbox",
 				:id=>6,
-				:index=>9}, box.to_hash )
+				:index=>13}, box.to_hash )
 		
 		course = Accounts.create_path("Root::Income::Course", "course")
 		assert_equal "Root::Income::Course", course.get_path
@@ -309,7 +324,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		foo.update_movement_index
 		assert_equal 4, foo.movement_index
 		foo.update_account_index
-		assert_equal 5, foo.account_index
+		assert_equal 10, foo.account_index
 	end
 	
 	def test_remote
@@ -321,7 +336,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		rem.update_movement_index
 		assert_equal 4, rem.movement_index
 		rem.update_account_index
-		assert_equal 5, rem.account_index
+		assert_equal 10, rem.account_index
 
 		rem2 = Remotes.create( :url => "http://localhost:3302/acaccount",
 			:name => "foo", :pass => "bar", :account_index => 10,
@@ -338,7 +353,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		assert_equal "4096", rep
 		
 		rep = ACaccess.get( "index/foo,bar")
-		assert_equal "6,5", rep
+		assert_equal "11,5", rep
 
 		rep = ACaccess.get( "accounts_get_one/5544436cf81115c6faf577a7e2307e92-2" + 
 				"/foo,bar")
@@ -346,9 +361,11 @@ class TC_AfriCompta < Test::Unit::TestCase
 			"1040.0\tCash\t-1.0\t5544436cf81115c6faf577a7e2307e92-1", rep
 
 		rep = ACaccess.get( "accounts_get/foo,bar")
-		assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\tRoot" +
-			"\t1.0\t\nFull description\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" +
-			"Cash\t-1.0\t5544436cf81115c6faf577a7e2307e92-1\nFull description\r" +
+		assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
+			"Root\t1.0\t\nFull description\r5544436cf81115c6faf577a7e2307e92-5\t0" +
+			"\tLending\t-1.0\t5544436cf81115c6faf577a7e2307e92-1\nFull description" +
+			"\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\tCash\t-1.0\t" +
+			"5544436cf81115c6faf577a7e2307e92-1\nFull description\r" +
 			"5544436cf81115c6faf577a7e2307e92-3\t1100.0\tIncome\t1.0\t" +
 			"5544436cf81115c6faf577a7e2307e92-1\nFull description\r" +
 			"5544436cf81115c6faf577a7e2307e92-4\t-60.0\tOutcome\t1.0\t" +
@@ -358,12 +375,15 @@ class TC_AfriCompta < Test::Unit::TestCase
 		assert_equal "", rep
 
 		rep = ACaccess.get( "accounts_get_all/foo,bar")
-		assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
-			"Root\t1.0\t\tRoot::\nFull description\r5544436cf81115c6faf577a7e2307e92-2" +
-			"\t1040.0\tCash\t-1.0\t5544436cf81115c6faf577a7e2307e92-1\tRoot::Cash\n" +
-			"Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\tIncome\t" +
-			"1.0\t5544436cf81115c6faf577a7e2307e92-1\tRoot::Income\nFull description" +
-			"\r5544436cf81115c6faf577a7e2307e92-4\t-60.0\tOutcome\t1.0\t" +
+		assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0" +
+			"\tRoot\t1.0\t\tRoot\nFull description\r" +
+			"5544436cf81115c6faf577a7e2307e92-5\t0\tLending\t-1.0\t" +
+			"5544436cf81115c6faf577a7e2307e92-1\tRoot::Lending\nFull description" +
+			"\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\tCash\t-1.0\t" +
+			"5544436cf81115c6faf577a7e2307e92-1\tRoot::Cash\nFull description\r" +
+			"5544436cf81115c6faf577a7e2307e92-3\t1100.0\tIncome\t1.0\t" +
+			"5544436cf81115c6faf577a7e2307e92-1\tRoot::Income\nFull description\r" +
+			"5544436cf81115c6faf577a7e2307e92-4\t-60.0\tOutcome\t1.0\t" +
 			"5544436cf81115c6faf577a7e2307e92-1\tRoot::Outcome\n", rep
 		
 		rep = ACaccess.get( "movements_get_one/5544436cf81115c6faf577a7e2307e92-4/foo,bar")

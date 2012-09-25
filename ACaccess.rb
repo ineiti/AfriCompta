@@ -125,7 +125,8 @@ class ACaccess < RPCQooxdooPath
 		when /account_get_id/
 			account = input['account']
 			dputs 2, "account_get_id with path #{account}"
-			Accounts.get_id_by_path( account )
+			a = Accounts.get_id_by_path( account )
+			a and return a
 			dputs 2, "didn't find anything"
 			return nil
 

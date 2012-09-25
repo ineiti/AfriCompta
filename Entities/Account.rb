@@ -84,7 +84,7 @@ class Accounts < Entities
 	
 	def self.get_by_path( p )
 		self.search_all.to_a.each{|a|
-			if a.global_id and a.path =~ /#{p}/
+			if a.global_id and a.path == p
 				dputs 3, "Found #{a.inspect}, a.id is #{a.id}"
 				return a
 			end
@@ -121,9 +121,9 @@ class Account < Entity
     
 	def path( sep = "::", p="", first=true )
 		if self.account
-			return self.account.path( sep, p, false ) + self.name + ( first ? "" : sep )
+			return self.account.path( sep, p, false ) + sep + self.name
 		else
-			return self.name + sep
+			return self.name
 		end
 	end
 	
@@ -238,6 +238,7 @@ class Account < Entity
 		Accounts.match_by_account_id( self.id )
 	end
 	
+	# This is the parent account
 	def account
 		account_id
 	end
