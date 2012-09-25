@@ -53,7 +53,7 @@ class Movements < Entities
 		t.value = value
 		t.global_id = Users.find_by_name("local").full + "-" + t.id.to_s
 		t.new_index
-		dputs 0, t.to_json
+		dputs 4, t.to_json
 		t
 	end
 end

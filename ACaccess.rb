@@ -1,5 +1,6 @@
-# Used for returning some information about the internal state
-# SHOULD NOT CHANGE ANYTHING IN HERE, JUST READING, INFORMATION!
+# This is the interface to AfriCompta. It is called through different
+# Post/Get-handlers over HTTP
+
 
 $VERSION = 0x1000
 

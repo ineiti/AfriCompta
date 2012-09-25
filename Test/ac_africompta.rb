@@ -308,9 +308,11 @@ class TC_AfriCompta < Test::Unit::TestCase
 		
 		course = Accounts.create_path("Root::Income::Course", "course")
 		assert_equal "Root::Income::Course", course.get_path
+		assert_equal "5544436cf81115c6faf577a7e2307e92-7", course.global_id
 
 		ccard = Accounts.create_path("Credit::Card", "credit-card")
 		assert_equal "Credit::Card", ccard.get_path
+		assert_equal "5544436cf81115c6faf577a7e2307e92-9", ccard.global_id
 	end
 	
 	def test_users
@@ -445,6 +447,56 @@ class TC_AfriCompta < Test::Unit::TestCase
 
 		assert_equal 389, tree.count
 		assert_equal 389, tree_d.count
+	end
+	
+	def test_archive
+		Entities.delete_all_data()
+		Users.create( 'local', '123456789', 'bar' )
+		@root = Accounts.create( 'Root' )
+		@income = Accounts.create( 'Income', '', @root )
+		@income.multiplier = -1
+		@cash = Accounts.create( 'Cash', '', @root )
+		@base = []
+		[ 1001, 1009, 1101, 1112, 1201 ].each{|b|
+			@base[b] = Accounts.create "Base_#{b}", "", @income
+		}
+		
+		Movements.create 'inscr_1001_1', '2010-01-01', 1, 
+			@base[1001], @cash
+		Movements.create 'inscr_1001_2', '2010-01-02', 2, 
+			@base[1001], @cash
+		Movements.create 'inscr_1009_1', '2010-09-02', 3, 
+			@base[1009], @cash
+		Movements.create 'inscr_1009_2', '2011-01-02', 4, 
+			@base[1009], @cash
+		Movements.create 'inscr_1101_1', '2011-01-01', 5, 
+			@base[1101], @cash
+		Movements.create 'inscr_1101_2', '2011-01-02', 6, 
+			@base[1101], @cash
+		Movements.create 'inscr_1112_1', '2011-12-01', 7, 
+			@base[1112], @cash
+		Movements.create 'inscr_1112_2', '2012-01-02', 8, 
+			@base[1112], @cash
+		Movements.create 'inscr_1201_1', '2012-01-01', 9, 
+			@base[1201], @cash
+		Movements.create 'inscr_1201_2', '2012-01-02', 10, 
+			@base[1201], @cash
+		
+		Accounts.archive( 1, 2012 )
+		
+		[ [1001,1,2,'Archive::2010::Income::Base_1001'], 
+			[1009,3,1,'Archive::2010::Income::Base_1009'], 
+			[1101,2,2,'Archive::2011::Income::Base_1101'], 
+			[1112,2,1,'Archive::2011::Income::Base_1112'], 
+			[1201,1,2,'Root::Income::Base_1201'] ].each{|b|
+			name, count, movs, path = b
+			@base[name] = Accounts.search_by_name( "Base_#{name}" ).sort{
+				|a,b| a.path <=> b.path
+			}
+			assert_equal count, @base[name].count, "Count for #{name}"
+			assert_equal movs, @base[name].first.movements.count, "movs for #{name}"
+			assert_equal path, @base[name].first.path, "path for #{name}"
+		}
 	end
 
 end
