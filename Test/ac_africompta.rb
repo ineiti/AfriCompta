@@ -457,36 +457,42 @@ class TC_AfriCompta < Test::Unit::TestCase
 		@income.multiplier = -1
 		@cash = Accounts.create( 'Cash', '', @root )
 		@base = []
-		[ 1001, 1009, 1101, 1112, 1201 ].each{|b|
+		[ 1001, 1009, 1012, 1106, 1112, 1201 ].each{|b|
 			@base[b] = Accounts.create "Base_#{b}", "", @income
 		}
 		
-		Movements.create 'inscr_1001_1', '2010-01-01', 1, 
-			@base[1001], @cash
-		Movements.create 'inscr_1001_2', '2010-01-02', 2, 
-			@base[1001], @cash
-		Movements.create 'inscr_1009_1', '2010-09-02', 3, 
-			@base[1009], @cash
-		Movements.create 'inscr_1009_2', '2011-01-02', 4, 
-			@base[1009], @cash
-		Movements.create 'inscr_1101_1', '2011-01-01', 5, 
-			@base[1101], @cash
-		Movements.create 'inscr_1101_2', '2011-01-02', 6, 
-			@base[1101], @cash
-		Movements.create 'inscr_1112_1', '2011-12-01', 7, 
-			@base[1112], @cash
-		Movements.create 'inscr_1112_2', '2012-01-02', 8, 
-			@base[1112], @cash
-		Movements.create 'inscr_1201_1', '2012-01-01', 9, 
-			@base[1201], @cash
-		Movements.create 'inscr_1201_2', '2012-01-02', 10, 
-			@base[1201], @cash
+		def testmov( base, cash, movs )
+			d = 1
+			movs.each{|m|
+				Movements.create( "inscr #{base.desc}", "#{m}-01-2#{d}",
+				m.to_i + d, base, cash )
+				d += 1
+			}
+		end
+		
+		# This should never happen, but still it's possible...
+		Movements.create 'buggy', '2011-01-01', 100, @income, @cash
+
+		# Create different test cases in different accounts
+		# This has most == last == 2010
+		testmov( @base[1001], @cash, %w( 2010 2010 ) )
+		# This has most == 2010, last == 2011
+		testmov( @base[1009], @cash, %w( 2010 2010 2011 ) )
+		# This has most == last == 2011
+		testmov( @base[1012], @cash, %w( 2010 2011 2011 ) )
+		# This has most == 2011, last == 2012
+		testmov( @base[1106], @cash, %w( 2011 2011 2012 ) )
+		# This has most == last == 2012 and movements in 2011
+		testmov( @base[1112], @cash, %w( 2011 2012 2012 ) )
+		# This has most == last == 2012 and no movements in 2011
+		testmov( @base[1201], @cash, %w( 2012 2012 ) )
 		
 		Accounts.archive( 1, 2012 )
 		
 		[ [1001,1,2,'Archive::2010::Income::Base_1001'], 
-			[1009,3,1,'Archive::2010::Income::Base_1009'], 
-			[1101,2,2,'Archive::2011::Income::Base_1101'], 
+			[1009,3,2,'Archive::2010::Income::Base_1009'], 
+			[1012,3,1,'Archive::2010::Income::Base_1012'], 
+			[1106,2,2,'Archive::2011::Income::Base_1106'], 
 			[1112,2,1,'Archive::2011::Income::Base_1112'], 
 			[1201,1,2,'Root::Income::Base_1201'] ].each{|b|
 			name, count, movs, path = b
@@ -499,4 +505,8 @@ class TC_AfriCompta < Test::Unit::TestCase
 		}
 	end
 
+	def test_creation
+		Entities.delete_all_data()
+		ACQooxView::check_db
+	end
 end

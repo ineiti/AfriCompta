@@ -29,22 +29,27 @@ class Accounts < Entities
 			a.global_id = Users.find_by_name('local').full + "-" + a.id.to_s
 		end
 		a.save
-		dputs 2, "Created account #{a.name}"
+		dputs 2, "Created account #{a.path_id}"
 		a
 	end
 	
-	def self.create_path( path, desc )
+	def self.create_path( path, desc, double_last = false )
 		elements = path.split( "::" )
 		last_id = nil
 		elements.each{|e|
-			t = Accounts.match_by_name( e ).select{|a|
-				dputs 5, "Account_id is #{a.account_id}"
-				if a.account_id == last_id
-					last_id = a
-				end
-			}
-			if t == []
+			if ( e == elements.last ) and double_last
+				ddputs 3, "Doubling account #{path}"
 				last_id = Accounts.create( e, desc, last_id )
+			else
+				t = Accounts.match_by_name( e ).select{|a|
+					dputs 5, "Account_id is #{a.account_id}"
+					if a.account_id == last_id
+						last_id = a
+					end
+				}
+				if t == []
+					last_id = Accounts.create( e, desc, last_id )
+				end
 			end
 		}
 		last_id
@@ -102,10 +107,10 @@ class Accounts < Entities
 	
 	def self.archive( month_start = 1, this_year = nil )
 		
-		def archive_parent( years_archived, year, acc )
+		def archive_parent( acc, years_archived, year )
 			ddputs 3, "years_archived is #{years_archived.inspect}"
 			if not years_archived.has_key? year
-				dputs 2, "Adding #{year}"
+				ddputs 2, "Adding #{year}"
 				years_archived[year] = 
 					Accounts.create_path( "Archive::#{year}", "New archive" )
 			end
@@ -117,6 +122,55 @@ class Accounts < Entities
 			else
 				return years_archived[year]
 			end
+		end
+		
+		def search_account( acc, month_start )
+			years = Hash.new(0)
+			acc.movements.each{|mov|
+				y, m, d = mov.date.split("-").collect{|d| d.to_i}
+				ddputs 5, "Date of #{mov.desc} is #{mov.date}"
+				m < month_start and y -= 1
+				years[y] += 1
+			}
+			ddputs 3, "years is #{years.inspect}"
+			years
+		end
+		
+		def create_accounts( acc, years, years_archived, this_year )
+			years.keys.each{|y|
+				if y == this_year
+					years[y] = Accounts.create_path( acc.path, acc.desc, true )
+				else
+					path = "#{archive_parent( acc, years_archived, y ).path}::" +
+						acc.name
+					years[y] = Accounts.create_path( path, acc.desc )
+				end
+				ddputs 3, "years[y] is #{years[y].path_id}"
+			}
+		end
+		
+		def move_movements( acc, years, month_start )
+			acc.movements.each{|mov|
+				y, m, d = mov.date.split("-").collect{|d| d.to_i}
+				ddputs 5, "Date of #{mov.desc} is #{mov.date}"
+				m < month_start and y -= 1
+				if years.has_key? y
+					ddputs 5, "Moving to #{years[y].inspect}: " +
+						"#{mov.account_src.id} - #{mov.account_dst.id} - #{acc.id}"
+					if mov.account_src.id == acc.id
+						ddputs 5, "Moving src"
+						mov.account_src_id = years[y]
+					else
+						ddputs 5, "Moving dst"
+						mov.account_dst_id = years[y]
+					end
+					mov.new_index
+				end
+			}
+			ddputs 5, "Movements left in account #{acc.path}:"
+			acc.movements.each{|m|
+				ddputs 5, m.desc
+			}
 		end
 		
 		if not this_year
@@ -143,68 +197,40 @@ class Accounts < Entities
 		# we omit as many as possible updates for the clients, as
 		# every displacement of a movement will have to be updated,
 		# while the displacement of an account is much simpler
-		root.get_tree{|acc|
+		root.get_tree_depth{|acc|
 			ddputs 3, "Looking at account #{acc.path}"
-			years = Hash.new(0)
-			acc.movements.each{|mov|
-				y, m, d = mov.date.split("-").collect{|d| d.to_i}
-				ddputs 5, "Date of #{mov.desc} is #{mov.date}"
-				m < month_start and y -= 1
-				years[y] += 1
-			}
-			ddputs 3, "years is #{years.inspect}"
+			years = search_account( acc, month_start )
 			
 			if years.size > 0
-				most_used = years.index( years.values.max )
-				last_used = years.keys.max
+				most_used = last_used = this_year
+				if acc.accounts.count == 0
+					most_used = years.index( years.values.max )
+					last_used = years.keys.max
+					years.delete most_used
+				end
 				acc_path = acc.path
 				
 				ddputs 3, "most_used: #{most_used} - last_used: #{last_used}" +
 					"- acc_path: #{acc_path}"
-				
+
 				# First move all other movements around
-				years.delete( most_used )
 				if years.keys.size > 0
-					years.keys.each{|y|
-						ddputs 3, "Creating account #{acc.name} for year #{y}"
-						years[y] = Accounts.create( acc.name, acc.desc, 
-							archive_parent( years_archived, y, acc ))
-						ddputs 3, "years[y] is #{years[y].path}"
-					}
-					acc.movements.each{|mov|
-						y, m, d = mov.date.split("-").collect{|d| d.to_i}
-						ddputs 5, "Date of #{mov.desc} is #{mov.date}"
-						m < month_start and y -= 1
-						if years.has_key? y
-							ddputs 5, "Moving to #{years[y].inspect}: " +
-								"#{mov.account_src.id} - #{mov.account_dst.id} - #{acc.id}"
-							if mov.account_src.id == acc.id
-								ddputs 5, "Moving src"
-								mov.account_src_id = years[y]
-							else
-								ddputs 5, "Moving dst"
-								mov.account_dst_id = years[y]
-							end
-							mov.new_index
-						end
-					}
-					ddputs 5, "Movements left in account #{acc.path}:"
-					acc.movements.each{|m|
-						ddputs 5, m.desc
-					}
+					create_accounts( acc, years, years_archived, this_year )
+					
+					move_movements( acc, years, month_start )
 				end
 
 				if most_used != this_year
 					# Now move account to archive-year of most movements
-					ddputs 3, "Most used year is #{most_used}"
-					parent = archive_parent( years_archived, most_used, acc )
-					ddputs 3, "Moving account #{acc.path} to #{parent.path}"
-					acc.account_id = parent
+					parent = archive_parent( acc, years_archived, most_used )
+					ddputs 3, "Moving account #{acc.path_id} to #{parent.path_id}"
+					acc.parent = parent
 					acc.new_index
 				end
 
 				# Check whether we need to add the account to the current year
-				if last_used == this_year - 1
+				if ( last_used >= this_year - 1 ) and 
+						( most_used != this_year )
 					ddputs 3, "Adding #{acc_path} to this year"
 					Accounts.create_path( acc_path, "Copied from archive" )
 				end
@@ -213,11 +239,11 @@ class Accounts < Entities
 			end
 		}
 		ddputs 3, "Root-tree is now"
-		root.get_tree{|a|
+		root.get_tree_depth{|a|
 			ddputs 3, a.path
 		}
 		ddputs 3, "Archive-tree is now"
-		archive.get_tree{|a|
+		archive.get_tree_depth{|a|
 			ddputs 3, a.path
 		}
 	end
@@ -231,6 +257,14 @@ class Account < Entity
 		accounts.each{|a|
 			a.get_tree{|b| yield b} 
 		}
+	end
+    
+	# This gets the tree under that account, depth-first
+	def get_tree_depth
+		accounts.each{|a|
+			a.get_tree_depth{|b| yield b} 
+		}
+		yield self
 	end
     
 	def get_tree_debug( ind = "" )
@@ -247,6 +281,12 @@ class Account < Entity
 		else
 			return self.name
 		end
+	end
+	
+	def path_id( sep = "::", p="", first=true )
+		( self.account ? 
+				"#{self.account.path_id( sep, p, false )}#{sep}" : "" ) +
+			"#{self.name}-#{self.id}"
 	end
 	
 	def get_path( sep = "::", p = "", first = true )
@@ -365,8 +405,16 @@ class Account < Entity
 		account_id
 	end
 	
+	def account= ( a )
+		self.account_id = a
+	end
+	
 	def parent
 		account
+	end
+	
+	def parent= ( a )
+		self.account_id = a
 	end
 	
 	def movements_src
