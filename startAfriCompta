@@ -1,5 +1,6 @@
 #!/bin/bash
 echo startafricompta
+DB=~/.camping
 
 # Initialize variables
 cd `dirname $0`
@@ -11,22 +12,27 @@ if [ "$1" = "std" ]; then
   OUT=std
   shift
 fi
-DB=""
+ARGS=""
 if [ "$1" ]; then
-  DB="--database db.$1"
+  ARGS="--database db.$1"
+  DB=$1
+  shift
+fi
+if [ "$1" ]; then
+  ARGS="$ARGS -p $1"
 fi
 
 # Backing up the DB
-./backup_bdd $1
+./backup_bdd $DB
 
 # Closing old instance
 killall -9 ruby
 
 # Starting either in konsole-mode or in nohup
 if [ "$OUT" = "std" ]; then
-  ./camping $DB compta.rb &
+  ./camping $ARGS compta.rb &
 else
-  nohup ./camping $DB compta.rb &
+  nohup ./camping $ARGS compta.rb &
 fi
 
 # Depending on where we are, "open" or "firefox"
