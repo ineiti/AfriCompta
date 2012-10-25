@@ -54,10 +54,10 @@ module Compta::Controllers
       if getForm( "version" ) != @VERSION.to_s
         render :remote_error_version
       end
-      
       #
       # First get the remote accounts
       u = User.find_by_name('local')
+
       debug 1, "Getting remotes"
       @account_index_stop = u.account_index - 1
       accounts = getForm( "accounts_get" )
@@ -108,6 +108,8 @@ module Compta::Controllers
         debug 0, "Putting one bunch of 10 movements"
 				debug 4, movements_put.to_json
         postForm( "movements_put", {"movements" => movements_put.to_json } )
+				# TODO: remove
+				# movements = []
       end
       # Update the pointer
       @remote.update_movement_index      

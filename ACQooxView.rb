@@ -57,7 +57,7 @@ end
 require 'ACaccess'
 Dir[File.dirname(__FILE__) + "/Entities/*.rb"].each{|f| 
 	require(f)
-	dputs 2, "Adding #{f}"
+	dputs( 2 ){ "Adding #{f}" }
 }
 
 module ACQooxView
@@ -67,7 +67,7 @@ module ACQooxView
         rand( 2 ** 128 ).to_s )
 		end
     if Accounts.search_by_name( 'Root' ).count == 0
-      dputs 0, "Didn't find 'Root' in database - creating base"
+      dputs( 0 ){ "Didn't find 'Root' in database - creating base" }
       root = Accounts.create( 'Root', 'Initialisation' )
       %w( Income Outcome Lending Cash ).each{|a|
         Accounts.create( a, 'Initialisation', root )

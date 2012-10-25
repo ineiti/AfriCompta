@@ -220,7 +220,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		assert_equal "All money", @cash.desc
 		assert_equal 1, @cash.multiplier
 		assert_equal( -1, box.multiplier )
-		assert_equal "1040.0", @cash.total
+		assert_equal( -1040.0, @cash.total )
 		
 		assert_equal([{:value=>20.0,
 					:desc=>"Restaurant",
@@ -257,7 +257,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 			@cash.movements.collect{|m| m.to_hash.delete_if{|k,v| k == :date
 				}} )
 		
-		assert_equal "All money\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" + 
+		assert_equal "All money\r5544436cf81115c6faf577a7e2307e92-2\t-1040.0\t" + 
 			"Cash_2\t1\t5544436cf81115c6faf577a7e2307e92-1", 
 			@cash.to_s
 		
@@ -299,20 +299,20 @@ class TC_AfriCompta < Test::Unit::TestCase
 		box = Accounts.from_s( box_s )
 		assert_equal( {:multiplier=>-1.0,
 				:desc=>"Running cash",
-				:total=>"0",
+				:total=>0.0,
 				:account_id=>[2],
 				:global_id=>"5544436cf81115c6faf577a7e2307e92-8",
 				:name=>"Cashbox",
-				:id=>6,
+				:id=>7,
 				:index=>13}, box.to_hash )
 		
 		course = Accounts.create_path("Root::Income::Course", "course")
 		assert_equal "Root::Income::Course", course.get_path
-		assert_equal "5544436cf81115c6faf577a7e2307e92-7", course.global_id
+		assert_equal "5544436cf81115c6faf577a7e2307e92-8", course.global_id
 
 		ccard = Accounts.create_path("Credit::Card", "credit-card")
 		assert_equal "Credit::Card", ccard.get_path
-		assert_equal "5544436cf81115c6faf577a7e2307e92-9", ccard.global_id
+		assert_equal "5544436cf81115c6faf577a7e2307e92-10", ccard.global_id
 	end
 	
 	def test_users
@@ -418,20 +418,39 @@ class TC_AfriCompta < Test::Unit::TestCase
 		assert_equal "2", rep
 		
 		mov_pizza = "Pizza\r5544436cf81115c6faf577a7e2307e92-5\t12.0\t" +
-			"2012-07-11\t5544436cf81115c6faf577a7e2307e92-4\t" +
+			"2012-07-20\t5544436cf81115c6faf577a7e2307e92-4\t" +
 			"5544436cf81115c6faf577a7e2307e92-2"
 		mov_panini = "Panini\r5544436cf81115c6faf577a7e2307e92-6\t14.0\t" +
-			"2012-07-11\t5544436cf81115c6faf577a7e2307e92-4\t" +
+			"2012-07-21\t5544436cf81115c6faf577a7e2307e92-4\t" +
 			"5544436cf81115c6faf577a7e2307e92-2"
 		assert_equal "-60.0", @outcome.total
 		assert_equal "1040.0", @cash.total
 		rep = ACaccess.post( 'movements_put', input.merge( 'movements' => 
 					[{ :str => mov_pizza }.to_json, { :str => mov_panini }.to_json].to_json))
 		assert_equal "ok", rep
-		assert_equal 12.0, Movements.find_by_desc( 'Pizza' ).value
-		assert_equal 14.0, Movements.find_by_desc( 'Panini' ).value
+
+		mov_pizza_merged = Movements.find_by_desc( 'Pizza' )
+		assert_equal 12.0, mov_pizza_merged.value
+		mov_panini_merged = Movements.find_by_desc( 'Panini' )
+		assert_equal 14.0, mov_panini_merged.value
 		assert_equal( -86.0, @outcome.total )
 		assert_equal 1014.0, @cash.total
+		
+		Entities.Movements.load
+		mov_pizza_merged = Movements.find_by_desc( 'Pizza' )
+		assert_equal "2012-07-20", mov_pizza_merged.date.to_s
+		mov_panini_merged = Movements.find_by_desc( 'Panini' )
+		assert_equal "2012-07-21", mov_panini_merged.date.to_s
+
+		rep = ACaccess.post( 'movements_put', input.merge( 'movements' => 
+					[{ :str => mov_pizza.sub("12.0", "22.0") }.to_json, 
+					{ :str => mov_panini.sub("14.0", "24.0") }.to_json].to_json))
+		assert_equal "ok", rep
+		mov_pizza_merged = Movements.find_by_desc( 'Pizza' )
+		assert_equal 22.0, mov_pizza_merged.value
+		mov_panini_merged = Movements.find_by_desc( 'Panini' )
+		assert_equal 24.0, mov_panini_merged.value
+
 	end
 	
 	# This is only relevant when testing with big data from solar
@@ -449,23 +468,34 @@ class TC_AfriCompta < Test::Unit::TestCase
 		assert_equal 389, tree_d.count
 	end
 	
-	def test_archive
+	def setup_clean_accounts
 		Entities.delete_all_data()
 		Users.create( 'local', '123456789', 'bar' )
 		@root = Accounts.create( 'Root' )
 		@income = Accounts.create( 'Income', '', @root )
-		@income.multiplier = -1
-		@cash = Accounts.create( 'Cash', '', @root )
+		@spending = Accounts.create( 'Spending', '', @root )
+		@cash = Accounts.create( 'Cash', '', @root )		
+		@cash.multiplier = -1
+	end
+	
+	def get_sorted_accounts( name )
+		Accounts.search_by_name( name ).sort{
+			|a,b| a.path <=> b.path
+		}
+	end
+	
+	def test_archive
+		setup_clean_accounts
 		@base = []
 		[ 1001, 1009, 1012, 1106, 1112, 1201 ].each{|b|
 			@base[b] = Accounts.create "Base_#{b}", "", @income
 		}
 		
-		def testmov( base, cash, movs )
+		def testmov( base, cash, years )
 			d = 1
-			movs.each{|m|
-				Movements.create( "inscr #{base.desc}", "#{m}-01-2#{d}",
-				m.to_i + d, base, cash )
+			years.each{|y|
+				Movements.create( "inscr #{base.desc}", "#{y}-01-2#{d}",
+					y.to_i + d, base, cash )
 				d += 1
 			}
 		end
@@ -489,6 +519,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		
 		Accounts.archive( 1, 2012 )
 		
+		# Name, account-count, movs-count, path of first occurence
 		[ [1001,1,2,'Archive::2010::Income::Base_1001'], 
 			[1009,3,2,'Archive::2010::Income::Base_1009'], 
 			[1012,3,1,'Archive::2010::Income::Base_1012'], 
@@ -496,17 +527,115 @@ class TC_AfriCompta < Test::Unit::TestCase
 			[1112,2,1,'Archive::2011::Income::Base_1112'], 
 			[1201,1,2,'Root::Income::Base_1201'] ].each{|b|
 			name, count, movs, path = b
-			@base[name] = Accounts.search_by_name( "Base_#{name}" ).sort{
-				|a,b| a.path <=> b.path
-			}
+			@base[name] = get_sorted_accounts( "Base_#{name}" )
 			assert_equal count, @base[name].count, "Count for #{name}"
 			assert_equal movs, @base[name].first.movements.count, "movs for #{name}"
 			assert_equal path, @base[name].first.path, "path for #{name}"
 		}
 	end
+	
+	def add_movs
+		Movements.create( "Year 2011", "2011-01-01", 10, @cash, @income )
+		Movements.create( "Year 2011", "2012-05-01", 20, @cash, @income )
+		Movements.create( "Year 2012", "2012-06-01", 30, @cash, @income )
+	end
+
+	def test_archive_start_june	
+		setup_clean_accounts
+		add_movs
+		Accounts.archive( 6, 2012 )
+		incomes = get_sorted_accounts( "Income" )
+		
+		assert_equal 3, incomes.length
+		assert_equal 1, incomes[0].movements.length
+		assert_equal 2, incomes[1].movements.length
+		assert_equal 2, incomes[2].movements.length
+	end
+	
+	def test_archive_sum_up
+		# Make sure that everything still sums up
+		setup_clean_accounts
+		add_movs
+		@cash.update_total
+		
+		assert_equal 60, Accounts.find_by_name( "Cash" ).total
+		Accounts.archive( 6, 2012 )
+		cashs = get_sorted_accounts( "Cash" )
+		(0..2).each{|i|
+			dputs( 3 ){ "Path for #{i} is #{cashs[i].get_path}" }
+		}
+		assert_equal 10, cashs[0].total
+		assert_equal 30, cashs[1].total
+		assert_equal 60, cashs[2].total
+
+		# Test two consecutive runs on the archive like 2013, then 2014, and
+		# make sure that the accounts that hold only a "final"-movement get
+		# deleted
+		setup_clean_accounts
+		add_movs
+		Accounts.archive( 6, 2013 )
+		incomes = get_sorted_accounts( "Income" )
+		assert_equal 4, incomes.count
+		assert_equal 60, incomes[3].total
+		
+		Accounts.archive( 6, 2014 )
+		incomes = get_sorted_accounts( "Income" )
+		# We lost the actual account, as it should be empty
+		#assert_equal 3, incomes.count
+		assert_equal 60, incomes[3].total
+		
+	end
 
 	def test_creation
 		Entities.delete_all_data()
 		ACQooxView::check_db
+	end
+	
+	def load_big_data
+		FileUtils.cp( "db.solar", "data/compta.db" )		
+		Entities.Movements.load
+		Entities.Accounts.load
+		Entities.Users.load
+	end
+		
+	def test_big_data
+		load_big_data
+		Accounts.archive( 1, 2012 )
+	end
+	
+	def test_archive_2
+		load_big_data
+		Accounts.archive( 1, 2012, 
+			Accounts.get_by_path( "Root::Caisses::Centre::Josué" ) )
+	end
+
+	def test_archive_3
+		load_big_data
+		Accounts.archive( 1, 2012, 
+			Accounts.get_by_path( "Root::Caisses::Centre::Rubia Centre" ) )
+	end
+
+	def test_get_by_path
+		cash = Accounts.get_by_path( "Root::Cash" )
+		
+		assert_equal "Cash", cash.name
+	end
+	
+	def test_speed
+		require 'rubygems'
+		require 'perftools'
+		PerfTools::CpuProfiler.start("/tmp/profile") do
+			(2010..2012).each{|year|
+				dputs( 0 ){ "Doing year #{year}" }
+				(1..12).each{|month|
+					(1..10).each{|day|
+						(1..1).each{|t|
+							date = "#{year}-#{month}-#{day}"
+							Movements.create( "Test #{date}", date, t, @cash, @income )
+						}
+					}
+				}
+			}
+		end
 	end
 end

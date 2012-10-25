@@ -1,6 +1,6 @@
 class Movements < Entities
   def setup_data
-		dputs 0, "init_movements"
+		dputs( 0 ){ "init_movements" }
     @default_type = :SQLiteAC
 		@data_field_id = :id
 
@@ -21,23 +21,24 @@ class Movements < Entities
 	def self.from_s( str )
 		desc, str = str.split("\r")
 		global_id, value, date, src, dst = str.split("\t")
-		date = Time.parse(date).to_ss
+		#date = Time.parse(date).to_ss
+		date = Date.strptime(date, "%Y-%m-%d" )
 		value = value.to_f
 		a_src = Accounts.find_by_global_id( src )
 		a_dst = Accounts.find_by_global_id( dst )
 		if not a_src or not a_dst
-			dputs 0, "error: didn't find " + src.to_s + " or " + dst.to_s
+			dputs( 0 ){ "error: didn't find " + src.to_s + " or " + dst.to_s }
 			return [ -1, nil ]
 		end
 		# Does the movement already exist?
 		our_m = nil
 		if not ( our_m = self.find_by_global_id(global_id) )
-			dputs 3, "New movement"
+			dputs( 3 ){ "New movement" }
 			our_m = self.create( desc, date, value, 
 				a_src, a_dst )
 			our_m.global_id = global_id
 		else
-			dputs 2, "Overwriting movement #{global_id}"
+			dputs( 2 ){ "Overwriting movement #{global_id}" }
 			# And update it
 			our_m.set( desc, date, value, a_src.id, a_dst.id )
 		end
@@ -53,7 +54,7 @@ class Movements < Entities
 		t.value = value
 		t.global_id = Users.find_by_name("local").full + "-" + t.id.to_s
 		t.new_index
-		dputs 4, t.to_json
+		dputs( 4 ){ t.to_json }
 		t
 	end
 end
@@ -66,8 +67,8 @@ class Movement < Entity
 		self.index = u_l.movement_index
 		u_l.movement_index += 1
 		u_l.save
-		dputs 3, "index is #{self.index} and date is --#{self.date}--"
-		dputs 3, "User('local').index is: " + Users.find_by_name('local').movement_index.to_s
+		dputs( 3 ){ "index is #{self.index} and date is --#{self.date}--" }
+		dputs( 3 ){ "User('local').index is: " + Users.find_by_name('local').movement_index.to_s }
 	end
     
 	def get_index()
@@ -80,7 +81,7 @@ class Movement < Entity
     
 	def value=(v)
 		if account_src and account_dst
-			dputs 3, "value=" + v.to_s + ":" + account_src.total.to_s
+			dputs( 3 ){ "value=" + v.to_s + ":" + account_src.total.to_s }
 			diff = value.to_f - v
 			account_src.total = account_src.total.to_f + ( diff * account_src.multiplier )
 			account_dst.total = account_dst.total.to_f - ( diff * account_dst.multiplier )
@@ -91,7 +92,10 @@ class Movement < Entity
 	end
     
 	def get_value( account )
-		value.to_f * account.multiplier.to_f * ( account_src == account ? -1 : 1 )
+		account_side = ( account_src == account ? -1 : 1 )
+		dputs( 5 ){ "account_src #{account_src.inspect} == account #{account.inspect}" }
+		dputs( 5 ){ "Account_side = #{account_side}" }
+		value.to_f * account.multiplier.to_f * account_side
 	end
     
 	def get_other_account( account )
@@ -99,7 +103,7 @@ class Movement < Entity
 	end
     
 	def set( desc, date, value, source, dest )
-		dputs 3, "self.value " + self.value.to_s + " - " + value.to_s
+		dputs( 3 ){ "self.value " + self.value.to_s + " - " + value.to_s }
 		self.value = 0
 		self.account_src_id, self.account_dst_id = source, dest
 		if false
@@ -115,17 +119,17 @@ class Movement < Entity
 				self.date = Date.strptime( date.join("/"), "%d/%m/%y" )
 			end
 		else
-			self.date = Date.from_s(date)
+			self.date = Date.from_s(date.to_s)
 		end
 		self.desc, self.value = desc, value
-		dputs 4, "Going to save"
+		dputs( 4 ){ "Going to save" }
 		self.new_index()
 		save
-		dputs 4, "Date " + self.date.to_s
+		dputs( 4 ){ "Date " + self.date.to_s }
 	end
     
 	def to_s
-		dputs 5, "I am: #{to_hash.inspect} - my id is: #{global_id}"
+		dputs( 5 ){ "I am: #{to_hash.inspect} - my id is: #{global_id}" }
 		"#{desc}\r#{global_id}\t" + 
       "#{value.to_s}\t#{date.to_s}\t" +
       account_src.global_id.to_s + "\t" +
