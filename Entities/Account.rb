@@ -379,7 +379,7 @@ class Account < Entity
 		dputs( 3 ){ "Index for account #{name} is #{index}" }
 	end
 	
-	def update_total
+	def update_total( precision = 3 )
 		# Recalculate everything.
 		dputs( 4 ){ "Calculating total for #{self.path_id} with mult #{self.multiplier}" }
 		self.total = ( 0.0 ).to_f
@@ -390,6 +390,7 @@ class Account < Entity
 			dputs( 5 ){ "Value is #{v.inspect}" }
 			self.total = self.total.to_f + v.to_f
 		}
+		self.total = self.total.round( precision )
 		dputs( 4 ){ "Final total is #{self.total} - #{self.total.class.name}" }
 	end
 

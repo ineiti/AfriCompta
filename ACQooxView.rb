@@ -54,6 +54,16 @@ class SQLiteAC < SQLite
 	end
 end
 
+class Float
+	def round( precision = 0 )
+		if precision > 0
+			return ( self * 10**precision ).round / 10.0**precision
+		else
+			return super()
+		end
+	end
+end
+
 require 'ACaccess'
 Dir[File.dirname(__FILE__) + "/Entities/*.rb"].each{|f| 
 	require(f)

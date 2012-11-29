@@ -581,7 +581,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		Accounts.archive( 6, 2014 )
 		incomes = get_sorted_accounts( "Income" )
 		# We lost the actual account, as it should be empty
-		#assert_equal 3, incomes.count
+		assert_equal 3, incomes.count
 		assert_equal 60, incomes[3].total
 		
 	end
@@ -598,7 +598,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		Entities.Users.load
 	end
 		
-	def test_big_data
+	def tes_big_data
 		load_big_data
 		Accounts.archive( 1, 2012 )
 	end
@@ -637,5 +637,13 @@ class TC_AfriCompta < Test::Unit::TestCase
 				}
 			}
 		end
+	end
+	
+	def test_round
+		a = 2.563
+		assert_equal Float, a.class
+		assert_equal 3, a.round
+		assert_equal 2.6, a.round( 1 )
+		assert_equal 2.56, a.round( 2 )
 	end
 end
