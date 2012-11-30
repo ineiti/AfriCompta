@@ -4,3 +4,5 @@ Test/.*
 camping-1.5.old
 nohup.out
 .git
+.buildpath
+.project

@@ -26,7 +26,7 @@ fi
 ./backup_bdd $DB
 
 # Closing old instance
-killall -9 ruby
+pkill -9 -f compta.rb
 
 # Starting either in konsole-mode or in nohup
 if [ "$OUT" = "std" ]; then
@@ -37,7 +37,7 @@ fi
 
 # Depending on where we are, "open" or "firefox"
 if echo "$MACHTYPE" | grep -q apple; then
-  sleep 5
+  sleep 2
   open http://localhost:3301
 else
   zenity --info --text="Un peu de patience" &

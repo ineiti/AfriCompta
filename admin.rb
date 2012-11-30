@@ -9,13 +9,14 @@ module Compta::Controllers
       @action, args = p.split("/")
 
       case @action
-        when "clean"
+			when "clean"
         # Let's just test for bad accounts and movements
         @count_mov, @count_acc = 0, 0
         @bad_movements, @bad_accounts = 0, 0
         Movement.find( :all ).each{ |m|
           if not m.date or not m.desc or not m.value or not m.index or 
-            not m.account_src or not m.account_dst or not m
+							not m.account_src or not m.account_dst or not m
+						debug 1, "Bad movement: #{m.to_json}"
             Movement.destroy(m)
             @bad_movements += 1
           end

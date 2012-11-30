@@ -39,10 +39,10 @@ module Compta::Controllers
     end
     
     def getForm( path )
-      debug 5, "Starting getForm with path #{path}"
       url = URI.parse( @remote.url )
+      debug 5, "Starting getForm with path #{path} - #{url.inspect}"
       debug 5, "Finished parsing #{@remote.url}"
-      ret = Net::HTTP.get( url.host, "/merge/#{path}/#{@remote.name},#{@remote.pass}", url.port )
+      ret = Net::HTTP.get( url.host, "#{url.path}/merge/#{path}/#{@remote.name},#{@remote.pass}", url.port )
       debug 5, "Ending getForm with path #{path}"
       ret
     end
@@ -54,10 +54,10 @@ module Compta::Controllers
       if getForm( "version" ) != @VERSION.to_s
         render :remote_error_version
       end
-      
       #
       # First get the remote accounts
       u = User.find_by_name('local')
+
       debug 1, "Getting remotes"
       @account_index_stop = u.account_index - 1
       accounts = getForm( "accounts_get" )
@@ -99,14 +99,17 @@ module Compta::Controllers
       movements = []
       Movement.find(:all, :conditions => 
 					{:index => @movement_index_start..@movement_index_stop } ).each{ |m|
-        debug 2, "Rem: Sending #{m.to_s}"
         movements.push( m.to_json )
       }
+			debug 0, "Having #{movements.size} movements to move"
       while movements.size > 0
         # We'll do it by bunches of 10
         movements_put = movements.shift 10
-        debug 0, "Putting one bunch of movements"
+        debug 0, "Putting one bunch of 10 movements"
+				debug 4, movements_put.to_json
         postForm( "movements_put", {"movements" => movements_put.to_json } )
+				# TODO: remove
+				# movements = []
       end
       # Update the pointer
       @remote.update_movement_index      
@@ -116,6 +119,7 @@ module Compta::Controllers
       @remote = Remote.find_by_id( arg )
       #
       # Check the versions
+			debug 3, "Remote is #{@remote.inspect}"
       if getForm( "version" ) != @VERSION.to_s
         render :remote_error_version
       end
