@@ -48,34 +48,34 @@ end
 
 
 class SQLiteAC < SQLite
-	def configure( config )
-		filename = get_config( "compta.db", :AfriCompta, :filename )
-		super( config, "compta", filename )
-	end
+  def configure( config )
+    filename = get_config( "compta.db", :AfriCompta, :filename )
+    super( config, "compta", filename )
+  end
 end
 
 class Float
-	def round( precision = 0 )
-		if precision > 0
-			return ( self * 10**precision ).round / 10.0**precision
-		else
-			return super()
-		end
-	end
+  def round( precision = 0 )
+    if precision > 0
+      return ( self * 10**precision ).round / 10.0**precision
+    else
+      return super()
+    end
+  end
 end
 
 require 'ACaccess'
 Dir[File.dirname(__FILE__) + "/Entities/*.rb"].each{|f| 
-	require(f)
-	dputs( 2 ){ "Adding #{f}" }
+  require(f)
+  dputs( 2 ){ "Adding #{f}" }
 }
 
 module ACQooxView
   def self.check_db
-		if Users.search_by_name( 'local' ).count == 0
-			Users.create( 'local', MD5::md5( ( rand 2**128 ).to_s ).to_s,
+    if Users.search_by_name( 'local' ).count == 0
+      Users.create( 'local', MD5::md5( ( rand 2**128 ).to_s ).to_s,
         rand( 2 ** 128 ).to_s )
-		end
+    end
     if Accounts.search_by_name( 'Root' ).count == 0
       dputs( 0 ){ "Didn't find 'Root' in database - creating base" }
       root = Accounts.create( 'Root', 'Initialisation' )
