@@ -64,7 +64,7 @@ class ACaccess < RPCQooxdooPath
       end
       get_all = $1 == "_all"
       dputs( 2 ){ "Starting to search accounts" }
-      Accounts.match_by_account_id(0).to_a.each{|a|
+      Accounts.matches_by_account_id(0).to_a.each{|a|
         dputs( 2 ){ "Found one account #{a.index}" }
         if a.global_id
           dputs( 2 ){ "It's global" }

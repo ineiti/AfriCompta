@@ -1,6 +1,6 @@
 class AccountRoot
   def self.accounts
-    Accounts.match_by_account_id( 0 )
+    Accounts.matches_by_account_id( 0 )
   end
 end
 
@@ -21,7 +21,7 @@ class Accounts < Entities
   def self.create( name, desc = "Too lazy", parent = nil, global_id = "" )
     if parent
       if parent.class != Account
-        parent = Accounts.match_by_index( parent ).first
+        parent = Accounts.matches_by_index( parent ).first
       end
       a = super( :name => name, :desc => desc, :account_id => parent.id,
         :global_id => global_id.to_s, :multiplier => parent.multiplier )
@@ -43,12 +43,13 @@ class Accounts < Entities
     elements = path.split( "::" )
     last_id = nil
     elements.each{|e|
+      ddputs( 5 ){ "Working on element #{e}" }
       if ( e == elements.last ) and double_last
-        dputs( 3 ){ "Doubling account #{path}" }
+        ddputs( 3 ){ "Doubling account #{path}" }
         last_id = Accounts.create( e, desc, last_id )
       else
-        t = Accounts.match_by_name( e ).select{|a|
-          dputs( 5 ){ "Account_id is #{a.account_id}" }
+        t = Accounts.matches_by_name( e ).select{|a|
+          ddputs( 5 ){ "Account_id is #{a.account_id}" }
           if a.account_id == last_id
             last_id = a
           end
@@ -488,7 +489,7 @@ class Account < Entity
   end
 	
   def accounts
-    Accounts.match_by_account_id( self.id )
+    Accounts.matches_by_account_id( self.id )
   end
 	
   # This is the parent account
@@ -509,10 +510,10 @@ class Account < Entity
   end
 	
   def movements_src
-    Movements.match_by_account_src_id( self.id )
+    Movements.matches_by_account_src_id( self.id )
   end
 	
   def movements_dst
-    Movements.match_by_account_dst_id( self.id )
+    Movements.matches_by_account_dst_id( self.id )
   end
 end
