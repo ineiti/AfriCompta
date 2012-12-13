@@ -510,10 +510,10 @@ class Account < Entity
   end
 	
   def movements_src
-    Movements.matches_by_account_src_id( self.id )
+    Movements.matches_by_account_src_id( self.id ).to_a
   end
 	
   def movements_dst
-    Movements.matches_by_account_dst_id( self.id )
+    Movements.matches_by_account_dst_id( self.id ).to_a
   end
 end
