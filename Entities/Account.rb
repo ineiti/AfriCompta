@@ -7,7 +7,7 @@ class AccountRoot
     count_mov, count_acc = 0, 0
     bad_mov, bad_acc = 0, 0
     Movements.search_all.each{ |m|
-      ddputs(4){"Testing movement #{m.inspect}"}
+      dputs(4){"Testing movement #{m.inspect}"}
       if not m or not m.date or not m.desc or not m.value or 
           not m.index or not m.account_src or not m.account_dst
         if m and m.desc
@@ -86,13 +86,13 @@ class Accounts < Entities
     elements = path.split( "::" )
     last_id = nil
     elements.each{|e|
-      ddputs( 5 ){ "Working on element #{e}" }
+      dputs( 5 ){ "Working on element #{e}" }
       if ( e == elements.last ) and double_last
-        ddputs( 3 ){ "Doubling account #{path}" }
+        dputs( 3 ){ "Doubling account #{path}" }
         last_id = Accounts.create( e, desc, last_id )
       else
         t = Accounts.matches_by_name( e ).select{|a|
-          ddputs( 5 ){ "Account_id is #{a.account_id}" }
+          dputs( 5 ){ "Account_id is #{a.account_id}" }
           if a.account_id == last_id
             last_id = a
           end
