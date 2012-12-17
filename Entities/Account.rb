@@ -2,6 +2,49 @@ class AccountRoot
   def self.accounts
     Accounts.matches_by_account_id( 0 )
   end
+  
+  def self.clean
+    count_mov, count_acc = 0, 0
+    bad_mov, bad_acc = 0, 0
+    Movements.search_all.each{ |m|
+      ddputs(4){"Testing movement #{m.inspect}"}
+      if not m or not m.date or not m.desc or not m.value or 
+          not m.index or not m.account_src or not m.account_dst
+        if m and m.desc
+          dputs(1){ "Bad movement: #{m.desc}" }
+        end
+        m.delete
+        bad_mov += 1
+      end
+      if m.index
+        count_mov = [ count_mov, m.index ].max
+      end
+    }
+    Accounts.search_all.each{ |a|
+      if ( a.account_id and a.account_id > 0 ) and not a.account
+        a.delete
+        bad_acc += 1
+      end
+      count_acc = [ count_acc, a.index ].max
+    }
+
+    # Check also whether our counters are OK
+    u_l = Users.match_by_name('local')
+    dputs(1){ "Movements-index: #{count_mov} - #{u_l.movement_index}" }
+    dputs(1){ "Accounts-index: #{count_acc} - #{u_l.account_index}" }
+    @ul_mov, @ul_acc = u_l.movement_index, u_l.account_index
+    if count_mov > u_l.movement_index
+      dputs(0){ "Error, there is a bigger movement! Fixing" }
+      u_l.movement_index = count_mov + 1
+      u_l.save
+    end
+    if count_acc > u_l.account_index
+      dputs(0){ "Error, there is a bigger account! Fixing" }
+      u_l.account_index = count_acc + 1
+      u_l.save
+    end
+    return [ count_mov, bad_mov, count_acc, bad_acc ]
+  end
 end
 
 class Accounts < Entities
@@ -197,7 +240,7 @@ class Accounts < Entities
     }
   end
 		
-  def	sum_up_total( acc_path, years_archived, month_start )
+  def sum_up_total( acc_path, years_archived, month_start )
     a_path = acc_path.sub( /[^:]*::/, '' )
     dputs( 3 ){ "Summing up account #{a_path}" }
     acc_sum = []
