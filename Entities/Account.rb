@@ -78,7 +78,7 @@ class Accounts < Entities
       a.global_id = Users.find_by_name('local').full + "-" + a.id.to_s
     end
     a.save
-    dputs( 2 ){ "Created account #{a.path_id}" }
+    ddputs( 2 ){ "Created account #{a.path_id}" }
     a
   end
 	
@@ -201,11 +201,13 @@ class Accounts < Entities
   def create_accounts( acc, years, years_archived, this_year )
     years.keys.each{|y|
       if y == this_year
+        dputs(3){"Creating path #{acc.path}"}
         years[y] = Accounts.create_path( acc.path, acc.desc, 
           true, acc.multiplier )
       else
         path = "#{archive_parent( acc, years_archived, y ).path}::" +
           acc.name
+        dputs(3){"Creating other path #{path}"}
         years[y] = Accounts.create_path( path, acc.desc, false,
           acc.multiplier )
       end
@@ -316,7 +318,7 @@ class Accounts < Entities
     root.get_tree_depth{|acc|
       dputs( 2 ){ "Looking at account #{acc.path}" }
       years = search_account( acc, month_start )
-			
+
       if years.size > 0
         most_used = last_used = this_year
         if acc.accounts.count == 0
@@ -339,9 +341,24 @@ class Accounts < Entities
         if most_used != this_year
           # Now move account to archive-year of most movements
           parent = archive_parent( acc, years_archived, most_used )
-          dputs( 3 ){ "Moving account #{acc.path_id} to #{parent.path_id}" }
-          acc.parent = parent
-          acc.new_index
+          if double = Accounts.get_by_path( "#{parent.get_path}::#{acc.name}" )
+            ddputs(3){"Account #{acc.path_id} already exists in #{parent.path_id}"}
+            # Move all movements
+            acc.movements.each{|m|
+              ddputs(4){"Moving movement #{m.to_json}"}
+              if m.account_src == acc
+                m.account_src_id = double
+              else
+                m.account_dst_id = double
+              end
+            }
+            # Delete acc
+            acc.delete
+          else
+            ddputs( 3 ){ "Moving account #{acc.path_id} to #{parent.path_id}" }
+            acc.parent = parent
+            acc.new_index
+          end
         end
 
         # Check whether we need to add the account to the current year
@@ -360,13 +377,19 @@ class Accounts < Entities
         dputs( 3 ){ "Empty account" }
       end
     }
-    dputs( 3 ){ "Root-tree is now" }
+    ddputs( 3 ){ "Root-tree is now" }
     root.get_tree_depth{|a|
-      dputs( 3 ){ a.path }
+      ddputs( 3 ){ a.path_id }
+      a.movements.each{|m|
+        ddputs(4){"Movement is #{m.inspect}"}
+      }
     }
-    dputs( 3 ){ "Archive-tree is now" }
+    ddputs( 3 ){ "Archive-tree is now" }
     archive.get_tree_depth{|a|
-      dputs( 3 ){ a.path }
+      ddputs( 3 ){ a.path_id }
+      a.movements.each{|m|
+        ddputs(4){"Movement is #{m.to_json}"}
+      }
     }
   end
 end
@@ -553,10 +576,10 @@ class Account < Entity
   end
 	
   def movements_src
-    Movements.matches_by_account_src_id( self.id ).to_a
+    Movements.matches_by_account_src_id( self.id )
   end
 	
   def movements_dst
-    Movements.matches_by_account_dst_id( self.id ).to_a
+    Movements.matches_by_account_dst_id( self.id )
   end
 end

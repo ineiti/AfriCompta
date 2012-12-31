@@ -17,3 +17,5 @@ Permission.add( 'secretary', 'PersonModify', 'professor' )
 qooxView = QooxView.init( '../Entities', '../Views' )
 
 require 'ac_africompta'
+
+# Fails test_archive_sum_up

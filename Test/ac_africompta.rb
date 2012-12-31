@@ -183,7 +183,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     # Testing JSON
     mov_json = newmov.to_json
     assert_equal "{\"str\":\"Car\\r5544436cf81115c6faf577a7e2307e92-5\\t100.0\\t" + 
-      "12/7/2012\\t5544436cf81115c6faf577a7e2307e92-4\\t" + 
+      "2012-07-12\\t5544436cf81115c6faf577a7e2307e92-4\\t" + 
       "5544436cf81115c6faf577a7e2307e92-2\"}", 
       mov_json
     newmov.value = 50
@@ -580,9 +580,10 @@ class TC_AfriCompta < Test::Unit::TestCase
 		
     Accounts.archive( 6, 2014 )
     incomes = get_sorted_accounts( "Income" )
+    ddputs(3){incomes.inspect}
     # We lost the actual account, as it should be empty
     assert_equal 3, incomes.count
-    assert_equal 60, incomes[3].total
+    assert_equal 60, incomes[2].total
 		
   end
 
