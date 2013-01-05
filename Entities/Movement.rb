@@ -57,6 +57,14 @@ class Movements < Entities
     dputs( 4 ){ t.to_json }
     t
   end
+  
+  def open_db
+    @storage[ :SQLiteAC ].open_db
+  end
+  
+  def close_db
+    @storage[ :SQLiteAC ].close_db
+  end
 end
 
 
@@ -147,5 +155,13 @@ class Movement < Entity
 	
   def account_dst
     account_dst_id
+  end
+  
+  def delete
+    ddputs(4){"Deleting movement #{desc}"}
+    src, dst = account_src, account_dst
+    super
+    src.update_total
+    dst.update_total
   end
 end

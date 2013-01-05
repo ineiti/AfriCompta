@@ -1,15 +1,21 @@
 require 'test/unit'
 
 class TC_AfriCompta < Test::Unit::TestCase
+  def send_to_sqlite_users( m )
+    Entities.Movements.send( m.to_sym )
+    Entities.Accounts.send( m.to_sym )
+    Entities.Users.send( m.to_sym )
+  end
+  
   def setup
     #    delete_all_data()
     #    Persons.create( :first_name => "admin", :password => "super123", :permissions => [ "admin" ] )
     #    Persons.create( :first_name => "josue", :password => "super", :permissions => [ "secretary" ] )
     #    Persons.create( :first_name => "surf", :password => "super", :permissions => [ "internet" ] )
+    send_to_sqlite_users :close_db
     FileUtils.cp( "db.testGestion", "data/compta.db" )
-    Entities.Movements.load
-    Entities.Accounts.load
-    Entities.Users.load
+    send_to_sqlite_users :open_db
+    send_to_sqlite_users :load
     @root = Accounts.find_by_name( "Root" )
     @cash = Accounts.find_by_name( "Cash" )
     @income = Accounts.find_by_name( "Income" )
@@ -360,17 +366,17 @@ class TC_AfriCompta < Test::Unit::TestCase
     rep = ACaccess.get( "accounts_get_one/5544436cf81115c6faf577a7e2307e92-2" + 
         "/foo,bar")
     assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-2\t" +
-      "1040.0\tCash\t-1.0\t5544436cf81115c6faf577a7e2307e92-1", rep
+      "1040.0\tCash\t-1\t5544436cf81115c6faf577a7e2307e92-1", rep
 
     rep = ACaccess.get( "accounts_get/foo,bar")
     assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
-      "Root\t1.0\t\nFull description\r5544436cf81115c6faf577a7e2307e92-5\t0" +
-      "\tLending\t-1.0\t5544436cf81115c6faf577a7e2307e92-1\nFull description" +
-      "\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\tCash\t-1.0\t" +
+      "Root\t1\t\nFull description\r5544436cf81115c6faf577a7e2307e92-5\t0" +
+      "\tLending\t-1\t5544436cf81115c6faf577a7e2307e92-1\nFull description" +
+      "\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\tCash\t-1\t" +
       "5544436cf81115c6faf577a7e2307e92-1\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-3\t1100.0\tIncome\t1.0\t" +
+      "5544436cf81115c6faf577a7e2307e92-3\t1100.0\tIncome\t1\t" +
       "5544436cf81115c6faf577a7e2307e92-1\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-4\t-60.0\tOutcome\t1.0\t" +
+      "5544436cf81115c6faf577a7e2307e92-4\t-60.0\tOutcome\t1\t" +
       "5544436cf81115c6faf577a7e2307e92-1\n", rep
 
     rep = ACaccess.get( "accounts_get/foo,bar")
@@ -378,14 +384,14 @@ class TC_AfriCompta < Test::Unit::TestCase
 
     rep = ACaccess.get( "accounts_get_all/foo,bar")
     assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0" +
-      "\tRoot\t1.0\t\tRoot\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-5\t0\tLending\t-1.0\t" +
+      "\tRoot\t1\t\tRoot\nFull description\r" +
+      "5544436cf81115c6faf577a7e2307e92-5\t0\tLending\t-1\t" +
       "5544436cf81115c6faf577a7e2307e92-1\tRoot::Lending\nFull description" +
-      "\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\tCash\t-1.0\t" +
+      "\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\tCash\t-1\t" +
       "5544436cf81115c6faf577a7e2307e92-1\tRoot::Cash\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-3\t1100.0\tIncome\t1.0\t" +
+      "5544436cf81115c6faf577a7e2307e92-3\t1100.0\tIncome\t1\t" +
       "5544436cf81115c6faf577a7e2307e92-1\tRoot::Income\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-4\t-60.0\tOutcome\t1.0\t" +
+      "5544436cf81115c6faf577a7e2307e92-4\t-60.0\tOutcome\t1\t" +
       "5544436cf81115c6faf577a7e2307e92-1\tRoot::Outcome\n", rep
 		
     rep = ACaccess.get( "movements_get_one/5544436cf81115c6faf577a7e2307e92-4/foo,bar")
@@ -488,6 +494,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     setup_clean_accounts
     @base = []
     [ 1001, 1009, 1012, 1106, 1112, 1201 ].each{|b|
+      #[ 1001, 1009 ].each{|b|
       @base[b] = Accounts.create "Base_#{b}", "", @income
     }
 		
@@ -508,15 +515,17 @@ class TC_AfriCompta < Test::Unit::TestCase
     testmov( @base[1001], @cash, %w( 2010 2010 ) )
     # This has most == 2010, last == 2011
     testmov( @base[1009], @cash, %w( 2010 2010 2011 ) )
-    # This has most == last == 2011
-    testmov( @base[1012], @cash, %w( 2010 2011 2011 ) )
-    # This has most == 2011, last == 2012
-    testmov( @base[1106], @cash, %w( 2011 2011 2012 ) )
-    # This has most == last == 2012 and movements in 2011
-    testmov( @base[1112], @cash, %w( 2011 2012 2012 ) )
-    # This has most == last == 2012 and no movements in 2011
-    testmov( @base[1201], @cash, %w( 2012 2012 ) )
-		
+    if true
+      # This has most == last == 2011
+      testmov( @base[1012], @cash, %w( 2010 2011 2011 ) )
+      # This has most == 2011, last == 2012
+      testmov( @base[1106], @cash, %w( 2011 2011 2012 ) )
+      # This has most == last == 2012 and movements in 2011
+      testmov( @base[1112], @cash, %w( 2011 2012 2012 ) )
+      # This has most == last == 2012 and no movements in 2011
+      testmov( @base[1201], @cash, %w( 2012 2012 ) )
+    end
+
     Accounts.archive( 1, 2012 )
 		
     # Name, account-count, movs-count, path of first occurence
@@ -525,17 +534,19 @@ class TC_AfriCompta < Test::Unit::TestCase
       [1012,3,1,'Archive::2010::Income::Base_1012'], 
       [1106,2,2,'Archive::2011::Income::Base_1106'], 
       [1112,2,1,'Archive::2011::Income::Base_1112'], 
-      [1201,1,2,'Root::Income::Base_1201'] ].each{|b|
+      [1201,1,2,'Root::Income::Base_1201'] 
+    ].each{|b|
       name, count, movs, path = b
-      @base[name] = get_sorted_accounts( "Base_#{name}" )
-      assert_equal count, @base[name].count, "Count for #{name}"
-      assert_equal movs, @base[name].first.movements.count, "movs for #{name}"
-      assert_equal path, @base[name].first.path, "path for #{name}"
+      accs = get_sorted_accounts( "Base_#{name}" )
+      dputs(3){"Accounts are #{accs.collect{|a| a.path}.join('-')  }"}
+      assert_equal count, accs.count, "Count for #{name}"
+      assert_equal movs, accs.first.movements.count, "movs for #{name}"
+      assert_equal path, accs.first.path, "path for #{name}"
     }
   end
 	
   def add_movs
-    Movements.create( "Year 2011", "2011-01-01", 10, @cash, @income )
+    Movements.create( "Year 2010", "2011-01-01", 10, @cash, @income )
     Movements.create( "Year 2011", "2012-05-01", 20, @cash, @income )
     Movements.create( "Year 2012", "2012-06-01", 30, @cash, @income )
   end
@@ -551,14 +562,38 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal 2, incomes[1].movements.length
     assert_equal 2, incomes[2].movements.length
   end
+  
+  def test_archive_multiple_invocations
+    setup_clean_accounts
+    add_movs
+    Accounts.archive( 6, 2012 )
+    incomes = get_sorted_accounts( "Income" )
+		
+    assert_equal 3, incomes.length
+    assert_equal 1, incomes[0].movements.length
+    assert_equal 2, incomes[1].movements.length
+    assert_equal 2, incomes[2].movements.length
+    
+    Accounts.archive( 6, 2012 )
+    incomes = get_sorted_accounts( "Income" )
+		
+    assert_equal 3, incomes.length
+    assert_equal 1, incomes[0].movements.length
+    assert_equal 2, incomes[1].movements.length
+    assert_equal 2, incomes[2].movements.length
+  end
 	
   def test_archive_sum_up
     # Make sure that everything still sums up
     setup_clean_accounts
     add_movs
+    Movements.create( "Year 2012 - 1", "2012-06-01", -30, @cash, @spending )
+    
     @cash.update_total
-		
-    assert_equal 60, Accounts.find_by_name( "Cash" ).total
+
+    dputs(0){"**** - Archiving for 2012 - *****"}
+    assert_equal( -30, Accounts.find_by_name( "Spending" ).total )
+    assert_equal( 30, Accounts.find_by_name( "Cash" ).total )
     Accounts.archive( 6, 2012 )
     cashs = get_sorted_accounts( "Cash" )
     (0..2).each{|i|
@@ -566,25 +601,42 @@ class TC_AfriCompta < Test::Unit::TestCase
     }
     assert_equal 10, cashs[0].total
     assert_equal 30, cashs[1].total
-    assert_equal 60, cashs[2].total
-
+    assert_equal 30, cashs[2].total
+  end
+  
+  def test_archive_sum_up_consecutive
     # Test two consecutive runs on the archive like 2013, then 2014, and
     # make sure that the accounts that hold only a "final"-movement get
     # deleted
     setup_clean_accounts
     add_movs
+    Movements.create( "Year 2012 - 1", "2012-06-01", -30, @cash, @spending )
+
+    dputs(0){"**** - Archiving 1st for 2013 - *****"}
     Accounts.archive( 6, 2013 )
     incomes = get_sorted_accounts( "Income" )
     assert_equal 4, incomes.count
     assert_equal 60, incomes[3].total
+    # check also after re-calculating of the totals!
+    incomes[3].update_total
+    assert_equal 60, incomes[3].total
 		
+    dputs(0){"**** - Archiving 2nd for 2014 - *****"}
+    # @cash and @spending are now pointing to the archived ones...
+    cash = Accounts.get_by_path("Root::Cash")
+    spending = Accounts.get_by_path("Root::Spending")
+    Movements.create( "Year 2013 - 2", "2013-06-01", -30, cash, spending )
     Accounts.archive( 6, 2014 )
+    
     incomes = get_sorted_accounts( "Income" )
-    ddputs(3){incomes.inspect}
+    dputs(3){incomes.inspect}
     # We lost the actual account, as it should be empty
     assert_equal 3, incomes.count
     assert_equal 60, incomes[2].total
-		
+    
+    spending = get_sorted_accounts( "Spending" )
+    assert_equal 3, spending.count
+    assert_equal( -60, spending[2].total )
   end
 
   def test_creation

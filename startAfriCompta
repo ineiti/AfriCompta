@@ -38,7 +38,7 @@ fi
 # Depending on where we are, "open" or "firefox"
 if echo "$MACHTYPE" | grep -q apple; then
   sleep 2
-  open http://localhost:3301
+  osascript firefox-window.scpt "http://localhost:3301"
 else
   zenity --info --text="Un peu de patience" &
   sleep 10

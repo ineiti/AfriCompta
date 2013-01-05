@@ -78,7 +78,7 @@ class Accounts < Entities
       a.global_id = Users.find_by_name('local').full + "-" + a.id.to_s
     end
     a.save
-    ddputs( 2 ){ "Created account #{a.path_id}" }
+    dputs( 2 ){ "Created account #{a.path_id}" }
     a
   end
 	
@@ -189,10 +189,12 @@ class Accounts < Entities
   def search_account( acc, month_start )
     years = Hash.new(0)
     acc.movements.each{|mov|
-      y, m, d = mov.date.to_s.split("-").collect{|d| d.to_i}
-      dputs( 5 ){ "Date of #{mov.desc} is #{mov.date}" }
-      m < month_start and y -= 1
-      years[y] += 1
+      if not mov.desc =~ /^-- Sum of/
+        y, m, d = mov.date.to_s.split("-").collect{|d| d.to_i}
+        dputs( 5 ){ "Date of #{mov.desc} is #{mov.date}" }
+        m < month_start and y -= 1
+        years[y] += 1
+      end
     }
     dputs( 3 ){ "years is #{years.inspect}" }
     years
@@ -259,37 +261,50 @@ class Accounts < Entities
 
     last_total = 0
     last_year_acc = nil
+    last_year_acc_parent = nil
     last_year = 0
     dputs( 5 ){ "Sorting account_sum of length #{acc_sum.length}" }
     acc_sum.sort{|a,b| a[0] <=> b[0]}.each{|y, a, aacc|
       dputs( 5 ){ "y, a, aacc: #{y}, #{a}, #{aacc.to_s}" }
       if aacc
-        dputs( 4 ){ "Found archived account #{aacc.get_path} for year #{y}" }
+        dputs( 4 ){ "Found archived account #{aacc.get_path} for year #{y}" + 
+            " with last_total #{last_total}" }
         dputs( 5 ){ "And has movements" }
         aacc.movements.each{|m|
           dputs( 5 ){ m.to_json }
         }
         if last_total != 0
+          desc = "-- Sum of #{last_year} of #{last_year_acc.path}"
+          date = "#{last_year + 1}-#{month_start}-01"
+          dputs( 3 ){ "Deleting old sums" }
+          Movements.matches_by_desc( "^#{desc}$" ).each{|m|
+            dputs(3){"Testing movement #{m.to_json}"}
+            if m.date == date
+              dputs(3){"Deleting it"}
+              m.delete
+            end
+          }
           dputs( 3 ){ "Creating movement for the sum of last year: #{last_total}" }
-          mov = Movements.create( "Sum of #{last_year}", 
-            "#{last_year}-#{month_start}-01", last_total, last_year_acc, aacc )
+          mov = Movements.create( desc, date, last_total, 
+            last_year_acc_parent, aacc )
           dputs( 3 ){ "Movement is: #{mov.to_json}" }
         end
         aacc.update_total
-        dputs( 5 ){ "#{aacc.total.class.name} - #{aacc.multiplier.class.name}" }
+        dputs( 5 ){ "#{aacc.total} - #{aacc.multiplier}" }
         last_total = aacc.total * aacc.multiplier
       else
         dputs( 4 ){ "Didn't find archived account for #{y}" }
         last_total = 0
       end
-      last_year, last_year_acc = y, a
+      last_year, last_year_acc, last_year_acc_parent = y, aacc, a
     }
   end
 
   def self.archive( month_start = 1, this_year = nil, only_account = nil )		
     if not this_year
-      this_year = Time.now.year
-      Time.now.month < month_start and this_year -= 1
+      now = Time.now
+      this_year = now.year
+      now.month < month_start and this_year -= 1
     end
 		
     root = self.find_by_name( 'Root' )
@@ -298,6 +313,7 @@ class Accounts < Entities
     else
       if root.account_id
         dputs( 0 ){ "Can't archive with Root is not in root: #{root.account_id.inspect}!" }
+        return false
       end
     end
 		
@@ -318,7 +334,7 @@ class Accounts < Entities
     root.get_tree_depth{|acc|
       dputs( 2 ){ "Looking at account #{acc.path}" }
       years = search_account( acc, month_start )
-
+      
       if years.size > 0
         most_used = last_used = this_year
         if acc.accounts.count == 0
@@ -342,10 +358,10 @@ class Accounts < Entities
           # Now move account to archive-year of most movements
           parent = archive_parent( acc, years_archived, most_used )
           if double = Accounts.get_by_path( "#{parent.get_path}::#{acc.name}" )
-            ddputs(3){"Account #{acc.path_id} already exists in #{parent.path_id}"}
+            dputs(3){"Account #{acc.path_id} already exists in #{parent.path_id}"}
             # Move all movements
             acc.movements.each{|m|
-              ddputs(4){"Moving movement #{m.to_json}"}
+              dputs(4){"Moving movement #{m.to_json}"}
               if m.account_src == acc
                 m.account_src_id = double
               else
@@ -355,7 +371,7 @@ class Accounts < Entities
             # Delete acc
             acc.delete
           else
-            ddputs( 3 ){ "Moving account #{acc.path_id} to #{parent.path_id}" }
+            dputs( 3 ){ "Moving account #{acc.path_id} to #{parent.path_id}" }
             acc.parent = parent
             acc.new_index
           end
@@ -374,24 +390,49 @@ class Accounts < Entities
         sum_up_total( acc_path, years_archived, month_start )
         dputs( 5 ){ "acc_path is now #{acc_path}" }
       else
-        dputs( 3 ){ "Empty account" }
+        dputs( 3 ){ "Empty account #{acc.movements.count} - #{acc.accounts.count}" }
+      end
+
+      if acc.accounts.count == 0
+        movs = acc.movements
+        case movs.count
+        when 0
+          dputs( 3 ){ "Deleting empty account #{acc.path}" }
+          acc.delete
+        when 1
+          dputs( 3 ){ "Found only one movement for #{acc.path}" }
+          if movs.first.desc =~ /^-- Sum of/
+            dputs( 3 ){ "Deleting account which has only a sum" }
+            movs.first.delete
+            acc.delete
+          end
+        end
       end
     }
-    ddputs( 3 ){ "Root-tree is now" }
+    dputs( 3 ){ "Root-tree is now" }
     root.get_tree_depth{|a|
-      ddputs( 3 ){ a.path_id }
+      dputs( 3 ){ a.path_id }
       a.movements.each{|m|
-        ddputs(4){"Movement is #{m.inspect}"}
+        dputs(4){"Movement is #{m.to_json}"}
       }
     }
-    ddputs( 3 ){ "Archive-tree is now" }
+    dputs( 3 ){ "Archive-tree is now" }
     archive.get_tree_depth{|a|
-      ddputs( 3 ){ a.path_id }
+      dputs( 3 ){ a.path_id }
       a.movements.each{|m|
-        ddputs(4){"Movement is #{m.to_json}"}
+        dputs(4){"Movement is #{m.to_json}"}
       }
     }
   end
+      
+  def open_db
+    @storage[ :SQLiteAC ].open_db
+  end
+  
+  def close_db
+    @storage[ :SQLiteAC ].close_db
+  end
+
 end
 
 class Account < Entity
@@ -399,14 +440,14 @@ class Account < Entity
   # This gets the tree under that account, breadth-first
   def get_tree
     yield self
-    accounts.each{|a|
+    accounts.sort{|a,b| a.desc <=> b.desc }.each{|a|
       a.get_tree{|b| yield b} 
     }
   end
     
   # This gets the tree under that account, depth-first
   def get_tree_depth
-    accounts.each{|a|
+    accounts.sort{|a,b| a.desc <=> b.desc }.each{|a|
       a.get_tree_depth{|b| yield b} 
     }
     yield self
@@ -415,7 +456,7 @@ class Account < Entity
   def get_tree_debug( ind = "" )
     yield self
     dputs( 0 ){ "get_tree_ #{ind}#{self.name}" }
-    accounts.each{|a|
+    accounts.sort{|a,b| a.desc <=> b.desc }.each{|a|
       a.get_tree_debug( "#{ind} " ){|b| yield b} 
     }
   end
@@ -524,7 +565,7 @@ class Account < Entity
 	    
   def to_s( add_path = false )
     if account || true
-      "Account-desc: #{name.to_s}, #{global_id}"
+      # "Account-desc: #{name.to_s}, #{global_id}"
       "#{desc}\r#{global_id}\t" + 
         "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
         ( account_id ? account.global_id.to_s : "" ) +
@@ -581,5 +622,9 @@ class Account < Entity
 	
   def movements_dst
     Movements.matches_by_account_dst_id( self.id )
+  end
+  
+  def multiplier
+    data_get(:multiplier).to_i
   end
 end
