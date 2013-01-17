@@ -35,7 +35,7 @@ module Compta::Models
       self.index = u_l.account_index
       u_l.account_index += 1
       u_l.save
-      debug 3, "Index for account #{name} is #{index}"
+      debug 0, "Index for account #{name} is #{index}"
     end
     
     # Sets different new parameters.
@@ -63,6 +63,7 @@ module Compta::Models
       save
     end
     def set( name, desc, parent, multiplier = 1, users = [] )
+      debug 1, "Setting #{name}"
       set_nochildmult( name, desc, parent, multiplier, users )
       # All descendants shall have the same multiplier
       set_child_multipliers( multiplier )
@@ -77,7 +78,7 @@ module Compta::Models
       movs = ( movements_src + movements_dst )
       if ( from != nil and to != nil )
         movs.delete_if{ |m|
-         ( m.date < from or m.date > to )
+          ( m.date < from or m.date > to )
         }
         debug 3, "Rejected some elements"
       end
@@ -106,7 +107,7 @@ module Compta::Models
     def Account.create( name, desc, parent, global_id )
       parent = parent.to_i
       a = Account.new( :name => name, :desc => desc, :account_id => parent,
-                      :global_id => global_id.to_s )
+        :global_id => global_id.to_s )
       a.total = "0"
       # TODO: u_l.save?
       if parent > 0
@@ -124,9 +125,9 @@ module Compta::Models
       if account || true
         "Account-desc: #{name.to_s}, #{global_id}"
         "#{desc}\r#{global_id}\t" + 
-        "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
-       ( (account_id and account_id > 0 ) ? account.global_id.to_s : "" ) +
-       ( add_path ? "\t#{path}" : "" )
+          "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
+          ( (account_id and account_id > 0 ) ? account.global_id.to_s : "" ) +
+          "\t#{deleted.to_s}" + ( add_path ? "\t#{path}" : "" )
       else
         "nope"
       end
@@ -142,7 +143,13 @@ module Compta::Models
     end
     
     def delete
-      self.destroy if self.is_empty
+      if self.is_empty
+        debug 2, "Deleting account #{self.name} with #{self.deleted.inspect}"
+        self.deleted = true
+        self.new_index
+        self.save
+        debug 2, "account #{self.name} is now #{self.deleted.inspect}"
+      end
     end
     
     # Gets an account from a string, if it doesn't exist yet, creates it.
@@ -153,7 +160,7 @@ module Compta::Models
         debug 0, "Invalid account found: #{desc}"
         return [ -1, nil ]
       end
-      global_id, total, name, multiplier, par = str.split("\t")
+      global_id, total, name, multiplier, par, deleted = str.split("\t")
       total, multiplier = total.to_f, multiplier.to_f
       debug 3, "Here comes the account: " + global_id.to_s
       debug 5, "par: #{par}"
@@ -170,6 +177,7 @@ module Compta::Models
       end
       # And update it
       pid = par ? parent.id : 0
+      our_a.deleted = deleted
       our_a.set_nochildmult( name, desc, pid, multiplier )
       our_a.global_id = global_id
       our_a.save
@@ -187,6 +195,13 @@ module Compta::Models
         acc.set_child_multipliers( m )
       }
     end
+    
+    def self.find_not_deleted
+      Account.find( :all ).select{|a|
+        debug 2, "Account #{a.name} is #{a.deleted.inspect}"
+        not a.deleted
+      }
+    end
   end
 end  
 
@@ -197,9 +212,9 @@ module Compta::Controllers
   #
   class AccountClasses < R '/account/(.*)'
     def fillGlobal
-      @accounts = Account.find :all
+      @accounts = Account.find_not_deleted
       @accounts_root = @accounts.select{|a|
-        debug 0, "#{a.name} - #{a.account}"
+        debug 0, "#{a.name} - #{a.account_id} - #{a.deleted}"
         not a.account 
       }
       @users = User.find_all
@@ -209,19 +224,19 @@ module Compta::Controllers
       path, arg = p.split("/")
       debug 1, path + "<->" + arg.to_s
       case path
-        when "add"
+      when "add"
         parent = Account.find_by_id( arg.to_i )
         if not parent
           parent = Account.new( :multiplier => 1 )
         end
         @account = Account.new( :name => "Short name", :desc => "Full description", 
-        :account => parent, :multiplier => parent.multiplier )
+          :account => parent, :multiplier => parent.multiplier )
         render :account_edit
-        when "edit"
+      when "edit"
         @account = Account.find_by_id( arg )
         debug 2, "Account is #{@account.to_s}"
         render :account_edit
-        when "delete"
+      when "delete"
         if Account.find_by_id( arg ).delete
           @account_deleted = true
         else
@@ -229,17 +244,18 @@ module Compta::Controllers
         end
         fillGlobal
         render :account_list
-        when "list"
+      when "list"
         fillGlobal
         render :account_list
       end
     end
+    
     def post( p )
       fillGlobal
       path, arg = p.split("/")
       debug 1, path + "<->" + arg.to_s
       case path
-        when "edit"
+      when "edit"
         a = Account.find_or_initialize_by_id( input.aid )
         a.set( input.name, input.desc, input.parent, input.multiplier, input.users.to_a )
         a.save

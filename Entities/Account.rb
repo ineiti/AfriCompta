@@ -58,6 +58,7 @@ class Accounts < Entities
     value_float :total
     value_int :multiplier
     value_int :index
+    value_bool :deleted
     value_entity_account :account_id
   end
     
@@ -114,7 +115,7 @@ class Accounts < Entities
       dputs( 0 ){ "Invalid account found: #{desc}" }
       return [ -1, nil ]
     end
-    global_id, total, name, multiplier, par = str.split("\t")
+    global_id, total, name, multiplier, par, deleted = str.split("\t")
     total, multiplier = total.to_f, multiplier.to_f
     dputs( 3 ){ "Here comes the account: " + global_id.to_s }
     dputs( 5 ){ "par: #{par}" }
@@ -131,6 +132,7 @@ class Accounts < Entities
       our_a = Accounts.create( name, desc, Accounts.find_by_id( par ), global_id )
     end
     # And update it
+    our_a.deleted = deleted
     our_a.set_nochildmult( name, desc, pid, multiplier )
     our_a.global_id = global_id
     our_a.save
@@ -432,6 +434,12 @@ class Accounts < Entities
   def close_db
     @storage[ :SQLiteAC ].close_db
   end
+  
+  def migration_1( a )
+    dputs(4){ Accounts.storage[:SQLiteAC].db_class.inspect }
+    a.deleted = false
+    dputs(4){ "#{a.deleted.inspect}" }
+  end
 
 end
 
@@ -569,7 +577,7 @@ class Account < Entity
       "#{desc}\r#{global_id}\t" + 
         "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
         ( account_id ? account.global_id.to_s : "" ) +
-        ( add_path ? "\t#{path}" : "" )
+        "\t#{deleted.to_s}" + ( add_path ? "\t#{path}" : "" )
     else
       "nope"
     end
@@ -626,5 +634,14 @@ class Account < Entity
   
   def multiplier
     data_get(:multiplier).to_i
+  end
+  
+  def delete
+    if is_empty
+      dputs(2){"Deleting account #{self.name}"}
+      self.account_id = nil
+      self.new_index
+      self.deleted = true
+    end
   end
 end

@@ -16,6 +16,10 @@ Permission.add( 'secretary', 'PersonModify', 'professor' )
 
 qooxView = QooxView.init( '../Entities', '../Views' )
 
-require 'ac_africompta'
+tests = %w( africompta account )
+tests = %w( account )
+tests.each{|t|
+  require "ac_#{t}"
+}
 
 # Fails test_archive_sum_up

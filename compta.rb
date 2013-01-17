@@ -250,6 +250,19 @@ module Compta::Models
       }
     end
   end
+
+  # Adding a "deleted" field to accounts, so they get correctly
+  # updatede once they're gone
+  class CreateCompta03 < V 0.4
+    def self.up
+      # Add "deleted" field to accounts
+      add_column :compta_accounts, :deleted, :boolean
+      
+      Account.find( :all ).each{ |acc|
+        acc.deleted = false
+      }
+    end
+  end
 end
 
 
@@ -270,8 +283,10 @@ module Compta::Views
       a.name <=> b.name
     }
     accs.each{ |a|
-      yield a, indent + a.name # + ", id: " + a.id.to_s + ", parent-account: " + a.account_id.to_s
-      list_sub( a.accounts, indent + "+" ){ |a, s| yield a, s }
+      if not a.deleted
+        yield a, indent + a.name # + ", id: " + a.id.to_s + ", parent-account: " + a.account_id.to_s
+        list_sub( a.accounts, indent + "+" ){ |a, s| yield a, s }
+      end
     }
   end
     
