@@ -8,7 +8,7 @@ require 'md5'
 
 # 4bits for each version: major-minor-revision-patch
 # Patch is usually not needed.
-@VERSION=0x0940
+$VERSION=0x1000
 
 Camping.goes :Compta
 # Have some nice HTML-output
@@ -226,8 +226,8 @@ module Compta::Models
       # TODO: check why this doesn't work with a new database -> rm .camping*
       if not User.find_by_name('local')
         User.create( "local", 
-        MD5::md5( ( rand 2**128 ).to_s ).to_s,
-        rand( 2 ** 128 ).to_s )
+          MD5::md5( ( rand 2**128 ).to_s ).to_s,
+          rand( 2 ** 128 ).to_s )
       end
       User.find( :all ).each{ |u|
         u.account_index = account_index
@@ -297,7 +297,7 @@ module Compta::Views
       html do
         head do
           style :type => "text/css", :media => "screen" do
-          %[
+            %[
 body {
  background-color:#55ff55;
 }
@@ -326,7 +326,7 @@ td.money {
   text-align: right;
   font-family: monospace
 }
-          ]
+            ]
           end
           style :type => "text/css", :media => "print" do
             %[

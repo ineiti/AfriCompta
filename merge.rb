@@ -78,7 +78,7 @@ module Compta::Controllers
         return ret
         
         when "version"
-        return @VERSION.to_s
+        return $VERSION.to_s
         
         when "index"
         return [ u_local.account_index, u_local.movement_index ].join(",")

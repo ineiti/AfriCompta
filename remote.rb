@@ -51,8 +51,8 @@ module Compta::Controllers
       @remote = Remote.find_by_id( arg )
       #
       # Check the versions
-      if getForm( "version" ) != @VERSION.to_s
-        render :remote_error_version
+      if getForm( "version" ) != $VERSION.to_s
+        return false
       end
       #
       # First get the remote accounts
@@ -112,7 +112,9 @@ module Compta::Controllers
         # movements = []
       end
       # Update the pointer
-      @remote.update_movement_index      
+      @remote.update_movement_index   
+      
+      return true
     end
     
     def doCopied( path, arg )
@@ -120,8 +122,8 @@ module Compta::Controllers
       #
       # Check the versions
       debug 3, "Remote is #{@remote.inspect}"
-      if getForm( "version" ) != @VERSION.to_s
-        render :remote_error_version
+      if getForm( "version" ) != $VERSION.to_s
+        return false
       end
       
       #
@@ -132,6 +134,7 @@ module Compta::Controllers
       
       debug 1, "Getting movements"
       @remote.update_movement_index
+      return true
     end
     
     def doCheck( path, arg )
@@ -147,8 +150,8 @@ module Compta::Controllers
       @remote = Remote.find_by_id( arg )
       #
       # Check the version
-      if getForm( "version" ) != @VERSION.to_s
-        render :remote_error_version
+      if getForm( "version" ) != $VERSION.to_s
+        return false
       end
       
       account_max, movement_max = getForm( "index" ).split(",")
@@ -258,6 +261,7 @@ module Compta::Controllers
       else
         @movements_only_local = []
       end
+      return false
     end
     
     # Execute the desired action
@@ -344,14 +348,23 @@ module Compta::Controllers
         @remote = Remote.find_by_id( arg )
         render :remote_edit
       when "check"
-        doCheck( path, arg )
-        render :remote_check
+        if doCheck( path, arg )
+          render :remote_check
+        else
+          render :remote_error_version
+        end
       when "merge"
-        doMerge( path, arg )
-        render :remote_merge
+        if doMerge( path, arg )
+          render :remote_merge
+        else
+          render :remote_error_version
+        end
       when "copied"
-        doCopied( path, arg )
-        render :remote_edit
+        if doCopied( path, arg )
+          render :remote_edit
+        else
+          render :remote_error_version
+        end
       end
     end
     def post( p )
