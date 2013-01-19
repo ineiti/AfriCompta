@@ -253,13 +253,19 @@ module Compta::Models
 
   # Adding a "deleted" field to accounts, so they get correctly
   # updatede once they're gone
+  # Also add a "keep_total" field that makes the sum for that account be
+  # reported from one year to another
   class CreateCompta03 < V 0.4
     def self.up
       # Add "deleted" field to accounts
       add_column :compta_accounts, :deleted, :boolean
+      add_column :compta_accounts, :keep_total, :boolean
       
       Account.find( :all ).each{ |acc|
         acc.deleted = false
+        # As most of the accounts in Cash have -1 and shall be kept, this
+        # gives a good first initialisation
+        acc.keep_total = acc.multiplier == -1
       }
     end
   end

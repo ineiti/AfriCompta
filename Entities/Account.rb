@@ -59,7 +59,11 @@ class Accounts < Entities
     value_int :multiplier
     value_int :index
     value_bool :deleted
+    value_bool :keep_total
     value_entity_account :account_id
+    
+    dputs(0){"Accounts-init-table"}
+    #init_table
   end
     
   def self.create( name, desc = "Too lazy", parent = nil, global_id = "" )
@@ -68,10 +72,12 @@ class Accounts < Entities
         parent = Accounts.matches_by_index( parent ).first
       end
       a = super( :name => name, :desc => desc, :account_id => parent.id,
-        :global_id => global_id.to_s, :multiplier => parent.multiplier )
+        :global_id => global_id.to_s, :multiplier => parent.multiplier,
+        :deleted => false, :keep_total => parent.keep_total )
     else
       a = super( :name => name, :desc => desc, :account_id => 0,
-        :global_id => global_id.to_s, :multiplier => 1 )
+        :global_id => global_id.to_s, :multiplier => 1,
+        :deleted => false, :keep_total => false )
     end
     a.total = "0"
     a.new_index
@@ -83,7 +89,8 @@ class Accounts < Entities
     a
   end
 	
-  def self.create_path( path, desc, double_last = false, mult = 1 )
+  def self.create_path( path, desc, double_last = false, mult = 1, 
+      keep_total = false )
     elements = path.split( "::" )
     last_id = nil
     elements.each{|e|
@@ -103,7 +110,7 @@ class Accounts < Entities
         end
       end
     }
-    last_id.set_child_multipliers( mult )
+    last_id.set_child_multiplier_total( mult, keep_total )
     last_id
   end
 
@@ -115,7 +122,8 @@ class Accounts < Entities
       dputs( 0 ){ "Invalid account found: #{desc}" }
       return [ -1, nil ]
     end
-    global_id, total, name, multiplier, par, deleted = str.split("\t")
+    global_id, total, name, multiplier, par, 
+      deleted, keep_total = str.split("\t")
     total, multiplier = total.to_f, multiplier.to_f
     dputs( 3 ){ "Here comes the account: " + global_id.to_s }
     dputs( 5 ){ "par: #{par}" }
@@ -133,7 +141,7 @@ class Accounts < Entities
     end
     # And update it
     our_a.deleted = deleted
-    our_a.set_nochildmult( name, desc, pid, multiplier )
+    our_a.set_nochildmult( name, desc, pid, multiplier, keep_total )
     our_a.global_id = global_id
     our_a.save
     dputs( 2 ){ "Saved account #{name} with index #{our_a.index} and global_id #{our_a.global_id}" }
@@ -182,7 +190,7 @@ class Accounts < Entities
     if acc.path.split('::').count > 2
       return Accounts.create_path( "Archive::#{year}::"+
           "#{acc.parent.path.gsub(/^Root::/,'')}", "New archive", false,
-        acc.multiplier )
+        acc.multiplier, acc.keep_total )
     else
       return years_archived[year]
     end
@@ -207,13 +215,13 @@ class Accounts < Entities
       if y == this_year
         dputs(3){"Creating path #{acc.path}"}
         years[y] = Accounts.create_path( acc.path, acc.desc, 
-          true, acc.multiplier )
+          true, acc.multiplier, acc.keep_total )
       else
         path = "#{archive_parent( acc, years_archived, y ).path}::" +
           acc.name
         dputs(3){"Creating other path #{path}"}
         years[y] = Accounts.create_path( path, acc.desc, false,
-          acc.multiplier )
+          acc.multiplier, acc.keep_total )
       end
       dputs( 3 ){ "years[y] is #{years[y].path_id}" }
     }
@@ -384,13 +392,16 @@ class Accounts < Entities
             ( most_used != this_year )
           dputs( 3 ){ "Adding #{acc_path} to this year" }
           Accounts.create_path( acc_path, "Copied from archive", false,
-            acc.multiplier )
+            acc.multiplier, acc.keep_total )
         end
 				
-        # And create a trail so that every year contains the previous
-        # years worth of "total"
-        sum_up_total( acc_path, years_archived, month_start )
-        dputs( 5 ){ "acc_path is now #{acc_path}" }
+        if acc.keep_total
+          dputs(2){"Keeping total for #{acc_path}"}
+          # And create a trail so that every year contains the previous
+          # years worth of "total"
+          sum_up_total( acc_path, years_archived, month_start )
+          dputs( 5 ){ "acc_path is now #{acc_path}" }
+        end
       else
         dputs( 3 ){ "Empty account #{acc.movements.count} - #{acc.accounts.count}" }
       end
@@ -438,7 +449,10 @@ class Accounts < Entities
   def migration_1( a )
     dputs(4){ Accounts.storage[:SQLiteAC].db_class.inspect }
     a.deleted = false
-    dputs(4){ "#{a.deleted.inspect}" }
+    # As most of the accounts in Cash have -1 and shall be kept, this
+    # gives a good first initialisation
+    a.keep_total = a.multiplier == -1
+    dputs(4){ "#{a.name}: #{a.deleted.inspect} - #{a.keep_total.inspect}" }
   end
 
 end
@@ -511,7 +525,8 @@ class Account < Entity
   end
 
   # Sets different new parameters.
-  def set_nochildmult( name, desc, parent, multiplier = 1, users = [] )
+  def set_nochildmult( name, desc, parent, multiplier = 1, users = [],
+      keep_total = false )
     if self.new_record?
       dputs( 4 ){ "New record in nochildmult" }
       self.total = 0
@@ -519,18 +534,20 @@ class Account < Entity
       save
       self.global_id = User.find_by_name('local').full + "-" + self.id.to_s
     end
-    self.name, self.desc, self.account_id = name, desc, parent;
+    self.name, self.desc, self.account_id, self.keep_total = 
+      name, desc, parent, keep_total
     # TODO: implement link between user-table and account-table
     # self.users = users ? users.join(":") : ""
     self.multiplier = multiplier
+    self.keep_total = keep_total
     update_total
     new_index
     save
   end
-  def set( name, desc, parent, multiplier = 1, users = [] )
-    set_nochildmult( name, desc, parent, multiplier, users )
+  def set( name, desc, parent, multiplier = 1, users = [], keep_total = false )
+    set_nochildmult( name, desc, parent, multiplier, users, keep_total )
     # All descendants shall have the same multiplier
-    set_child_multipliers( multiplier )
+    set_child_multiplier_total( multiplier, total )
     save
   end
     
@@ -577,7 +594,8 @@ class Account < Entity
       "#{desc}\r#{global_id}\t" + 
         "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
         ( account_id ? account.global_id.to_s : "" ) +
-        "\t#{deleted.to_s}" + ( add_path ? "\t#{path}" : "" )
+        "\t#{deleted.to_s}" + "\t#{keep_total.to_s}" + 
+        ( add_path ? "\t#{path}" : "" )
     else
       "nope"
     end
@@ -592,14 +610,15 @@ class Account < Entity
     return false
   end
     
-  # Be sure that all descendants have the same multiplier
-  def set_child_multipliers( m )
-    dputs( 3 ){ "Setting multiplier from #{name} to #{m}" }
+  # Be sure that all descendants have the same multiplier and keep_total
+  def set_child_multiplier_total( m, t )
+    dputs( 3 ){ "Setting multiplier from #{name} to #{m} and keep_total to #{t}" }
     self.multiplier = m
+    self.keep_total = t
     save
     return if not accounts
     accounts.each{ |acc|
-      acc.set_child_multipliers( m )
+      acc.set_child_multiplier_total( m, t )
     }
   end
 	

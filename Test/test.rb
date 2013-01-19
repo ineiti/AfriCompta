@@ -17,7 +17,7 @@ Permission.add( 'secretary', 'PersonModify', 'professor' )
 qooxView = QooxView.init( '../Entities', '../Views' )
 
 tests = %w( africompta account )
-tests = %w( account )
+tests = %w( africompta )
 tests.each{|t|
   require "ac_#{t}"
 }

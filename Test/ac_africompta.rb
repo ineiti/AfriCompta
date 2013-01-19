@@ -8,14 +8,17 @@ class TC_AfriCompta < Test::Unit::TestCase
   end
   
   def setup
-    #    delete_all_data()
-    #    Persons.create( :first_name => "admin", :password => "super123", :permissions => [ "admin" ] )
-    #    Persons.create( :first_name => "josue", :password => "super", :permissions => [ "secretary" ] )
-    #    Persons.create( :first_name => "surf", :password => "super", :permissions => [ "internet" ] )
+    dputs(0){"Setting up"}
+    Entities.delete_all_data()
+
+    dputs(0){"Resetting SQLite"}
     send_to_sqlite_users :close_db
     FileUtils.cp( "db.testGestion", "data/compta.db" )
     send_to_sqlite_users :open_db
     send_to_sqlite_users :load
+    RPCQooxdooService.migrate_all
+
+    dputs(0){"And searching for some accounts"}
     @root = Accounts.find_by_name( "Root" )
     @cash = Accounts.find_by_name( "Cash" )
     @income = Accounts.find_by_name( "Income" )
@@ -77,6 +80,8 @@ class TC_AfriCompta < Test::Unit::TestCase
         :account_id=>[1],
         :name=>"Lending",
         :index=>9,
+        :deleted=>false,
+        :keep_total=>true,
         :id=>5},
       {:id=>1,
         :multiplier=>1.0,
@@ -85,6 +90,8 @@ class TC_AfriCompta < Test::Unit::TestCase
         :account_id=>0,
         :name=>"Root",
         :global_id=>"5544436cf81115c6faf577a7e2307e92-1",
+        :deleted=>false,
+        :keep_total=>false,
         :index=>1},
       {:id=>2,
         :multiplier=>-1.0,
@@ -93,6 +100,8 @@ class TC_AfriCompta < Test::Unit::TestCase
         :account_id=>[1],
         :name=>"Cash",
         :global_id=>"5544436cf81115c6faf577a7e2307e92-2",
+        :deleted=>false,
+        :keep_total=>true,
         :index=>5},
       {:id=>3,
         :multiplier=>1.0,
@@ -101,6 +110,8 @@ class TC_AfriCompta < Test::Unit::TestCase
         :account_id=>[1],
         :name=>"Income",
         :global_id=>"5544436cf81115c6faf577a7e2307e92-3",
+        :deleted=>false,
+        :keep_total=>false,
         :index=>8},
       {:id=>4,
         :multiplier=>1.0,
@@ -109,6 +120,8 @@ class TC_AfriCompta < Test::Unit::TestCase
         :account_id=>[1],
         :name=>"Outcome",
         :global_id=>"5544436cf81115c6faf577a7e2307e92-4",
+        :deleted=>false,
+        :keep_total=>false,
         :index=>10}], 
       accs.collect{|a| a.to_hash}
 		
@@ -264,7 +277,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         }} )
 		
     assert_equal "All money\r5544436cf81115c6faf577a7e2307e92-2\t-1040.0\t" + 
-      "Cash_2\t1\t5544436cf81115c6faf577a7e2307e92-1", 
+      "Cash_2\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t", 
       @cash.to_s
 		
     assert_equal false, @cash.is_empty
@@ -274,13 +287,14 @@ class TC_AfriCompta < Test::Unit::TestCase
 		
     assert_equal( 1, @cash.multiplier )
     assert_equal( 1, box.multiplier )
-    @cash.set_child_multipliers( -1 )
+    @cash.set_child_multiplier_total( -1, true )
     assert_equal( -1, @cash.multiplier )
     assert_equal( -1, box.multiplier )
 		
     assert_equal 7, Accounts.search_all.length
     box.delete
-    assert_equal 6, Accounts.search_all.length
+    assert_equal 7, Accounts.search_all.length
+    assert_equal true, box.deleted
   end
 	
   def test_accounts
@@ -645,10 +659,15 @@ class TC_AfriCompta < Test::Unit::TestCase
   end
 	
   def load_big_data
+    dputs(0){"Setting up"}
+    Entities.delete_all_data()
+
+    dputs(0){"Resetting SQLite"}
+    send_to_sqlite_users :close_db
     FileUtils.cp( "db.solar", "data/compta.db" )		
-    Entities.Movements.load
-    Entities.Accounts.load
-    Entities.Users.load
+    send_to_sqlite_users :open_db
+    send_to_sqlite_users :load
+    RPCQooxdooService.migrate_all
   end
 		
   def tes_big_data

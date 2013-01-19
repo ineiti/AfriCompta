@@ -39,7 +39,8 @@ module Compta::Models
     end
     
     # Sets different new parameters.
-    def set_nochildmult( name, desc, parent, multiplier = 1, users = [] )
+    def set_nochildmult( name, desc, parent, multiplier = 1, users = [],
+      keep_total = false )
       if self.new_record?
         debug 4, "New record in nochildmult"
         self.total = 0
@@ -47,7 +48,8 @@ module Compta::Models
         save
         self.global_id = User.find_by_name('local').full + "-" + self.id.to_s
       end
-      self.name, self.desc, self.account_id = name, desc, parent.to_i;
+      self.name, self.desc, self.account_id, self.keep_total = 
+        name, desc, parent.to_i, keep_total
       self.users.clear
       users.each { |u|
         self.users << User.find_by_name( u )
@@ -62,11 +64,11 @@ module Compta::Models
       new_index
       save
     end
-    def set( name, desc, parent, multiplier = 1, users = [] )
+    def set( name, desc, parent, multiplier = 1, users = [], keep_total = false )
       debug 1, "Setting #{name}"
-      set_nochildmult( name, desc, parent, multiplier, users )
+      set_nochildmult( name, desc, parent, multiplier, users, keep_total )
       # All descendants shall have the same multiplier
-      set_child_multipliers( multiplier )
+      set_child_multiplier_total( multiplier, keep_total )
       save
     end
     
@@ -127,7 +129,8 @@ module Compta::Models
         "#{desc}\r#{global_id}\t" + 
           "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
           ( (account_id and account_id > 0 ) ? account.global_id.to_s : "" ) +
-          "\t#{deleted.to_s}" + ( add_path ? "\t#{path}" : "" )
+          "\t#{deleted.to_s}" + "\t#{keep_total.to_s}" + 
+          ( add_path ? "\t#{path}" : "" )
       else
         "nope"
       end
@@ -160,7 +163,8 @@ module Compta::Models
         debug 0, "Invalid account found: #{desc}"
         return [ -1, nil ]
       end
-      global_id, total, name, multiplier, par, deleted = str.split("\t")
+      global_id, total, name, multiplier, par, 
+        deleted, keep_total = str.split("\t")
       total, multiplier = total.to_f, multiplier.to_f
       debug 3, "Here comes the account: " + global_id.to_s
       debug 5, "par: #{par}"
@@ -178,7 +182,7 @@ module Compta::Models
       # And update it
       pid = par ? parent.id : 0
       our_a.deleted = deleted
-      our_a.set_nochildmult( name, desc, pid, multiplier )
+      our_a.set_nochildmult( name, desc, pid, multiplier, keep_total )
       our_a.global_id = global_id
       our_a.save
       debug 2, "Saved account #{name} with index #{our_a.index} and global_id #{our_a.global_id}"
@@ -186,13 +190,13 @@ module Compta::Models
     end
     
     # Be sure that all descendants have the same multiplier
-    def set_child_multipliers( m )
+    def set_child_multiplier_total( m, t )
       debug 3, "Setting multiplier from #{name} to #{m}"
       self.multiplier = m
       save
       return if not accounts
       accounts.each{ |acc|
-        acc.set_child_multipliers( m )
+        acc.set_child_multiplier_total( m, t )
       }
     end
     
