@@ -79,7 +79,7 @@ class Accounts < Entities
         :global_id => global_id.to_s, :multiplier => 1,
         :deleted => false, :keep_total => false )
     end
-    a.total = "0"
+    a.total = 0
     a.new_index
     if global_id == ""
       a.global_id = Users.find_by_name('local').full + "-" + a.id.to_s
@@ -123,8 +123,11 @@ class Accounts < Entities
       return [ -1, nil ]
     end
     global_id, total, name, multiplier, par, 
-      deleted, keep_total = str.split("\t")
+      deleted_s, keep_total_s = str.split("\t")
     total, multiplier = total.to_f, multiplier.to_f
+    deleted = deleted_s == "true"
+    keep_total = keep_total_s == "true"
+    dputs(5){ "deleted, keep_total is #{deleted.inspect}, #{keep_total.inspect}"}
     dputs( 3 ){ "Here comes the account: " + global_id.to_s }
     dputs( 5 ){ "par: #{par}" }
     if par
@@ -141,7 +144,7 @@ class Accounts < Entities
     end
     # And update it
     our_a.deleted = deleted
-    our_a.set_nochildmult( name, desc, pid, multiplier, keep_total )
+    our_a.set_nochildmult( name, desc, pid, multiplier, [], keep_total )
     our_a.global_id = global_id
     our_a.save
     dputs( 2 ){ "Saved account #{name} with index #{our_a.index} and global_id #{our_a.global_id}" }
@@ -401,6 +404,8 @@ class Accounts < Entities
           # years worth of "total"
           sum_up_total( acc_path, years_archived, month_start )
           dputs( 5 ){ "acc_path is now #{acc_path}" }
+        else
+          dputs(2){"Not keeping for #{acc_path}"}
         end
       else
         dputs( 3 ){ "Empty account #{acc.movements.count} - #{acc.accounts.count}" }
@@ -513,12 +518,12 @@ class Account < Entity
     # Recalculate everything.
     dputs( 4 ){ "Calculating total for #{self.path_id} with mult #{self.multiplier}" }
     self.total = ( 0.0 ).to_f
-    dputs( 4 ){ "Final total is #{self.total} - #{self.total.class.name}" }
+    dputs( 4 ){ "Total before update is #{self.total} - #{self.total.class.name}" }
     self.movements.each{|m|
-      dputs( 5 ){ "Adding value #{m.get_value( self )}" }
       v = m.get_value( self )
-      dputs( 5 ){ "Value is #{v.inspect}" }
+      dputs( 5 ){ "Adding value #{v.inspect} to #{self.total.inspect}" }
       self.total = self.total.to_f + v.to_f
+      dputs( 5 ){ "And getting #{self.total.inspect}"}
     }
     self.total = self.total.round( precision )
     dputs( 4 ){ "Final total is #{self.total} - #{self.total.class.name}" }

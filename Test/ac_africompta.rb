@@ -159,6 +159,8 @@ class TC_AfriCompta < Test::Unit::TestCase
         :account_id=>[1],
         :name=>"Cash",
         :id=>2,
+        :deleted=>false,
+        :keep_total=>true,
         :index=>5}, 
       mov.get_other_account( mov.account_src ).to_hash )
 		
@@ -304,11 +306,13 @@ class TC_AfriCompta < Test::Unit::TestCase
       "5544436cf81115c6faf577a7e2307e92-8")
     assert_equal( {:multiplier=>-1,
         :desc=>"Running cash",
-        :total=>"0",
+        :total=>0,
         :account_id=>[2],
         :global_id=>"5544436cf81115c6faf577a7e2307e92-8",
         :name=>"Cashbox",
         :id=>6,
+        :deleted=>false,
+        :keep_total=>true,
         :index=>11}, box.to_hash )
     assert_equal "Root::Cash::Cashbox", box.path
     assert_equal( -1, @cash.multiplier )
@@ -316,6 +320,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		
     box_s = box.to_s
     box.delete
+    dputs(0){"box_s is #{box_s.inspect}"}
     box = Accounts.from_s( box_s )
     assert_equal( {:multiplier=>-1.0,
         :desc=>"Running cash",
@@ -323,16 +328,18 @@ class TC_AfriCompta < Test::Unit::TestCase
         :account_id=>[2],
         :global_id=>"5544436cf81115c6faf577a7e2307e92-8",
         :name=>"Cashbox",
-        :id=>7,
+        :id=>6,
+        :deleted=>false,
+        :keep_total=>true,
         :index=>13}, box.to_hash )
 		
     course = Accounts.create_path("Root::Income::Course", "course")
     assert_equal "Root::Income::Course", course.get_path
-    assert_equal "5544436cf81115c6faf577a7e2307e92-8", course.global_id
+    assert_equal "5544436cf81115c6faf577a7e2307e92-7", course.global_id
 
     ccard = Accounts.create_path("Credit::Card", "credit-card")
     assert_equal "Credit::Card", ccard.get_path
-    assert_equal "5544436cf81115c6faf577a7e2307e92-10", ccard.global_id
+    assert_equal "5544436cf81115c6faf577a7e2307e92-9", ccard.global_id
   end
 	
   def test_users
@@ -380,33 +387,34 @@ class TC_AfriCompta < Test::Unit::TestCase
     rep = ACaccess.get( "accounts_get_one/5544436cf81115c6faf577a7e2307e92-2" + 
         "/foo,bar")
     assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-2\t" +
-      "1040.0\tCash\t-1\t5544436cf81115c6faf577a7e2307e92-1", rep
+      "1040.0\tCash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue", rep
 
     rep = ACaccess.get( "accounts_get/foo,bar")
     assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
-      "Root\t1\t\nFull description\r5544436cf81115c6faf577a7e2307e92-5\t0" +
-      "\tLending\t-1\t5544436cf81115c6faf577a7e2307e92-1\nFull description" +
-      "\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\tCash\t-1\t" +
-      "5544436cf81115c6faf577a7e2307e92-1\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-3\t1100.0\tIncome\t1\t" +
-      "5544436cf81115c6faf577a7e2307e92-1\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-4\t-60.0\tOutcome\t1\t" +
-      "5544436cf81115c6faf577a7e2307e92-1\n", rep
+      "Root\t1\t\t\t\n" + 
+      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0" +
+      "\tLending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" +
+      "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\t" +
+      "Income\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.0\t" +
+      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\n", rep
 
     rep = ACaccess.get( "accounts_get/foo,bar")
     assert_equal "", rep
 
     rep = ACaccess.get( "accounts_get_all/foo,bar")
     assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0" +
-      "\tRoot\t1\t\tRoot\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-5\t0\tLending\t-1\t" +
-      "5544436cf81115c6faf577a7e2307e92-1\tRoot::Lending\nFull description" +
-      "\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\tCash\t-1\t" +
-      "5544436cf81115c6faf577a7e2307e92-1\tRoot::Cash\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-3\t1100.0\tIncome\t1\t" +
-      "5544436cf81115c6faf577a7e2307e92-1\tRoot::Income\nFull description\r" +
-      "5544436cf81115c6faf577a7e2307e92-4\t-60.0\tOutcome\t1\t" +
-      "5544436cf81115c6faf577a7e2307e92-1\tRoot::Outcome\n", rep
+      "\tRoot\t1\t\t\t\tRoot\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
+      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\tRoot::Lending\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" +
+      "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\tRoot::Cash\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\t" +
+      "Income\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\tRoot::Income\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.0\t" +
+      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\tRoot::Outcome\n", rep
 		
     rep = ACaccess.get( "movements_get_one/5544436cf81115c6faf577a7e2307e92-4/foo,bar")
     assert_equal "Restaurant\r5544436cf81115c6faf577a7e2307e92-4\t20.0\t" +
@@ -496,6 +504,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     @spending = Accounts.create( 'Spending', '', @root )
     @cash = Accounts.create( 'Cash', '', @root )		
     @cash.multiplier = -1
+    @cash.keep_total = true
   end
 	
   def get_sorted_accounts( name )
@@ -570,44 +579,68 @@ class TC_AfriCompta < Test::Unit::TestCase
     add_movs
     Accounts.archive( 6, 2012 )
     incomes = get_sorted_accounts( "Income" )
+    cash = get_sorted_accounts( "cash" )
 		
     assert_equal 3, incomes.length
     assert_equal 1, incomes[0].movements.length
-    assert_equal 2, incomes[1].movements.length
-    assert_equal 2, incomes[2].movements.length
+    assert_equal 1, incomes[1].movements.length
+    assert_equal 1, incomes[2].movements.length
+    
+    assert_equal 3, cash.length
+    assert_equal 1, cash[0].movements.length
+    assert_equal 2, cash[1].movements.length
+    assert_equal 2, cash[2].movements.length
   end
   
+  # Testing keep_total true and false
   def test_archive_multiple_invocations
     setup_clean_accounts
     add_movs
     Accounts.archive( 6, 2012 )
     incomes = get_sorted_accounts( "Income" )
+    cash = get_sorted_accounts( "cash" )
 		
     assert_equal 3, incomes.length
     assert_equal 1, incomes[0].movements.length
-    assert_equal 2, incomes[1].movements.length
-    assert_equal 2, incomes[2].movements.length
+    assert_equal 1, incomes[1].movements.length
+    assert_equal 1, incomes[2].movements.length
+    cash.each{|a|
+      dputs(0){"#{a.path} - #{a.movements.length}"}
+    }
+    assert_equal 3, cash.length
+    assert_equal 1, cash[0].movements.length
+    assert_equal 2, cash[1].movements.length
+    assert_equal 2, cash[2].movements.length
     
     Accounts.archive( 6, 2012 )
     incomes = get_sorted_accounts( "Income" )
+    cash = get_sorted_accounts( "cash" )
 		
     assert_equal 3, incomes.length
     assert_equal 1, incomes[0].movements.length
-    assert_equal 2, incomes[1].movements.length
-    assert_equal 2, incomes[2].movements.length
+    assert_equal 1, incomes[1].movements.length
+    assert_equal 1, incomes[2].movements.length
+    cash.each{|a|
+      dputs(0){"#{a.path} - #{a.movements.length}"}
+    }
+    assert_equal 3, cash.length
+    assert_equal 1, cash[0].movements.length
+    assert_equal 2, cash[1].movements.length
+    assert_equal 2, cash[2].movements.length
   end
 	
   def test_archive_sum_up
     # Make sure that everything still sums up
     setup_clean_accounts
     add_movs
-    Movements.create( "Year 2012 - 1", "2012-06-01", -30, @cash, @spending )
+    Movements.create( "Year 2012 - 1", "2012-06-01", 20, @spending, @cash )
     
+    assert_equal( -20, Accounts.find_by_name( "Spending" ).total )
+    assert_equal( 40, Accounts.find_by_name( "Cash" ).total )
     @cash.update_total
+    assert_equal( 40, Accounts.find_by_name( "Cash" ).total )
 
     dputs(0){"**** - Archiving for 2012 - *****"}
-    assert_equal( -30, Accounts.find_by_name( "Spending" ).total )
-    assert_equal( 30, Accounts.find_by_name( "Cash" ).total )
     Accounts.archive( 6, 2012 )
     cashs = get_sorted_accounts( "Cash" )
     (0..2).each{|i|
@@ -615,7 +648,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     }
     assert_equal 10, cashs[0].total
     assert_equal 30, cashs[1].total
-    assert_equal 30, cashs[2].total
+    assert_equal 40, cashs[2].total
   end
   
   def test_archive_sum_up_consecutive
@@ -629,11 +662,16 @@ class TC_AfriCompta < Test::Unit::TestCase
     dputs(0){"**** - Archiving 1st for 2013 - *****"}
     Accounts.archive( 6, 2013 )
     incomes = get_sorted_accounts( "Income" )
+    cash = get_sorted_accounts( "Cash" )
     assert_equal 4, incomes.count
-    assert_equal 60, incomes[3].total
+    assert_equal 0, incomes[3].total
+    assert_equal 4, cash.count
+    assert_equal 30, cash[3].total
     # check also after re-calculating of the totals!
     incomes[3].update_total
-    assert_equal 60, incomes[3].total
+    assert_equal 0, incomes[3].total
+    cash[3].update_total
+    assert_equal 30, cash[3].total
 		
     dputs(0){"**** - Archiving 2nd for 2014 - *****"}
     # @cash and @spending are now pointing to the archived ones...
@@ -644,13 +682,18 @@ class TC_AfriCompta < Test::Unit::TestCase
     
     incomes = get_sorted_accounts( "Income" )
     dputs(3){incomes.inspect}
+    cash = get_sorted_accounts( "Income" )
+    dputs(3){cash.inspect}
     # We lost the actual account, as it should be empty
-    assert_equal 3, incomes.count
-    assert_equal 60, incomes[2].total
+    assert_equal 4, incomes.count
+    assert_equal true, incomes[3].deleted
+    assert_equal 0, incomes[2].total
+    assert_equal 4, cash.count
+    assert_equal 0, cash[2].total
     
     spending = get_sorted_accounts( "Spending" )
     assert_equal 3, spending.count
-    assert_equal( -60, spending[2].total )
+    assert_equal( 0, spending[2].total )
   end
 
   def test_creation

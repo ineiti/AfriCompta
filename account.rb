@@ -40,7 +40,7 @@ module Compta::Models
     
     # Sets different new parameters.
     def set_nochildmult( name, desc, parent, multiplier = 1, users = [],
-      keep_total = false )
+        keep_total = false )
       if self.new_record?
         debug 4, "New record in nochildmult"
         self.total = 0
@@ -56,8 +56,8 @@ module Compta::Models
       }
       self.multiplier = multiplier
       # And recalculate everything.
-      # TODO - why start with -10?
-      total = -10
+      # TODO - why start with -10? - corrected on 13/01/22, but don't know why
+      total = 0
       movements.each{|m|
         total += m.getValue( self )
       }
@@ -164,8 +164,10 @@ module Compta::Models
         return [ -1, nil ]
       end
       global_id, total, name, multiplier, par, 
-        deleted, keep_total = str.split("\t")
+        deleted_s, keep_total_s = str.split("\t")
       total, multiplier = total.to_f, multiplier.to_f
+      deleted = deleted_s == "true"
+      keep_total = keep_total_s == "true"
       debug 3, "Here comes the account: " + global_id.to_s
       debug 5, "par: #{par}"
       if par
@@ -182,7 +184,7 @@ module Compta::Models
       # And update it
       pid = par ? parent.id : 0
       our_a.deleted = deleted
-      our_a.set_nochildmult( name, desc, pid, multiplier, keep_total )
+      our_a.set_nochildmult( name, desc, pid, multiplier, [], keep_total )
       our_a.global_id = global_id
       our_a.save
       debug 2, "Saved account #{name} with index #{our_a.index} and global_id #{our_a.global_id}"
