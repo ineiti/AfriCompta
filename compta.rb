@@ -266,6 +266,8 @@ module Compta::Models
         # As most of the accounts in Cash have -1 and shall be kept, this
         # gives a good first initialisation
         acc.keep_total = acc.multiplier == -1
+        debug 3, "Account #{acc.path} has keep_total of #{acc.keep_total.inspect}"
+        acc.save
       }
     end
   end

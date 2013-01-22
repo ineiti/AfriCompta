@@ -195,6 +195,7 @@ module Compta::Models
     def set_child_multiplier_total( m, t )
       debug 3, "Setting multiplier from #{name} to #{m}"
       self.multiplier = m
+      self.keep_total = t
       save
       return if not accounts
       accounts.each{ |acc|
@@ -204,7 +205,7 @@ module Compta::Models
     
     def self.find_not_deleted
       Account.find( :all ).select{|a|
-        debug 2, "Account #{a.name} is #{a.deleted.inspect}"
+        debug 2, "Account #{a.path} is #{a.deleted.inspect}::#{a.keep_total.inspect}"
         not a.deleted
       }
     end
@@ -236,7 +237,8 @@ module Compta::Controllers
           parent = Account.new( :multiplier => 1 )
         end
         @account = Account.new( :name => "Short name", :desc => "Full description", 
-          :account => parent, :multiplier => parent.multiplier )
+          :account => parent, :multiplier => parent.multiplier,
+          :keep_total => parent.keep_total )
         render :account_edit
       when "edit"
         @account = Account.find_by_id( arg )
@@ -263,7 +265,8 @@ module Compta::Controllers
       case path
       when "edit"
         a = Account.find_or_initialize_by_id( input.aid )
-        a.set( input.name, input.desc, input.parent, input.multiplier, input.users.to_a )
+        a.set( input.name, input.desc, input.parent, input.multiplier, 
+          input.users.to_a, input.keep_total )
         a.save
         debug 2, "Edited account: #{a.to_s}"
         debug 2, "Accounts here: #{Account.find(:all).size}"
@@ -325,6 +328,20 @@ module Compta::Views
             select :name => "multiplier", :size => "1" do
               [ 1, -1 ].each{ |v| 
                 if @account.multiplier == v
+                  option v, :value => v, :selected => ""
+                else
+                  option v, :value => v
+                end
+              }
+            end
+          }
+        }
+        tr {
+          td "Keep Total"
+          td { 
+            select :name => "keep_total", :size => "1" do
+              [ true, false ].each{ |v|
+                if ( not @account.keep_total ) == ( not v )
                   option v, :value => v, :selected => ""
                 else
                   option v, :value => v
