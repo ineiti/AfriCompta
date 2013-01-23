@@ -427,20 +427,22 @@ class Accounts < Entities
         end
       end
     }
-    dputs( 3 ){ "Root-tree is now" }
-    root.get_tree_depth{|a|
-      dputs( 3 ){ a.path_id }
-      a.movements.each{|m|
-        dputs(4){"Movement is #{m.to_json}"}
+    if DEBUG_LVL >= 3
+      dputs( 3 ){ "Root-tree is now" }
+      root.get_tree_depth{|a|
+        dputs( 3 ){ a.path_id }
+        a.movements.each{|m|
+          dputs(4){"Movement is #{m.to_json}"}
+        }
       }
-    }
-    dputs( 3 ){ "Archive-tree is now" }
-    archive.get_tree_depth{|a|
-      dputs( 3 ){ a.path_id }
-      a.movements.each{|m|
-        dputs(4){"Movement is #{m.to_json}"}
+      dputs( 3 ){ "Archive-tree is now" }
+      archive.get_tree_depth{|a|
+        dputs( 3 ){ a.path_id }
+        a.movements.each{|m|
+          dputs(4){"Movement is #{m.to_json}"}
+        }
       }
-    }
+    end
   end
       
   def open_db
