@@ -19,14 +19,6 @@ class Users < Entities
     new_user.account_index = new_user.movement_index = 0
     new_user
   end
-    
-  def open_db
-    @storage[ :SQLiteAC ].open_db
-  end
-  
-  def close_db
-    @storage[ :SQLiteAC ].close_db
-  end
 end
 
 class User < Entity

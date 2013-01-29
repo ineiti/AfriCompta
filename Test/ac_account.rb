@@ -12,11 +12,9 @@ class TC_AfriCompta < Test::Unit::TestCase
     Entities.delete_all_data()
 
     dputs(0){"Resetting SQLite"}
-    send_to_sqlite_users :close_db
+    SQLite.dbs_close_all
     FileUtils.cp( "db.testGestion", "data/compta.db" )
-    send_to_sqlite_users :open_db
-    send_to_sqlite_users :load
-    RPCQooxdooService.migrate_all
+    SQLite.dbs_open_load_migrate
     
     dputs(0){"And searching for some accounts"}
     @root = Accounts.find_by_name( "Root" )
@@ -43,5 +41,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     old_index = @lending.index
     assert_equal true, @lending.delete
     assert_operator old_index, :<, @lending.index
+    
+    Accounts.create_path("Root::Cash::Foo", "")
   end
 end

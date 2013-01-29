@@ -57,14 +57,6 @@ class Movements < Entities
     dputs( 4 ){ t.to_json }
     t
   end
-  
-  def open_db
-    @storage[ :SQLiteAC ].open_db
-  end
-  
-  def close_db
-    @storage[ :SQLiteAC ].close_db
-  end
 end
 
 

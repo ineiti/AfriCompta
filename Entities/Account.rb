@@ -444,14 +444,6 @@ class Accounts < Entities
       }
     end
   end
-      
-  def open_db
-    @storage[ :SQLiteAC ].open_db
-  end
-  
-  def close_db
-    @storage[ :SQLiteAC ].close_db
-  end
   
   def migration_1( a )
     dputs(4){ Accounts.storage[:SQLiteAC].db_class.inspect }
