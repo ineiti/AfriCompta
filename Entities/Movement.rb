@@ -150,7 +150,7 @@ class Movement < Entity
   end
   
   def delete
-    ddputs(4){"Deleting movement #{desc}"}
+    dputs(4){"Deleting movement #{desc}"}
     src, dst = account_src, account_dst
     super
     src.update_total

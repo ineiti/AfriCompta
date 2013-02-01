@@ -51,7 +51,8 @@ module Compta::Controllers
       @remote = Remote.find_by_id( arg )
       #
       # Check the versions
-      if getForm( "version" ) != $VERSION.to_s
+      if ( vers = getForm( "version" ) ) != $VERSION.to_s
+        debug 0, "Got version #{vers} instead of #{$VERSION.to_s}"
         return false
       end
       #
@@ -150,13 +151,13 @@ module Compta::Controllers
       @remote = Remote.find_by_id( arg )
       #
       # Check the version
-      if getForm( "version" ) != $VERSION.to_s
+      if ( vers = getForm( "version" ) ) != $VERSION.to_s
+        debug 0, "Wrong version - #{vers} instead of #{$VERSION.to_s}"
         return false
       end
       
       account_max, movement_max = getForm( "index" ).split(",")
       debug 2, "maximum accounts and movements: #{[account_max, movement_max].join(':')}"
-      render :remote_error_version
       #
       # First get the remote accounts
       
@@ -246,7 +247,7 @@ module Compta::Controllers
           end
         }
         debug 2, "Remote has #{@movements_only_remote.size} movements"
-        return
+        #return
         
         @movements_only_local = Movement.find(:all).select{|m|
           if ( remote_id = remote_movements_global_id.index( m.global_id.to_s ) ) == nil
@@ -261,7 +262,7 @@ module Compta::Controllers
       else
         @movements_only_local = []
       end
-      return false
+      return true
     end
     
     # Execute the desired action
