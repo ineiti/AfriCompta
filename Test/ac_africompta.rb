@@ -87,7 +87,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :multiplier=>1.0,
         :total=>"0",
         :desc=>"Full description",
-        :account_id=>0,
+        :account_id=>[0],
         :name=>"Root",
         :global_id=>"5544436cf81115c6faf577a7e2307e92-1",
         :deleted=>false,
@@ -706,11 +706,9 @@ class TC_AfriCompta < Test::Unit::TestCase
     Entities.delete_all_data()
 
     dputs(0){"Resetting SQLite"}
-    send_to_sqlite_users :close_db
-    FileUtils.cp( "db.solar", "data/compta.db" )		
-    send_to_sqlite_users :open_db
-    send_to_sqlite_users :load
-    RPCQooxdooService.migrate_all
+    SQLite.dbs_close_all
+    FileUtils.cp( "db.solar", "data/compta.db" )
+    SQLite.dbs_open_load_migrate
   end
 		
   def tes_big_data
