@@ -145,7 +145,11 @@ module Compta::Controllers
           # debug 2, "found account #{gid} locally to be #{acc.name} with path #{acc.path}"
           return acc.path
         elsif ( acc = @accounts_only_remote.select{|a| a.global_id == gid } )
-          return acc[0].name
+          if acc.length > 0
+            return acc[0].name
+          else
+            return gid
+          end
         end
       end
       @remote = Remote.find_by_id( arg )
