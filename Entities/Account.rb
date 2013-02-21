@@ -150,6 +150,11 @@ class Accounts < Entities
     dputs( 2 ){ "Saved account #{name} with index #{our_a.index} and global_id #{our_a.global_id}" }
     return our_a
   end
+  
+  def self.get_by_path_or_create( p, desc, last, mult, keep )
+    get_by_path( p ) or
+      create_path( p, desc, last, mult, keep )
+  end
 	
   def self.get_by_path( parent, elements = nil )
     if not elements
