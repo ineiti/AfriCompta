@@ -137,12 +137,18 @@ module Compta::Models
     end
     
     def is_empty
-      size = self.movements.select{|m| m.value.to_f != 0.0 }.size
-      debug 2, "Account #{self.name} has #{size} non-zero elements"
-      if size == 0 and self.accounts.size == 0
+      size_mov = self.movements.select{|m| m.value.to_f != 0.0 }.size
+      size_acc = self.accounts_nondeleted.size
+      debug 2, "Account #{self.name} has #{size_mov} movements and " +
+        "#{size_acc} accounts"
+      if size_mov == 0 and size_acc == 0
         return true
       end
       return false
+    end
+    
+    def accounts_nondeleted
+      accounts.select{|a| not a.deleted }
     end
     
     def delete
@@ -209,6 +215,24 @@ module Compta::Models
         not a.deleted
       }
     end
+    
+    def self.get_root
+      acc_root = Account.find_by_name( "Root" )
+      debug 0, "Found account_root: #{acc_root.inspect}"
+      acc_root and [acc_root].flatten.select{|a|
+        debug 0, "#{a.name} - #{a.account_id} - #{a.deleted}"
+        ( not a.account ) and ( not a.deleted )
+      }.first
+    end
+
+    def self.get_archive
+      acc_archive = Account.find_by_name( "Archive" )
+      debug 0, "Found account_archive: #{acc_archive.inspect}"
+      acc_archive and [acc_archive].flatten.select{|a|
+        debug 0, "#{a.name} - #{a.account_id} - #{a.deleted}"
+        ( not a.account ) and ( not a.deleted )
+      }.first
+    end
   end
 end  
 
@@ -219,11 +243,10 @@ module Compta::Controllers
   #
   class AccountClasses < R '/account/(.*)'
     def fillGlobal
-      @accounts = Account.find_not_deleted
-      @accounts_root = @accounts.select{|a|
-        debug 0, "#{a.name} - #{a.account_id} - #{a.deleted}"
-        not a.account 
-      }
+      @account_root = Account.get_root
+      debug 0, "Found root-account #{@account_root}"
+      @accounts = []
+      @account_root.get_tree{|a| @accounts.push a }
       @users = User.find_all
     end
     def get( p )
@@ -245,13 +268,13 @@ module Compta::Controllers
         debug 2, "Account is #{@account.to_s}"
         render :account_edit
       when "delete"
+        @account_deleted_path = Account.find_by_id( arg ).path
         if Account.find_by_id( arg ).delete
           @account_deleted = true
         else
           @account_deleted = false
         end
-        fillGlobal
-        render :account_list
+        render :account_deleted
       when "list"
         fillGlobal
         render :account_list
@@ -289,7 +312,7 @@ module Compta::Views
     a "Add account", :href=> "/account/add"
     h1 "Available accounts:"
     table do
-      list_sub( @accounts_root.to_a ){ |acc, str|
+      list_sub( @account_root.to_a ){ |acc, str|
         tr do 
           td.small { a "Edit", :href => "/account/edit/" + acc.id.to_s }
           td.small {
@@ -300,12 +323,26 @@ module Compta::Views
             end
           }
           td.small { a "Add", :href => "/account/add/" + acc.id.to_s }
+          td.small {
+            ( acc.multiplier < 0 ? "-" : "+" ) +
+              ( acc.keep_total ? "K" : "." )
+          }
           td {
             pre str
           }
         end
       }
     end
+    a "Home", :href => "/"
+    b "-"
+    a "Add account", :href=> "/account/add"
+  end
+  
+  def account_deleted
+    a "Home", :href => "/"
+    b "-"
+    a "Add account", :href=> "/account/add"
+    h1 "Account #{@account_deleted_path} deleted"
     a "Home", :href => "/"
     b "-"
     a "Add account", :href=> "/account/add"
@@ -355,7 +392,7 @@ module Compta::Views
           td { 
             select :name => "parent", :size => "1" do
               option "Top-account", :value => "0"
-              list_sub( @accounts_root.to_a ){ |acc, str|
+              list_sub( @account_root.to_a ){ |acc, str|
                 if acc == @account.account
                   option str, :value => acc.id, :selected => ""
                 elsif acc.id != @account.id

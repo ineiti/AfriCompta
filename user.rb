@@ -62,29 +62,34 @@ module Compta::Controllers
       fillGlobal
       path, arg = p.split("/")
       case path
-        when "list"
+      when "list"
         render :user_list
-        when "add"
+      when "add"
         @user = User.new( :name => "Username", :full => "Full name", :pass => "fadjal" )
         render :user_edit
-        when "delete"
+      when "delete"
         User.destroy( arg )
         fillGlobal
         render :user_list        
-        when "edit"
+      when "edit"
         @user = User.find_by_id( arg )
         render :user_edit
-        when "copied"
+      when "copied"
         @user = User.find_by_id( arg )
         @user.update_account_index
         @user.update_movement_index
         render :user_copied
+      when "reset"
+        @user = User.find_by_id( arg )
+        @user.full = MD5::md5( ( rand 2**128 ).to_s ).to_s
+        @user.pass = rand( 2 ** 128 ).to_s
+        render :user_edit
       end
     end
     def post( p )
       path, arg = p.split("/")
       case path
-        when "edit"
+      when "edit"
         u = User.find_or_initialize_by_id( input.uid )
         u.set( input.name, input.full, input.pass, input.accounts.to_a )
         u.save
@@ -106,8 +111,13 @@ module Compta::Views
       @users.to_a.each{ |u|
         tr do 
           td.small { a "Edit", :href => "/user/edit/" + u.id.to_s }
-          td.small { a "Copied", :href => "/user/copied/" + u.id.to_s }
-          td.small { a "Delete", :href => "/user/delete/" + u.id.to_s }
+          if u.name != "local"
+            td.small { a "Copied", :href => "/user/copied/" + u.id.to_s }
+            td.small { a "Delete", :href => "/user/delete/" + u.id.to_s }
+          else
+            td.small { a "Reset", :href => "/user/reset/" + u.id.to_s }
+            td.small {}
+          end
           td {
             pre u.name
           }
@@ -116,7 +126,7 @@ module Compta::Views
     end
     p { 
       a "Add user", :href=> "/user/add"
-    text( "-" )
+      text( "-" )
       a "Home", :href=>"/"
     }
   end
@@ -132,7 +142,7 @@ module Compta::Views
     }
     p { 
       a "Add user", :href=> "/user/add"
-    text( "-" )
+      text( "-" )
       a "Home", :href=>"/"
     }
   end

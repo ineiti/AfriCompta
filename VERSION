@@ -1,9 +1,6 @@
 Sometime
 	+ Change the movement/list-description field so it automatically
 	 takes the optimum width... Javascript-magic...
-	+ Use YAML instead of to_s and from_s -> take care about id's of
-	 the objects...
-	+ Archive accounts and movements and hide them
 	+ Put money from multiple into multiple accounts, but only once into any
 	 tree!
 	+ UNDO
@@ -15,14 +12,20 @@ Sometime
 ? - 1.1
 	+ Better user-authentification
 		+ Jobs for users
-? - 1.0
-	+ Fixed bugs
-? - 
 	+ Open / close trees in account-view
 	+ Good <titles>
+
+130227 - 1.0.1
+        + Added interface for QooxView-Entities
+       	+ Use JSON instead of to_s and from_s -> take care about id's of
+	 the objects...
+        + lots of changes in account-handling
+	+ Fixed bugs
+        + added possibility to show archives
+        + cleaned up front-interface
+	+ Archive accounts and movements and hide them
 	+ Delete accounts and merge them
 	  + add "status" field with bits
-	  + delete eventual dependant movements
 100421 - 0.9.8
 	+ added a movements_put to the code, so that a lot of movements don't
 	 block the server

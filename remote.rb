@@ -135,6 +135,9 @@ module Compta::Controllers
       
       debug 1, "Getting movements"
       @remote.update_movement_index
+      
+      debug 1, "Asking remote to clean us"
+      getForm( "reset_user_indexes" )
       return true
     end
     
@@ -327,9 +330,10 @@ module Compta::Controllers
           when "copy", "push", "pull"
             if @type == "movement"
               # TODO: put all movements in an array
-              postForm( "movements_put", {"movements" => [ element ].to_s } )
+              postForm( "movements_put", {"movements" => [ element.to_json ].to_json } )
+#                {"movements" => [ element ].to_s } )
             else
-              postForm( "#{@type}_put", {"#{@type}" => element.to_s } )
+              postForm( "#{@type}_put", {"#{@type}" => [ element.to_json ].to_json } )
             end
           end
         end

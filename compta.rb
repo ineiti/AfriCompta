@@ -8,7 +8,7 @@ require 'md5'
 
 # 4bits for each version: major-minor-revision-patch
 # Patch is usually not needed.
-$VERSION=0x1000
+$VERSION=0x1010
 
 Camping.goes :Compta
 # Have some nice HTML-output
@@ -371,10 +371,11 @@ def index
   ul {
     li { a "Movements", :href => "/movement/list" }
     li { a "Comptes", :href => "/account/list" }
-    li { a "Salaires", :href => "/salary/list" }
+    #li { a "Salaires", :href => "/salary/list" }
     li { a "Grand livre", :href => "/global/list"}
     li { a "Utilisateurs", :href => "/user/list" }
-    li { a "Employées", :href => "/employee/list" }
+    #li { a "Employées", :href => "/employee/list" }
+    li { a "Destinations", :href => "/remote/list" }
   }
   h2 "Rapports"
   ul {
@@ -391,16 +392,15 @@ def index
       end
     }
   }
-  h2 "Ajouter"
-  ul {
-    li { a "un compte", :href => "/account/add" }
-    li { a "un utilisateur", :href => "/user/add" }
-    li { a "une destination", :href => "/remote/add" }
-    li { a "un employée", :href => "/employee/add" }
-  }
+  #h2 "Ajouter"
+  #ul {
+  #  li { a "un compte", :href => "/account/add" }
+  #  li { a "un utilisateur", :href => "/user/add" }
+  #  li { a "une destination", :href => "/remote/add" }
+  #  li { a "un employée", :href => "/employee/add" }
+  #}
   h2 "Suppléments"
   ul {
-    li { a "Destinations", :href => "/remote/list" }
     li { a "ranger un peu", :href => "/admin/clean"}
   }
 end

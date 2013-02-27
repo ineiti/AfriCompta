@@ -152,8 +152,11 @@ class Movement < Entity
   def delete
     dputs(4){"Deleting movement #{desc}"}
     src, dst = account_src, account_dst
+    dputs(3){"totals before: #{src.get_path}=#{src.total}, " + 
+        "#{dst.get_path}=#{dst.total}"}
+    self.value = 0
+    dputs(3){"totals after: #{src.get_path}=#{src.total}, " + 
+        "#{dst.get_path}=#{dst.total}"}
     super
-    src.update_total
-    dst.update_total
   end
 end

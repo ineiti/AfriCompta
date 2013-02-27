@@ -14,7 +14,11 @@ class Users < Entities
     value_int :movement_index
   end
 	
-  def create( name, full, pass )
+  def create( name, full = nil, pass = nil )
+    if not full or not pass
+      ddputs(2){"Creating with hash: #{name.inspect}"}
+      name, full, pass = name[:name], name[:full], name[:pass]
+    end
     new_user = super( :name => name, :full => full, :pass => pass )
     new_user.account_index = new_user.movement_index = 0
     new_user

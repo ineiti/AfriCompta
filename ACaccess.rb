@@ -2,7 +2,7 @@
 # Post/Get-handlers over HTTP
 
 
-$VERSION = 0x1000
+$VERSION = 0x1010
 
 class ACaccess < RPCQooxdooPath
   def self.parse( r, p, q )
@@ -105,7 +105,10 @@ class ACaccess < RPCQooxdooPath
         
     when "index"
       return [ u_local.account_index, u_local.movement_index ].join(",")
-        
+                
+    when "reset_user_indexes"
+      u.update_account_index
+      u.update_movement_index
     end
     return ""
   end
@@ -132,9 +135,9 @@ class ACaccess < RPCQooxdooPath
       return nil
 
     when "movements_put"
-      dputs( 3 ){ "Going to put some movements" }
+      ddputs( 3 ){ "Going to put some movements: #{input['movements'].inspect}" }
       movs = ActiveSupport::JSON.decode( input['movements'] )
-      dputs( 3 ){ "movs is now #{movs.inspect}" }
+      ddputs( 3 ){ "movs is now #{movs.inspect}" }
       if movs.size > 0
         movs.each{ |m|
           mov = Movements.from_json( m )
@@ -143,16 +146,19 @@ class ACaccess < RPCQooxdooPath
         }
       end
     when "movement_delete"
-      dputs( 3 ){ "Going to delete movement" }
-      Movements.find_by_global_id( input['global_id'] ).delete
+      ddputs( 3 ){ "Going to delete movement" }
+      mov = Movements.find_by_global_id( input['global_id'] )
+      ddputs(3){"Found movement #{mov.inspect}" }
+      mov and mov.delete
+      ddputs(3){"Finished deleting"}
     when "account_put"
       dputs( 3 ){ "Going to put account" }
       acc = Accounts.from_s( input['account'] )
       u.update_account_index
       dputs( 2 ){ "Saved account #{acc.global_id}" }
     when "account_delete"
-      dputs( 3 ){ "Going to delete account" }
-      Accounts.find_by_global_id( input['global_id'] ).delete
+      ddputs( 3 ){ "Going to delete account" }
+      Accounts.find_by_global_id( input['global_id'] ).delete( true )
     end
     return "ok"
   end

@@ -659,12 +659,20 @@ class Account < Entity
     data_get(:multiplier).to_i
   end
   
-  def delete
+  def delete( force = false )
+    if not is_empty and force
+      movements_src.each{|m|
+        ddputs(3){"Deleting movement #{m.to_json}"}
+        m.delete
+      }
+    end
     if is_empty
       dputs(2){"Deleting account #{self.name}"}
       self.account_id = nil
       self.new_index
       self.deleted = true
+    else
+      dputs(1){"Refusing to delete account #{name}"}
     end
   end
 end
