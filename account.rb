@@ -246,7 +246,7 @@ module Compta::Controllers
       @account_root = Account.get_root
       debug 0, "Found root-account #{@account_root}"
       @accounts = []
-      @account_root.get_tree{|a| @accounts.push a }
+      @account_root and @account_root.get_tree{|a| @accounts.push a }
       @users = User.find_all
     end
     def get( p )

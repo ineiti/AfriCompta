@@ -141,6 +141,7 @@ module Compta::Controllers
       @accounts = []
       @account_root.get_tree{|a| @accounts.push a }
       @account_archive = Account.get_archive
+      @remote = Remote.first
       #      @account_lm = Account.find_by_id( 150 )
     end
     def movements_sort( arg )
@@ -403,8 +404,11 @@ module Compta::Views
   end
   def list_years
     select :name => :show_year, :size => "1" do
-      ["Actual"].concat(@account_archive.accounts.collect{|a| a.name}).
-        sort.reverse.each{|a|
+      years = %w( Actual )
+      if @account_archive
+        years += @account_archive.accounts.collect{|a| a.name}
+      end
+      years.sort.reverse.each{|a|
         text( "<option value=\"#{a}\"#{a == @show_year ? ' selected' : ''}>" +
             "#{a}</option>" )
         
@@ -419,8 +423,10 @@ module Compta::Views
         a "Home", :href => "/"
         b "-"
         a "Accounts", :href => "/account/list"
-        b "-"
-        a "Merge with base", :href => "/remote/merge/1"
+        if @remote
+          b "-"
+          a "Merge with base", :href => "/remote/merge/#{@remote.id}"
+        end
         td :align => "center" do
           text( "<h1>#{ name_rec( @account ) }</h1>" )
           p {
@@ -526,7 +532,9 @@ module Compta::Views
     a "Home", :href => "/"
     b "-"
     a "Accounts", :href => "/account/list"
-    b "-"
-    a "Merge with base", :href => "/remote/merge/1"
+    if @remote
+      b "-"
+      a "Merge with base", :href => "/remote/merge/#{@remote.id}"
+    end
   end
 end

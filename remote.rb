@@ -19,6 +19,9 @@ module Compta::Models
       self.save
     end
     
+    #def self.first
+    #  Remote.find(:all).first
+    #end
   end
 end  
 
@@ -455,7 +458,7 @@ module Compta::Views
     p "Put accounts: " + (@account_index_stop-@account_index_start + 1).to_s
     p "Got movements: " + (@remote.movement_index-@movement_index_stop).to_s
     p "Put movements: " + (@movement_index_stop - @movement_index_start + 1).to_s
-    a "Back to work", :href => "/movement/list/1"
+    a "Back to work", :href => "/movement/list"
   end
   
   def remote_error_version
