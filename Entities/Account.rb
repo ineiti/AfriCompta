@@ -627,7 +627,16 @@ class Account < Entity
   end
 	
   def accounts
-    Accounts.matches_by_account_id( self.id )
+    # Some hand-optimized stuff. This would be written shorter like this:
+    # Accounts.matches_by_account_id( self.id )
+    # But the code below is 3 times faster for some big data
+    ret = []
+    Accounts.data.each{|k,v|
+      if v[:account_id] == self.id
+        ret.push Accounts.get_data_instance( k )
+      end
+    }
+    ret
   end
 	
   # This is the parent account
@@ -662,7 +671,7 @@ class Account < Entity
   def delete( force = false )
     if not is_empty and force
       movements_src.each{|m|
-        ddputs(3){"Deleting movement #{m.to_json}"}
+        dputs(3){"Deleting movement #{m.to_json}"}
         m.delete
       }
     end

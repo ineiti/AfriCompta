@@ -1,21 +1,15 @@
 require 'test/unit'
+require 'benchmark'
 
 class TC_AfriCompta < Test::Unit::TestCase
-  def send_to_sqlite_users( m )
-    Entities.Movements.send( m.to_sym )
-    Entities.Accounts.send( m.to_sym )
-    Entities.Users.send( m.to_sym )
-  end
-  
   def setup
     dputs(0){"Setting up"}
     Entities.delete_all_data()
 
     dputs(0){"Resetting SQLite"}
-    send_to_sqlite_users :close_db
+    SQLite.dbs_close_all
     FileUtils.cp( "db.testGestion", "data/compta.db" )
-    send_to_sqlite_users :open_db
-    send_to_sqlite_users :load
+    SQLite.dbs_open_load_migrate
     RPCQooxdooService.migrate_all
 
     dputs(0){"And searching for some accounts"}
@@ -711,9 +705,37 @@ class TC_AfriCompta < Test::Unit::TestCase
     SQLite.dbs_open_load_migrate
   end
 		
-  def tes_big_data
+  def tes_big_data_archive
     load_big_data
     Accounts.archive( 1, 2012 )
+  end
+
+  def test_big_data_merge
+    load_big_data
+    
+    ACaccess.get( "reset_user_indexes/ineiti,lasj" )
+    dputs(0){ Benchmark.measure{
+        ACaccess.get( "accounts_get/ineiti,lasj")
+      }.to_s
+    }
+    dputs(0){ Benchmark.measure{
+        ACaccess.get( "accounts_get/ineiti,lasj")
+      }.to_s
+    }
+  end
+	
+  def test_big_data_check
+    load_big_data
+    
+    ACaccess.get( "reset_user_indexes/ineiti,lasj" )
+    dputs(0){ Benchmark.measure{
+        ACaccess.get( "movements_get_all/1,10000/ineiti,lasj")
+      }.to_s
+    }
+    dputs(0){ Benchmark.measure{
+        ACaccess.get( "movements_get_all/1,10000/ineiti,lasj")
+      }.to_s
+    }
   end
 	
   def test_archive_2

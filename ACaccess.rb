@@ -25,7 +25,8 @@ class ACaccess < RPCQooxdooPath
         " to #{stop.class}:#{stop}" }
     ret = ""
     Movements.search_all.select{|m|
-      m and m.index and m.index >= start and m.index <= stop }.each{ |m|
+      mi = m.index
+      m and mi and mi >= start and mi <= stop }.each{ |m|
       if start > 0
         dputs( 4 ){ "Mer: Movement #{m.desc}, #{m.value}" }
       end
@@ -65,11 +66,11 @@ class ACaccess < RPCQooxdooPath
       get_all = $1 == "_all"
       dputs( 2 ){ "Starting to search accounts" }
       Accounts.matches_by_account_id(0).to_a.each{|a|
-        dputs( 2 ){ "Found one account #{a.index}" }
+        dputs( 2 ){ "Found one account #{a.index} - #{a.path_id}" }
         if a.global_id
           dputs( 2 ){ "It's global" }
           a.get_tree{|acc|
-            dputs( 4 ){ "In get_tree #{acc.index}" }
+            dputs( 4 ){ "In get_tree #{acc.index} - #{acc.path_id}" }
             if acc.index > u.account_index or get_all
               dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
               ret += "#{acc.to_s( get_all )}\n"
@@ -135,9 +136,9 @@ class ACaccess < RPCQooxdooPath
       return nil
 
     when "movements_put"
-      ddputs( 3 ){ "Going to put some movements: #{input['movements'].inspect}" }
+      dputs( 3 ){ "Going to put some movements: #{input['movements'].inspect}" }
       movs = ActiveSupport::JSON.decode( input['movements'] )
-      ddputs( 3 ){ "movs is now #{movs.inspect}" }
+      dputs( 3 ){ "movs is now #{movs.inspect}" }
       if movs.size > 0
         movs.each{ |m|
           mov = Movements.from_json( m )
@@ -146,18 +147,18 @@ class ACaccess < RPCQooxdooPath
         }
       end
     when "movement_delete"
-      ddputs( 3 ){ "Going to delete movement" }
+      dputs( 3 ){ "Going to delete movement" }
       mov = Movements.find_by_global_id( input['global_id'] )
-      ddputs(3){"Found movement #{mov.inspect}" }
+      dputs(3){"Found movement #{mov.inspect}" }
       mov and mov.delete
-      ddputs(3){"Finished deleting"}
+      dputs(3){"Finished deleting"}
     when "account_put"
       dputs( 3 ){ "Going to put account" }
       acc = Accounts.from_s( input['account'] )
       u.update_account_index
       dputs( 2 ){ "Saved account #{acc.global_id}" }
     when "account_delete"
-      ddputs( 3 ){ "Going to delete account" }
+      dputs( 3 ){ "Going to delete account" }
       Accounts.find_by_global_id( input['global_id'] ).delete( true )
     end
     return "ok"

@@ -1,12 +1,6 @@
 require 'test/unit'
 
 class TC_AfriCompta < Test::Unit::TestCase
-  def send_to_sqlite_users( m )
-    Entities.Movements.send( m.to_sym )
-    Entities.Accounts.send( m.to_sym )
-    Entities.Users.send( m.to_sym )
-  end
-  
   def setup
     dputs(0){"Setting up"}
     Entities.delete_all_data()

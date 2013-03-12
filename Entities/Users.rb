@@ -16,7 +16,7 @@ class Users < Entities
 	
   def create( name, full = nil, pass = nil )
     if not full or not pass
-      ddputs(2){"Creating with hash: #{name.inspect}"}
+      dputs(2){"Creating with hash: #{name.inspect}"}
       name, full, pass = name[:name], name[:full], name[:pass]
     end
     new_user = super( :name => name, :full => full, :pass => pass )

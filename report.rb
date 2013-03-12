@@ -77,9 +77,10 @@ module Compta::Controllers
       
       fillGlobal
       @show_year = @start
-      if @account_archive.accounts_nondeleted.select{|a|
-          a.name == @show_year
-        }.size == 0
+      if ( not @account_archive ) or 
+          ( @account_archive.accounts_nondeleted.select{|a|
+            a.name == @show_year
+          }.size == 0 )
         @show_year = "Actual"
       end
       debug 1, "Year to show is #{@show_year}"
