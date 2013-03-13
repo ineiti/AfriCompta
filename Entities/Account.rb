@@ -559,7 +559,6 @@ class Account < Entity
   # and finally the value
   def movements( from = nil, to = nil )
     dputs( 5 ){ "Account::movements" }
-    timer_start
     movs = ( movements_src + movements_dst )
     if ( from != nil and to != nil )
       movs.delete_if{ |m|
@@ -567,7 +566,6 @@ class Account < Entity
       }
       dputs( 3 ){ "Rejected some elements" }
     end
-    timer_read("rejected elements")
     sorted = movs.sort{ |a,b|
       ret = 0
       if a.date and b.date
@@ -588,7 +586,6 @@ class Account < Entity
       end
       ret * -1
     }
-    timer_read( "Sorting movements: " )
     sorted
   end
 	    

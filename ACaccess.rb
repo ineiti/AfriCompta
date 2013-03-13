@@ -26,7 +26,8 @@ class ACaccess < RPCQooxdooPath
     ret = ""
     Movements.search_all.select{|m|
       mi = m.index
-      m and mi and mi >= start and mi <= stop }.each{ |m|
+      m and mi and mi >= start and mi <= stop 
+    }.each{ |m|
       if start > 0
         dputs( 4 ){ "Mer: Movement #{m.desc}, #{m.value}" }
       end
@@ -63,24 +64,31 @@ class ACaccess < RPCQooxdooPath
       if $1 == "_one"
         return Accounts.find_by_global_id( arg ).to_s
       end
-      get_all = $1 == "_all"
-      dputs( 2 ){ "Starting to search accounts" }
-      Accounts.matches_by_account_id(0).to_a.each{|a|
-        dputs( 2 ){ "Found one account #{a.index} - #{a.path_id}" }
-        if a.global_id
-          dputs( 2 ){ "It's global" }
-          a.get_tree{|acc|
-            dputs( 4 ){ "In get_tree #{acc.index} - #{acc.path_id}" }
-            if acc.index > u.account_index or get_all
-              dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
-              ret += "#{acc.to_s( get_all )}\n"
-            end
-          }
-        else
-          dputs( 2 ){ "It's not global" }
-        end
-        dputs( 2 ){ "Will search for next" }
-      }
+      if $1 == "_all"
+        dputs( 2 ){ "Putting all accounts" }
+        Accounts.search_all.each{|acc|
+          ddputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
+          ret += "#{acc.to_s( true )}\n"
+        }
+      else
+        dputs( 2 ){ "Starting to search accounts" }
+        Accounts.matches_by_account_id(0).to_a.each{|a|
+          dputs( 2 ){ "Found one root-account #{a.index} - #{a.path_id}" }
+          if a.global_id
+            dputs( 2 ){ "It's global" }
+            a.get_tree{|acc|
+              dputs( 4 ){ "In get_tree #{acc.index} - #{acc.path_id}" }
+              if acc.index > u.account_index
+                dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
+                ret += "#{acc.to_s}\n"
+              end
+            }
+          else
+            dputs( 2 ){ "It's not global" }
+          end
+          dputs( 2 ){ "Will search for next" }
+        }
+      end
       dputs( 2 ){ "Finished search" }
       u.update_account_index
       return ret

@@ -88,7 +88,7 @@ class Movement < Entity
       account_src.save
       account_dst.save
     end
-    super( v )
+    data_set_log( :value, v, @proxy.msg, @proxy.undo, @proxy.logging )
   end
     
   def get_value( account )

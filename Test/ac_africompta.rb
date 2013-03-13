@@ -1,5 +1,4 @@
 require 'test/unit'
-require 'benchmark'
 
 class TC_AfriCompta < Test::Unit::TestCase
   def setup
@@ -8,9 +7,9 @@ class TC_AfriCompta < Test::Unit::TestCase
 
     dputs(0){"Resetting SQLite"}
     SQLite.dbs_close_all
+    dputs(0){"Putting testGestion"}
     FileUtils.cp( "db.testGestion", "data/compta.db" )
     SQLite.dbs_open_load_migrate
-    RPCQooxdooService.migrate_all
 
     dputs(0){"And searching for some accounts"}
     @root = Accounts.find_by_name( "Root" )
@@ -373,7 +372,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal "User foo not known with pass ba", rep
 
     rep = ACaccess.get( "version/foo,bar" )
-    assert_equal "4096", rep
+    assert_equal $VERSION.to_s, rep
 		
     rep = ACaccess.get( "index/foo,bar")
     assert_equal "11,5", rep
@@ -385,9 +384,9 @@ class TC_AfriCompta < Test::Unit::TestCase
 
     rep = ACaccess.get( "accounts_get/foo,bar")
     assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
-      "Root\t1\t\t\t\n" + 
-      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0" +
-      "\tLending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n" +
+      "Root\t1\t\t\t\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
+      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" +
       "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\t" +
@@ -399,10 +398,10 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal "", rep
 
     rep = ACaccess.get( "accounts_get_all/foo,bar")
-    assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0" +
-      "\tRoot\t1\t\t\t\tRoot\n" +
-      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
+    assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
       "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\tRoot::Lending\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
+      "Root\t1\t\t\t\tRoot\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" +
       "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\tRoot::Cash\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\t" +
@@ -626,7 +625,9 @@ class TC_AfriCompta < Test::Unit::TestCase
   def test_archive_sum_up
     # Make sure that everything still sums up
     setup_clean_accounts
+    assert_equal( 0, Accounts.find_by_name( "Spending" ).total )
     add_movs
+    assert_equal( 0, Accounts.find_by_name( "Spending" ).total )
     Movements.create( "Year 2012 - 1", "2012-06-01", 20, @spending, @cash )
     
     assert_equal( -20, Accounts.find_by_name( "Spending" ).total )
@@ -701,27 +702,41 @@ class TC_AfriCompta < Test::Unit::TestCase
 
     dputs(0){"Resetting SQLite"}
     SQLite.dbs_close_all
+    dputs(0){"Loading big data"}
     FileUtils.cp( "db.solar", "data/compta.db" )
     SQLite.dbs_open_load_migrate
   end
 		
   def tes_big_data_archive
+    require 'benchmark'
+    require 'perftools'
     load_big_data
     Accounts.archive( 1, 2012 )
   end
 
-  def test_big_data_merge
+  def tes_big_data_merge
+    require 'benchmark'
+    require 'perftools'
     load_big_data
     
     ACaccess.get( "reset_user_indexes/ineiti,lasj" )
     dputs(0){ Benchmark.measure{
-        ACaccess.get( "accounts_get/ineiti,lasj")
+        PerfTools::CpuProfiler.start("perfcheck_merge_1st") do
+          ACaccess.get( "accounts_get/ineiti,lasj")
+        end
       }.to_s
     }
     dputs(0){ Benchmark.measure{
-        ACaccess.get( "accounts_get/ineiti,lasj")
+        PerfTools::CpuProfiler.start("perfcheck_merge_2nd") do
+          ACaccess.get( "accounts_get/ineiti,lasj")
+        end
       }.to_s
     }
+    puts "Now run
+pprof.rb --pdf perfcheck_merge_1st > perfcheck_merge_1st.pdf
+pprof.rb --pdf perfcheck_merge_2nd > perfcheck_merge_2nd.pdf
+open perfcheck_merge_1st.pdf perfcheck_merge_2nd.pdf
+    "
   end
 	
   def test_big_data_check
