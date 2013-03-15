@@ -36,7 +36,9 @@ module Compta::Controllers
       (date_start.year..date_end.year).each {|year|
         ranges["year"] = [ year ]
         ranges[detail].each {|det|
-          sum = subsum[year.to_s][det.to_s] += sum
+          if ( sum = subsum[year.to_s][det.to_s] += sum ) == 0
+            subsum[year.to_s][det.to_s] = 0.0001
+          end
           puts "Range is #{det.to_s} for account #{account.name} and sum is #{sum}"
         }
       }
@@ -49,9 +51,13 @@ module Compta::Controllers
       subsum = Hash.new{ |h,k| h[k] = Hash.new { |h,k| h[k] = 0 } }
       accounts.each{|acc|
         acc.movements.each{ |m|
-          subsum[m.date.year.to_s][m.date.method(detail).call.to_s] += m.getValue( acc )
+          year, month = m.date.year.to_s, m.date.method(detail).call.to_s
+          if ( subsum[year][month] += m.getValue( acc ) ) == 0
+            subsum[year][month] = 0.0001
+          end
         }
       }
+      # Nasty hack to get accounts with movements but sum of 0 to show up anyway
       subsum
     end
     # Calculate either a moving sum or the sum of each
