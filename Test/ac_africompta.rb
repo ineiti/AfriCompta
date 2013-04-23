@@ -70,7 +70,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :multiplier=>-1.0,
         :total=>"0",
         :desc=>"Full description",
-        :account_id=>[1],
+        :account_id=>1,
         :name=>"Lending",
         :index=>9,
         :deleted=>false,
@@ -80,7 +80,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :multiplier=>1.0,
         :total=>"0",
         :desc=>"Full description",
-        :account_id=>[0],
+        :account_id=>0,
         :name=>"Root",
         :global_id=>"5544436cf81115c6faf577a7e2307e92-1",
         :deleted=>false,
@@ -90,7 +90,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :multiplier=>-1.0,
         :total=>"1040.0",
         :desc=>"Full description",
-        :account_id=>[1],
+        :account_id=>1,
         :name=>"Cash",
         :global_id=>"5544436cf81115c6faf577a7e2307e92-2",
         :deleted=>false,
@@ -100,7 +100,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :multiplier=>1.0,
         :total=>"1100.0",
         :desc=>"Full description",
-        :account_id=>[1],
+        :account_id=>1,
         :name=>"Income",
         :global_id=>"5544436cf81115c6faf577a7e2307e92-3",
         :deleted=>false,
@@ -110,7 +110,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :multiplier=>1.0,
         :total=>"-60.0",
         :desc=>"Full description",
-        :account_id=>[1],
+        :account_id=>1,
         :name=>"Outcome",
         :global_id=>"5544436cf81115c6faf577a7e2307e92-4",
         :deleted=>false,
@@ -149,7 +149,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :desc=>"Full description",
         :total=>"1040.0",
         :multiplier=>-1.0,
-        :account_id=>[1],
+        :account_id=>1,
         :name=>"Cash",
         :id=>2,
         :deleted=>false,
@@ -300,7 +300,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal( {:multiplier=>-1,
         :desc=>"Running cash",
         :total=>0,
-        :account_id=>[2],
+        :account_id=>2,
         :global_id=>"5544436cf81115c6faf577a7e2307e92-8",
         :name=>"Cashbox",
         :id=>6,
@@ -318,7 +318,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal( {:multiplier=>-1.0,
         :desc=>"Running cash",
         :total=>0.0,
-        :account_id=>[2],
+        :account_id=>2,
         :global_id=>"5544436cf81115c6faf577a7e2307e92-8",
         :name=>"Cashbox",
         :id=>6,
@@ -795,5 +795,23 @@ open perfcheck_merge_1st.pdf perfcheck_merge_2nd.pdf
     assert_equal 3, a.round
     assert_equal 2.6, a.round( 1 )
     assert_equal 2.56, a.round( 2 )
+  end
+  
+  def test_create_path
+    accounts = Accounts.search_all.size
+    
+    base1 = Accounts.create_path( "Root::Income::Base", "base" )
+    assert_equal accounts + 1, Accounts.search_all.size
+
+    base2 = Accounts.create_path( "Root::Income::Base", "base" )
+    assert_equal accounts + 1, Accounts.search_all.size
+    assert_equal base1, base2
+
+    base3 = Accounts.create_path( "Root::Income::Base", "base", true )
+    assert_equal accounts + 2, Accounts.search_all.size
+    assert_not_equal base1, base3
+    
+    credit = Accounts.create_path( "Credit::Card", "mastercard" )
+    assert_equal "Credit::Card", credit.path
   end
 end

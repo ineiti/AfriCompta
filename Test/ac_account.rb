@@ -21,6 +21,10 @@ class TC_AfriCompta < Test::Unit::TestCase
 
   def teardown
   end
+  
+  def test_path
+    assert_equal "Root::Cash", @cash.path
+  end
 
   def test_del_account
     AccountRoot.accounts.each{|a|
@@ -37,5 +41,10 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_operator old_index, :<, @lending.index
     
     Accounts.create_path("Root::Cash::Foo", "")
+  end
+  
+  def test_clean
+    a, b, c, d = AccountRoot.clean
+    assert_equal [ 4, 0, 10, 0 ], [ a, b, c, d ]
   end
 end

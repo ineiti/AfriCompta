@@ -21,7 +21,7 @@ class AccountRoot
       end
     }
     Accounts.search_all.each{ |a|
-      if ( a.account_id and a.account_id > 0 ) and not a.account
+      if ( a.account_id and ( a.account_id > 0 ) ) and ( not a.account )
         a.delete
         bad_acc += 1
       end
@@ -45,6 +45,26 @@ class AccountRoot
     end
     return [ count_mov, bad_mov, count_acc, bad_acc ]
   end
+  
+  def self.path_id
+    return ""
+  end
+  
+  def self.id
+    0
+  end
+  
+  def self.mult
+    1
+  end
+  
+  def self.keep_total
+    false
+  end
+  
+  def self.multiplier
+    1
+  end
 end
 
 class Accounts < Entities
@@ -60,15 +80,16 @@ class Accounts < Entities
     value_int :index
     value_bool :deleted
     value_bool :keep_total
-    value_entity_account :account_id
+    value_int :account_id
     
     dputs(0){"Accounts-init-table"}
     #init_table
   end
     
   def self.create( name, desc = "Too lazy", parent = nil, global_id = "" )
+    dputs(5){"Parent is #{parent.inspect}"}
     if parent
-      if parent.class != Account
+      if parent.class != Account and parent != AccountRoot
         parent = Accounts.matches_by_index( parent ).first
       end
       a = super( :name => name, :desc => desc, :account_id => parent.id,
@@ -92,26 +113,22 @@ class Accounts < Entities
   def self.create_path( path, desc, double_last = false, mult = 1, 
       keep_total = false )
     elements = path.split( "::" )
-    last_id = nil
-    elements.each{|e|
-      dputs( 5 ){ "Working on element #{e}" }
-      if ( e == elements.last ) and double_last
-        dputs( 3 ){ "Doubling account #{path}" }
-        last_id = Accounts.create( e, desc, last_id )
-      else
-        t = Accounts.matches_by_name( e ).select{|a|
-          dputs( 5 ){ "Account_id is #{a.account_id}" }
-          if a.account_id == last_id
-            last_id = a
-          end
-        }
-        if t == []
-          last_id = Accounts.create( e, desc, last_id )
-        end
+    parent = AccountRoot
+    while elements.size > 0
+      name = elements.shift
+      dputs( 4 ){ "Working on element #{name} with base of #{parent.path_id}" }
+      child = parent.accounts.find{|a|
+        dputs( 5 ){"Searching child #{a.name} - #{a.path_id}"}
+        a.name == name
+      }
+      child and dputs( 4 ){ "Found existing child #{child.path_id}" }
+      if ( not child ) or ( elements.size == 0 and double_last )
+        dputs(4){"Creating child #{name}"}
+        child = Accounts.create( name, desc, parent )
       end
-    }
-    last_id.set_child_multiplier_total( mult, keep_total )
-    last_id
+      parent = child
+    end
+    parent.set_child_multiplier_total( mult, keep_total )
   end
 
   # Gets an account from a string, if it doesn't exist yet, creates it.
@@ -329,7 +346,7 @@ class Accounts < Entities
     if only_account
       root = only_account
     else
-      if root.account_id
+      if ( root.account_id > 0 )
         dputs( 0 ){ "Can't archive with Root is not in root: #{root.account_id.inspect}!" }
         return false
       end
@@ -488,8 +505,8 @@ class Account < Entity
   end
     
   def path( sep = "::", p="", first=true )
-    if self.account
-      return self.account.path( sep, p, false ) + sep + self.name
+    if ( acc = self.account )
+      return acc.path( sep, p, false ) + sep + self.name
     else
       return self.name
     end
@@ -594,7 +611,7 @@ class Account < Entity
       # "Account-desc: #{name.to_s}, #{global_id}"
       "#{desc}\r#{global_id}\t" + 
         "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
-        ( account_id ? account.global_id.to_s : "" ) +
+        ( ( account_id > 0 ) ? account.global_id.to_s : "" ) +
         "\t#{deleted.to_s}" + "\t#{keep_total.to_s}" + 
         ( add_path ? "\t#{path}" : "" )
     else
@@ -621,6 +638,7 @@ class Account < Entity
     accounts.each{ |acc|
       acc.set_child_multiplier_total( m, t )
     }
+    self
   end
 	
   def accounts
@@ -638,11 +656,11 @@ class Account < Entity
 	
   # This is the parent account
   def account
-    account_id
+    Accounts.find_by_id( self.account_id )
   end
 	
   def account= ( a )
-    self.account_id = a
+    self.account_id = a.class == Account ? a.id : a
   end
 	
   def parent
@@ -650,7 +668,7 @@ class Account < Entity
   end
 	
   def parent= ( a )
-    self.account_id = a
+    self.account = a
   end
 	
   def movements_src
