@@ -1,2 +1,14 @@
-hg commit -m "$@"
-git commit -a -m "$@"
+#!/bin/bash
+for a in Gestion QooxView AfriCompta LibNet; do
+  echo Doing $a
+  cd ../$a
+  if [ ! "$1" ]; then
+    hg diff
+    hg st
+    git status
+    echo
+  else
+    hg commit -m "$@"
+    git commit -a -m "$@"
+  fi
+done

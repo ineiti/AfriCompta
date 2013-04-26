@@ -5,12 +5,12 @@ end
 module Compta::Controllers
   class ReportCClasses < R '/report/(.*)'
     def fillGlobal
-      @accounts = Account.find :all
-      @accounts_root = Account.find_all_by_account_id( 0 )
+      @account_root = Account.get_root
+      @account_archive = Account.get_archive
     end
     def get_all_sub_accounts( acc )
       ret = [ acc ]
-      acc.accounts.each { |a|
+      acc.accounts_nondeleted.each { |a|
         ret = ret + get_all_sub_accounts( a )
       }
       ret
@@ -33,10 +33,12 @@ module Compta::Controllers
       # Then we sum up all slots.
       sum=0
       ranges = { "cweek" => (1..53), "month" => (1..12) }
-       (date_start.year..date_end.year).each {|year|
+      (date_start.year..date_end.year).each {|year|
         ranges["year"] = [ year ]
         ranges[detail].each {|det|
-          sum = subsum[year.to_s][det.to_s] += sum
+          if ( sum = subsum[year.to_s][det.to_s] += sum ) == 0
+            subsum[year.to_s][det.to_s] = 0.0001
+          end
           puts "Range is #{det.to_s} for account #{account.name} and sum is #{sum}"
         }
       }
@@ -49,9 +51,13 @@ module Compta::Controllers
       subsum = Hash.new{ |h,k| h[k] = Hash.new { |h,k| h[k] = 0 } }
       accounts.each{|acc|
         acc.movements.each{ |m|
-          subsum[m.date.year.to_s][m.date.method(detail).call.to_s] += m.getValue( acc )
+          year, month = m.date.year.to_s, m.date.method(detail).call.to_s
+          if ( subsum[year][month] += m.getValue( acc ) ) == 0
+            subsum[year][month] = 0.0001
+          end
         }
       }
+      # Nasty hack to get accounts with movements but sum of 0 to show up anyway
       subsum
     end
     # Calculate either a moving sum or the sum of each
@@ -59,13 +65,13 @@ module Compta::Controllers
     def calc_subsum( type, account, detail, depth )
       account.subsum =
         case type
-          when "abs"
-            get_subsum_abs( account, detail )
-          when "cumul"
-            get_subsum_cumul( account, detail )
-        end
-      if depth > 0 and account.accounts
-        account.accounts.each{|a|
+      when "abs"
+        get_subsum_abs( account, detail )
+      when "cumul"
+        get_subsum_cumul( account, detail )
+      end
+      if depth > 0 and account.accounts_nondeleted
+        account.accounts_nondeleted.each{|a|
           calc_subsum( type, a, detail, depth - 1 )
         }
       end
@@ -75,13 +81,42 @@ module Compta::Controllers
         input['type'], input['period'], input['account'], 
         input['year'], input['start'], input['depth'].to_i 
       
+      fillGlobal
+      @show_year = @start
+      if ( not @account_archive ) or 
+          ( @account_archive.accounts_nondeleted.select{|a|
+            a.name == @show_year
+          }.size == 0 )
+        @show_year = "Actual"
+      end
+      debug 1, "Year to show is #{@show_year}"
+      @accounts = []
+      if @show_year == "Actual"
+        @account_root.get_tree{|a|
+          @accounts.push a
+        }
+      else
+        @account_archive.accounts_nondeleted.select{|a|
+          debug 1, "Searching for year #{@show_year} in #{a.name}"
+          a.name == @show_year.to_s
+        }.first.get_tree{|a|
+          @accounts.push a
+        }
+      end
       if arg1
         @account = Account.find_by_id( arg1 )
+        if not @accounts.index( @account )
+          path = @account.path.gsub(/^Root::/, '')
+          path.gsub!(/^Archive::[^:]*(::)*/, '')
+          debug 1, "Changed year - searching account with path #{path}"
+          @account = @accounts.select{|a|
+            a.path =~ /#{path}$/
+          }.first
+        end
       else
-        @account = Account.find_all_by_account_id(0)[0]
+        @account = @accounts[0]
       end
       @movements = @account.movements
-      fillGlobal
       
       # Make a hashed array with the sub-accounts as key and the
       # months as index
@@ -93,15 +128,15 @@ module Compta::Controllers
       not @depth and @depth = 2
       
       case @period
-        when "year"
+      when "year"
         # Let's make a flag out of year
         @year = 0
         @last = 9999
         not @start and @start = Date.today.year.to_s
-        when "month"
+      when "month"
         @last = 12
         not @start and @start = Date.today.month.to_s
-        when "cweek"
+      when "cweek"
         # Well, this is trial and error and has something to do with
         # the commercial week. It gives the last cweek in a year.
         @last = Date.parse( "#{@year}-12-28" ).cweek
@@ -155,9 +190,9 @@ module Compta::Views
   end
   
   def print_link_type( t, a = @account, y = @year, 
-    s = @start, d = @depth )
+      s = @start, d = @depth )
     "/report/?type=#{t}&period=#{@period}&" +
-    "account=#{a.id}&year=#{y}&start=#{s}&depth=#{d}"
+      "account=#{a.id}&year=#{y}&start=#{s}&depth=#{d}"
   end
         
   def print_link(a, y = @year, s = @start, d = @depth )
@@ -166,8 +201,9 @@ module Compta::Views
   
   def get_accounts_depth( acc, depth )
     sub_accounts = [ [ acc, depth ] ]
-    if depth > 0 and acc.accounts
-      acc.accounts.each{|a|
+    if depth > 0 and acc.accounts_nondeleted
+      acc.accounts_nondeleted.sort{|a,b|
+        a.name <=> b.name }.each{|a|
         sub_accounts.concat( get_accounts_depth( a, depth - 1) )
       }
     end
@@ -179,11 +215,19 @@ module Compta::Views
       # Go home
       a "Home", :href => "/"
       b "-"
-      a "+++", :href => print_link( @account, @year, @start,
+      a "+", :href => print_link( @account, @year, @start,
+        @depth + 3 )
+      a "+", :href => print_link( @account, @year, @start,
+        @depth + 2 )
+      a "+", :href => print_link( @account, @year, @start,
         @depth + 1 )
       b "-"
-      a "---", :href => print_link( @account, @year, @start,
+      a "-", :href => print_link( @account, @year, @start,
         @depth - 1 )
+      a "-", :href => print_link( @account, @year, @start,
+        @depth - 2 )
+      a "-", :href => print_link( @account, @year, @start,
+        @depth - 3 )
       [ @start.to_i - 1, @start.to_i + 1 ].each{ |s|
         b "-"
         a s, :href => print_link( @account, s, s )
@@ -277,12 +321,12 @@ module Compta::Views
           td.money total.fix( 0, 3 )
         end
       }
-      @account.accounts.sort{|a,b| a.name <=> b.name}.
+      @account.accounts_nondeleted.sort{|a,b| a.name <=> b.name}.
         reverse.each {|acc|
         tr {
           td {
             a "+-#{acc.name}", 
-              :href => print_link( acc )
+            :href => print_link( acc )
           }
           # Show the 12 last months
           total = show_sum( acc.subsum )

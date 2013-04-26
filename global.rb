@@ -6,10 +6,36 @@ end
 module Compta::Controllers
   class GlobalClasses < R '/global/(.*)'
     def get(p)
-      arg1, @year, @start = p.split("/")
-      @movements = Movement.find :all
-      case arg1
-        when "date"
+      @sort, @year = p.split("/")
+      @movements = []
+      @year_list = ["Actual"]
+      if archives = Account.get_archive
+        @year_list += archives.accounts_nondeleted.collect{|a|
+          a.name
+        }.sort.reverse
+      end
+      
+      if not @year or @year == "Actual"
+        @year = "Actual"
+        Account.get_root.get_tree{|a|
+          @movements += a.movements
+        }
+      else
+        Account.get_archive.accounts_nondeleted.select{|a|
+          a.name == @year
+        }.first.get_tree{|a|
+          @movements += a.movements
+        }
+      end
+      @movements.uniq!
+      
+      case @sort
+      when "gid"
+        @movements.sort! {|a,b|
+          a.global_id.gsub(/.*-/, '') <=> b.global_id.gsub(/.*-/, '')
+        }
+      else
+        @sort = "date"
         puts "Sorting movements"
         @movements.sort! {|a,b|
           if a.date == b.date
@@ -23,6 +49,7 @@ module Compta::Controllers
           end
         }
       end
+      @movements.reverse!
       render :list
     end
   end
@@ -33,6 +60,13 @@ module Compta::Views
   def list
     h1 "Le grand livre"
     table :border => "1" do
+      sort_other = @sort == 'date' ? 'gid' : 'date'
+      a "Sort: #{sort_other}", :href => "/global/#{sort_other}/#{@year}"
+      b " -:- "
+      @year_list.each{|y|
+        a y, :href => "/global/#{@sort}/#{y}"
+        b "-"
+      }
       tr {
         td "Date"
         td "Description"

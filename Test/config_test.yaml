@@ -1,0 +1,26 @@
+StorageType:
+  CSV:
+    csv_dir: ./data2/
+
+#autologin: linus
+#autologin: admin
+
+title: "Gestion du Markas-al-Nour"
+
+log: events.log
+
+compta_due:
+  host: "http://localhost:3301"
+  user: "gestion"
+  pass: "gestion777"
+  src: "Emprunts::"
+  dst: "Entrés"
+
+StorageHandler:
+  Replace:
+      LDAP: CSV
+
+AfriCompta:
+  disabled: true
+
+DiplomaDir: Diplomas

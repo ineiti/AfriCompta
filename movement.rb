@@ -46,7 +46,7 @@ module Compta::Models
       debug 3, "self.value " + self.value.to_s + " - " + value.to_s
       self.value = 0
       self.account_src, self.account_dst = 
-      Account.find_by_id( source ), Account.find_by_id( dest )
+        Account.find_by_id( source ), Account.find_by_id( dest )
       if false
         # Do some date-magic, so that we can give either the day, day and month or
         # a complete date. The rest is filled up with todays date.
@@ -72,7 +72,7 @@ module Compta::Models
     def Movement.create( desc, date, value, source, dest )
       return nil if source == dest
       t = Movement.new( :value => 0, :account_src => Account.find_by_id(source),
-      :account_dst => Account.find_by_id(dest) )
+        :account_dst => Account.find_by_id(dest) )
       t.save
       t.global_id = User.find_by_name("local").full + "-" + t.id.to_s
       t.set( desc, date, value, source, dest )
@@ -81,9 +81,9 @@ module Compta::Models
     
     def to_s
       "#{desc}\r#{global_id}\t" + 
-      "#{value.to_s}\t#{date.to_s}\t" +
-      account_src.global_id.to_s + "\t" +
-      account_dst.global_id.to_s
+        "#{value.to_s}\t#{date.to_s}\t" +
+        account_src.global_id.to_s + "\t" +
+        account_dst.global_id.to_s
     end
     
     def to_json
@@ -128,23 +128,34 @@ module Compta::Controllers
   # MOVEMENT-related stuff
   #
   class MovementClasses < R '/movement/(.*)'
-    def fillGlobal
-      @accounts = Account.find :all
-      @accounts_root = Account.find_all_by_account_id( 0 )
+    def fillGlobal( show_year = "Actual" )
+      if show_year == "Actual"
+        @account_root = Account.get_root
+      else
+        @account_root = Account.get_archive.accounts.select{|a|
+          a.name == show_year
+        }.first
+      end
+      @show_year = show_year
+      debug 0, "Found root-account #{@account_root} for year #{@show_year}"
+      @accounts = []
+      @account_root.get_tree{|a| @accounts.push a }
+      @account_archive = Account.get_archive
+      @remote = Remote.first
       #      @account_lm = Account.find_by_id( 150 )
     end
     def movements_sort( arg )
       @sort = arg
       debug 0, "sorting movements according to #{arg.inspect}"
       case arg
-        when "account"
+      when "account"
         @movements.sort!{ |a,b|
           a.getOtherAccount(@account).name <=> b.getOtherAccount(@account).name
         }
-        when /value.*/
+      when /value.*/
         mult = ( arg == "valued" ? 1 : -1 ) * @account.multiplier
         @movements.sort!{ |a,b|
-         ( a.getValue(@account) <=> b.getValue(@account) ) * mult
+          ( a.getValue(@account) <=> b.getValue(@account) ) * mult
         }        
       else
         @movements.sort!{ |a,b|
@@ -155,7 +166,7 @@ module Compta::Controllers
     def get_dates( inp )
       if inp.date_from and inp.date_to
         @date_from, @date_to = 
-        Date.from_s( inp.date_from ), Date.from_s( inp.date_to )
+          Date.from_s( inp.date_from ), Date.from_s( inp.date_to )
         debug 0, "inp.date_from.length = #{inp.date_from.length}"
         if inp.date_from.length == 0
           @date_from = Date.from_s("1/1/1900")
@@ -170,36 +181,37 @@ module Compta::Controllers
       debug 4, "From: #{@date_from} to: #{@date_to}"
     end
     def get(p)
-      path, arg1, arg2 = p.split("/")
+      path, arg1, arg2, arg3 = p.split("/")
       @movement = Movement.new( :date => Time.now )
       debug 2, "input is #{input.inspect}"
-      if arg1
-        @account = Account.find_by_id( arg1 )
+      show_year = arg1 || "Actual"
+      if arg2
+        @account = Account.find_by_id( arg2 )
       else
         @account = Account.find_all_by_account_id(0)[0]
       end
       get_dates( input )
       @movements = @account.movements( @date_from, @date_to )
       case path
-        when "list"
+      when "list"
         if @movements[0]
           @movement.account_src = @movements[0].account_src
           @movement.account_dst = @movements[0].account_dst
         end
-        when "edit"
-        @movement = Movement.find_by_id( arg2 )
-        when "del"
-        mov = Movement.find_by_id( arg2 )
+      when "edit"
+        @movement = Movement.find_by_id( arg3 )
+      when "del"
+        mov = Movement.find_by_id( arg3 )
         @movements.delete(mov)
         mov.value = 0
         mov.new_index() 
         mov.save
-        when "inverse"
+      when "inverse"
         @movements.each{|m|
           m.account_src, m.account_dst = m.account_dst, m.account_src
           m.save
         }
-        when "get_sum"
+      when "get_sum"
         sum_c, sum_d = 0, 0
         @account.movements.to_a.each{|m|
           if m.account_src == @account
@@ -210,7 +222,7 @@ module Compta::Controllers
         }
         return ActiveSupport::JSON.encode( [ sum_d, sum_c, @account.multiplier ] )
       end
-      fillGlobal
+      fillGlobal( show_year )
       movements_sort( input["sort"] ) if input["sort"]
       render :movement_list
     end
@@ -221,7 +233,8 @@ module Compta::Controllers
       in_deb = eval input.debit.to_s
       credit = in_cred.to_f - in_deb.to_f
       account_src, account_dst = 
-      input.account_src, input.account_dst
+        input.account_src, input.account_dst
+      show_year = input.show_year || "Actual"
       @account = Account.find_by_id( account_src )
       if credit > 0
         account_src, account_dst = account_dst, account_src
@@ -230,34 +243,35 @@ module Compta::Controllers
       #      m = @account.movements[0]
       get_dates( input )
       debug 2, "For #{path} with #{arg}"
+
+      fillGlobal( show_year )
       case path
-        when "edit"
+      when "edit"
         mov = Movement.find_or_initialize_by_id( input.mid )
         mov.new_index()
         mov.set( input.desc, input.date, 
-                credit.abs, account_src, account_dst )
+          credit.abs, account_src, account_dst )
         debug 3, "Setting " + input.mid + " to " + credit.to_s
-        @movements = @account.movements( @date_from, @date_to )
-        when "add"
+      when "add"
         mov = Movement.create( input.desc, input.date, 
-                              credit.abs, account_src, account_dst )
+          credit.abs, account_src, account_dst )
         if arg == "silent"
           return nil
         end
-        @movements = @account.movements( @date_from, @date_to )
-        when "list"
+      when "list"
+        if not @accounts.index( @account )
+          @account = @account_root
+        end
         mov = @account.movements[0]
-        @movements = @account.movements( @date_from, @date_to )
-        when "multi"
+      when "multi"
         multi_mov = []
         @account.movements.each{|m|
           if input[m.id.to_s] == "on"
             multi_mov.push(m)
           end
         }
-        @movements = @account.movements( @date_from, @date_to )
         case input.action
-          when "move"
+        when "move"
           multi_mov.each{|m|
             debug 2, "Moving movement #{m.id} - #{m.desc}"
             value = m.value
@@ -273,14 +287,14 @@ module Compta::Controllers
             m.value = value.to_f
             m.save
           }
-          when "delete"
+        when "delete"
           multi_mov.each{|m|
             debug 2, "Deleting movement #{m.id}"
             m.value = 0
             m.new_index 
             m.save
           }
-          when "inverse"
+        when "inverse"
           multi_mov.each{|m|
             debug 2, "Inversing movement #{m.id}"
             value = m.value
@@ -292,14 +306,13 @@ module Compta::Controllers
           }
         end
         @account = Account.find_by_id( account_src )
-        @movements = @account.movements( @date_from, @date_to )
       end
       if not mov
         mov = Movement.new( :date => Date.today )
       end
+      @movements = @account.movements( @date_from, @date_to )
       @movement = Movement.new( :date => mov.date,
-                               :account_dst => mov.account_dst, :account_src => mov.account_src )
-      fillGlobal
+        :account_dst => mov.account_dst, :account_src => mov.account_src )
       movements_sort( input["sort"] ) if input["sort"]
       render :movement_list
     end
@@ -320,17 +333,17 @@ module Compta::Views
       else
         acc, cred = m.account_src, value
       end
-      cred_deb = "<td><a href='/movement/list/#{acc.id}'>"+
-                  "#{acc.name}</a></td>" +
-                  "<td class='money'>#{cred}</td><td class='money'>#{deb}</td>"
-      args = account.id.to_s + "/" + m.id.to_s
+      cred_deb = "<td><a href='/movement/list/#{@show_year}/#{acc.id}'>"+
+        "#{acc.name}</a></td>" +
+        "<td class='money'>#{cred}</td><td class='money'>#{deb}</td>"
+      args = "#{@show_year}/#{account.id.to_s}/#{m.id.to_s}"
       text("<tr><td><input type=checkbox name=#{m.id}></td>"+
-                    "<td>#{m.date.to_s_eu}</td>" +
-                    "<td>#{m.desc}</td>#{cred_deb}" +
-                    "<td><a href=\"/movement/edit/#{args}\">edit</a> " +
-                    "<a href=\"/movement/del/#{args}\">del</a></td>" +
-                    "<td>#{total.fix(0,3)}</td>" +
-                    "</tr>" )
+          "<td>#{m.date.to_s_eu}</td>" +
+          "<td>#{m.desc}</td>#{cred_deb}" +
+          "<td><a href=\"/movement/edit/#{args}\">edit</a> " +
+          "<a href=\"/movement/del/#{args}\">del</a></td>" +
+          "<td>#{total.fix(0,3)}</td>" +
+          "</tr>" )
       if m.account_src == account
         total += m.value.to_f * account.multiplier
       else
@@ -351,7 +364,7 @@ module Compta::Views
                 current.checked = ! current.checked;
               } }" do "Inv" end
       
-      url = "/movement/list/#{@account.id}?date_from=#{@date_from}&date_to=#{@date_to}&sort="
+      url = "/movement/list/#{@show_year}/#{@account.id}?date_from=#{@date_from}&date_to=#{@date_to}&sort="
       td { a "Date", :href => "#{url}date" }
       td { a "Description", :href => "#{url}desc" }
       td { a "Account", :href => "#{url}account" }
@@ -371,21 +384,34 @@ module Compta::Views
     if acc.account
       str = str + name_rec( acc.account, str ) + "::"
     end
-    str += "<a href='/movement/list/#{acc.id}'>#{acc.name}</a>"
+    str += "<a href='/movement/list/#{@show_year}/#{acc.id}'>#{acc.name}</a>"
   end
   def sum_accounts( acc )
     ret = acc.total.to_f
-    acc.accounts.to_a.each{ |a|
+    acc.accounts_nondeleted.to_a.each{ |a|
       ret += sum_accounts( a )
     }
     ret
   end
   def list_accounts( name, selected )
     select :name => name, :size => "1" do
-      list_sub( @accounts_root.to_a ){ |acc, str|
+      list_sub( [@account_root] ){ |acc, str|
         sel = ( acc == selected ? " selected" : "" ) 
         text( "<option value=\"#{acc.id.to_s}\"#{sel}>" +
-                    "#{str}</option>" )
+            "#{str}</option>" )
+      }
+    end
+  end
+  def list_years
+    select :name => :show_year, :size => "1" do
+      years = %w( Actual )
+      if @account_archive
+        years += @account_archive.accounts.collect{|a| a.name}
+      end
+      years.sort.reverse.each{|a|
+        text( "<option value=\"#{a}\"#{a == @show_year ? ' selected' : ''}>" +
+            "#{a}</option>" )
+        
       }
     end
   end
@@ -397,19 +423,22 @@ module Compta::Views
         a "Home", :href => "/"
         b "-"
         a "Accounts", :href => "/account/list"
-        b "-"
-        a "Merge with base", :href => "/remote/merge/1"
+        if @remote
+          b "-"
+          a "Merge with base", :href => "/remote/merge/#{@remote.id}"
+        end
         td :align => "center" do
           text( "<h1>#{ name_rec( @account ) }</h1>" )
           p {
-            @account.accounts.each{ |a|
-              a a.name, :href => "/movement/list/#{a.id}"
+            @account.accounts_nondeleted.each{ |a|
+              a a.name, :href => "/movement/list/#{@show_year}/#{a.id}"
             }
           }
           # List of accounts
           perf_mov.timer_start
           
           form :action => "/movement/list", :method => "post" do
+            list_years
             list_accounts( "account_src", @account )
             input :type => 'text', :name => "date_from", :size => "10", :value => @date_from.to_s_eu
             input :type => 'text', :name => "date_to", :size => "10", :value => @date_to.to_s_eu
@@ -452,6 +481,7 @@ module Compta::Views
                 td { input :type => "text", :name => "debit", :size => "10",
                   :value => debit }
                 input :type => 'hidden', :name => "account_src", :value => @account.id
+                input :type => 'hidden', :name => "show_year", :value => @show_year
                 submit = "New movement"
                 if not @movement.new_record?
                   input :type => 'hidden', :name => "mid", 
@@ -490,6 +520,7 @@ module Compta::Views
                   :onclick => "document.multi.action.value='inverse'"
                   input :type => 'hidden', :name => "account_src", :value => @account.id
                   input :type => 'hidden', :name => "action", :value => "none"
+                  input :type => 'hidden', :name => "show_year", :value => @show_year
                 end
               }
               perf_mov.timer_read("Total time for page: ", false)
@@ -501,7 +532,9 @@ module Compta::Views
     a "Home", :href => "/"
     b "-"
     a "Accounts", :href => "/account/list"
-    b "-"
-    a "Merge with base", :href => "/remote/merge/1"
+    if @remote
+      b "-"
+      a "Merge with base", :href => "/remote/merge/#{@remote.id}"
+    end
   end
 end

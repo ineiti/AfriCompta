@@ -8,7 +8,7 @@ require 'md5'
 
 # 4bits for each version: major-minor-revision-patch
 # Patch is usually not needed.
-@VERSION=0x0940
+$VERSION=0x1010
 
 Camping.goes :Compta
 # Have some nice HTML-output
@@ -226,8 +226,8 @@ module Compta::Models
       # TODO: check why this doesn't work with a new database -> rm .camping*
       if not User.find_by_name('local')
         User.create( "local", 
-        MD5::md5( ( rand 2**128 ).to_s ).to_s,
-        rand( 2 ** 128 ).to_s )
+          MD5::md5( ( rand 2**128 ).to_s ).to_s,
+          rand( 2 ** 128 ).to_s )
       end
       User.find( :all ).each{ |u|
         u.account_index = account_index
@@ -247,6 +247,27 @@ module Compta::Models
         r.account_index = account_index - 1
         r.movement_index = movement_index - 1
         r.save
+      }
+    end
+  end
+
+  # Adding a "deleted" field to accounts, so they get correctly
+  # updatede once they're gone
+  # Also add a "keep_total" field that makes the sum for that account be
+  # reported from one year to another
+  class CreateCompta03 < V 0.4
+    def self.up
+      # Add "deleted" field to accounts
+      add_column :compta_accounts, :deleted, :boolean
+      add_column :compta_accounts, :keep_total, :boolean
+      
+      Account.find( :all ).each{ |acc|
+        acc.deleted = false
+        # As most of the accounts in Cash have -1 and shall be kept, this
+        # gives a good first initialisation
+        acc.keep_total = acc.multiplier == -1
+        debug 3, "Account #{acc.path} has keep_total of #{acc.keep_total.inspect}"
+        acc.save
       }
     end
   end
@@ -270,8 +291,10 @@ module Compta::Views
       a.name <=> b.name
     }
     accs.each{ |a|
-      yield a, indent + a.name # + ", id: " + a.id.to_s + ", parent-account: " + a.account_id.to_s
-      list_sub( a.accounts, indent + "+" ){ |a, s| yield a, s }
+      if not a.deleted
+        yield a, indent + a.name # + ", id: " + a.id.to_s + ", parent-account: " + a.account_id.to_s
+        list_sub( a.accounts, indent + "+" ){ |a, s| yield a, s }
+      end
     }
   end
     
@@ -282,7 +305,7 @@ module Compta::Views
       html do
         head do
           style :type => "text/css", :media => "screen" do
-          %[
+            %[
 body {
  background-color:#55ff55;
 }
@@ -311,7 +334,7 @@ td.money {
   text-align: right;
   font-family: monospace
 }
-          ]
+            ]
           end
           style :type => "text/css", :media => "print" do
             %[
@@ -348,10 +371,11 @@ def index
   ul {
     li { a "Movements", :href => "/movement/list" }
     li { a "Comptes", :href => "/account/list" }
-    li { a "Salaires", :href => "/salary/list" }
+    #li { a "Salaires", :href => "/salary/list" }
     li { a "Grand livre", :href => "/global/list"}
     li { a "Utilisateurs", :href => "/user/list" }
-    li { a "Employées", :href => "/employee/list" }
+    #li { a "Employées", :href => "/employee/list" }
+    li { a "Destinations", :href => "/remote/list" }
   }
   h2 "Rapports"
   ul {
@@ -368,16 +392,15 @@ def index
       end
     }
   }
-  h2 "Ajouter"
-  ul {
-    li { a "un compte", :href => "/account/add" }
-    li { a "un utilisateur", :href => "/user/add" }
-    li { a "une destination", :href => "/remote/add" }
-    li { a "un employée", :href => "/employee/add" }
-  }
+  #h2 "Ajouter"
+  #ul {
+  #  li { a "un compte", :href => "/account/add" }
+  #  li { a "un utilisateur", :href => "/user/add" }
+  #  li { a "une destination", :href => "/remote/add" }
+  #  li { a "un employée", :href => "/employee/add" }
+  #}
   h2 "Suppléments"
   ul {
-    li { a "Destinations", :href => "/remote/list" }
     li { a "ranger un peu", :href => "/admin/clean"}
   }
 end

@@ -11,7 +11,7 @@ module Compta::Controllers
       debug 2, "Doing printMovements from #{start.class} to #{stop.class}"
       ret = ""
       Movement.find(:all, :conditions => 
-      {:index => start..stop } ).each{ |m|
+          {:index => start..stop } ).each{ |m|
         if start > 0
           debug 4, "Mer: Movement #{m.desc}, #{m.value}"
         end
@@ -33,14 +33,14 @@ module Compta::Controllers
       u_local = User.find_by_name('local')
       if not ( u and u.pass == pass )
         return "User " + user + " not known with pass " +
-        pass
+          pass
       end
       case path
         
         # Gets all accounts available (to that user) that have been changed
         # since the last update, again, do it from the root(s), else we have
         # a problem for children without parents
-        when /accounts_get(.*)/
+      when /accounts_get(.*)/
         ret = ""
         debug 2, "user index is: #{u.account_index}"
         # Returns only one account
@@ -62,7 +62,7 @@ module Compta::Controllers
         return ret
         
         # Gets all movements (for the accounts of that user)
-        when /movements_get(.*)/
+      when /movements_get(.*)/
         debug 2, "movements_get#{$1}"
         start, stop = u.movement_index + 1, u_local.movement_index - 1
         # Returns only one account
@@ -77,14 +77,19 @@ module Compta::Controllers
         debug 3, "Sending:\n #{ret}"
         return ret
         
-        when "version"
-        return @VERSION.to_s
+      when "version"
+        return $VERSION.to_s
         
-        when "index"
+      when "index"
         return [ u_local.account_index, u_local.movement_index ].join(",")
         
-        when "users_get"
+      when "users_get"
         return User.find(:all).join("/")
+        
+      when "reset_user_indexes"
+        u.update_account_index
+        u.update_movement_index
+        return ""
       end
     end
     
@@ -94,11 +99,11 @@ module Compta::Controllers
       if not (  u and u.pass == input.pass )
         debug 0, "Didn't find user #{user}"
         return "User " + user + " not known with pass " +
-        pass
+          pass
       end
       case path
         # Retrieves id of the path of the account
-        when /account_get_id/
+      when /account_get_id/
         debug 2, "account_get_id with path #{input.account}"
         Account.find(:all).to_a.each{|a|
           if a.global_id and a.path =~ /#{input.account}/
@@ -109,7 +114,7 @@ module Compta::Controllers
         debug 2, "didn't find anything"
         return nil
 
-        when "movements_put"
+      when "movements_put"
         debug 3, "Going to put some movements"
         movs = ActiveSupport::JSON.decode( input.movements )
         if movs.size > 0
@@ -119,15 +124,15 @@ module Compta::Controllers
             u.update_movement_index
           }
         end
-        when "movement_delete"
+      when "movement_delete"
         debug 3, "Going to delete movement"
         Movement.find_by_global_id( input.global_id ).delete
-        when "account_put"
+      when "account_put"
         debug 3, "Going to put account"
         acc = Account.from_s( input.account )
         u.update_account_index
         debug 2, "Saved account #{acc.global_id}"
-        when "account_delete"
+      when "account_delete"
         debug 3, "Going to delete account"
         Account.find_by_global_id( input.global_id ).delete
       end
