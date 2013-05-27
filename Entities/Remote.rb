@@ -18,12 +18,12 @@ end
 
 class Remote < Entity
   def update_movement_index
-    self.movement_index = Users.find_by_name('local').movement_index - 1
+    self.movement_index = Users.match_by_name('local').movement_index - 1
     self.save
   end
 
   def update_account_index
-    self.account_index = Users.find_by_name('local').account_index - 1
+    self.account_index = Users.match_by_name('local').account_index - 1
     self.save
   end
 end

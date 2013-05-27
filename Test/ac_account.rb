@@ -11,12 +11,12 @@ class TC_AfriCompta < Test::Unit::TestCase
     SQLite.dbs_open_load_migrate
     
     dputs(0){"And searching for some accounts"}
-    @root = Accounts.find_by_name( "Root" )
-    @cash = Accounts.find_by_name( "Cash" )
-    @lending = Accounts.find_by_name( "Lending" )
-    @income = Accounts.find_by_name( "Income" )
-    @outcome = Accounts.find_by_name( "Outcome" )
-    @local = Users.find_by_name( 'local' )
+    @root = Accounts.match_by_name( "Root" )
+    @cash = Accounts.match_by_name( "Cash" )
+    @lending = Accounts.match_by_name( "Lending" )
+    @income = Accounts.match_by_name( "Income" )
+    @outcome = Accounts.match_by_name( "Outcome" )
+    @local = Users.match_by_name( 'local' )
   end
 
   def teardown

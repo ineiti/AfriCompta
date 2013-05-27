@@ -24,15 +24,15 @@ class Movements < Entities
     #date = Time.parse(date).to_ss
     date = Date.strptime(date, "%Y-%m-%d" )
     value = value.to_f
-    a_src = Accounts.find_by_global_id( src )
-    a_dst = Accounts.find_by_global_id( dst )
+    a_src = Accounts.match_by_global_id( src )
+    a_dst = Accounts.match_by_global_id( dst )
     if not a_src or not a_dst
       dputs( 0 ){ "error: didn't find " + src.to_s + " or " + dst.to_s }
       return [ -1, nil ]
     end
     # Does the movement already exist?
     our_m = nil
-    if not ( our_m = self.find_by_global_id(global_id) )
+    if not ( our_m = self.match_by_global_id(global_id) )
       dputs( 3 ){ "New movement" }
       our_m = self.create( desc, date, value, 
         a_src, a_dst )
@@ -52,7 +52,7 @@ class Movements < Entities
       :account_src_id => source.id, :account_dst_id => dest.id )
     t.save
     t.value = value
-    t.global_id = Users.find_by_name("local").full + "-" + t.id.to_s
+    t.global_id = Users.match_by_name("local").full + "-" + t.id.to_s
     t.new_index
     dputs( 4 ){ t.to_json }
     t
@@ -63,12 +63,12 @@ end
 
 class Movement < Entity
   def new_index()
-    u_l = Users.find_by_name('local')
+    u_l = Users.match_by_name('local')
     self.index = u_l.movement_index
     u_l.movement_index += 1
     u_l.save
     dputs( 3 ){ "index is #{self.index} and date is --#{self.date}--" }
-    dputs( 3 ){ "User('local').index is: " + Users.find_by_name('local').movement_index.to_s }
+    dputs( 3 ){ "User('local').index is: " + Users.match_by_name('local').movement_index.to_s }
   end
     
   def get_index()

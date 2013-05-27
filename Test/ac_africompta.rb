@@ -12,11 +12,11 @@ class TC_AfriCompta < Test::Unit::TestCase
     SQLite.dbs_open_load_migrate
 
     dputs(0){"And searching for some accounts"}
-    @root = Accounts.find_by_name( "Root" )
-    @cash = Accounts.find_by_name( "Cash" )
-    @income = Accounts.find_by_name( "Income" )
-    @outcome = Accounts.find_by_name( "Outcome" )
-    @local = Users.find_by_name( 'local' )
+    @root = Accounts.match_by_name( "Root" )
+    @cash = Accounts.match_by_name( "Cash" )
+    @income = Accounts.match_by_name( "Income" )
+    @outcome = Accounts.match_by_name( "Outcome" )
+    @local = Users.match_by_name( 'local' )
   end
 
   def teardown
@@ -135,7 +135,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 	
   def test_mov
     # Test all methods copied into Movements
-    mov = Movements.find_by_desc( "Train" )
+    mov = Movements.match_by_desc( "Train" )
 		
     assert_equal 40, mov.value
     assert_equal "Train\r5544436cf81115c6faf577a7e2307e92-3\t40.0\t2012-07-02\t" + 
@@ -337,7 +337,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 	
   def test_users
     Users.create( "foo2", "foo foo", "foo2bar" )
-    foo = Users.find_by_name( "foo2" )
+    foo = Users.match_by_name( "foo2" )
     assert_equal "foo foo", foo.full
     assert_equal "foo2bar", foo.pass
     assert_equal 0, foo.movement_index
@@ -450,26 +450,26 @@ class TC_AfriCompta < Test::Unit::TestCase
           [{ :str => mov_pizza }.to_json, { :str => mov_panini }.to_json].to_json))
     assert_equal "ok", rep
 
-    mov_pizza_merged = Movements.find_by_desc( 'Pizza' )
+    mov_pizza_merged = Movements.match_by_desc( 'Pizza' )
     assert_equal 12.0, mov_pizza_merged.value
-    mov_panini_merged = Movements.find_by_desc( 'Panini' )
+    mov_panini_merged = Movements.match_by_desc( 'Panini' )
     assert_equal 14.0, mov_panini_merged.value
     assert_equal( -86.0, @outcome.total )
     assert_equal 1014.0, @cash.total
 		
     Entities.Movements.load
-    mov_pizza_merged = Movements.find_by_desc( 'Pizza' )
+    mov_pizza_merged = Movements.match_by_desc( 'Pizza' )
     assert_equal "2012-07-20", mov_pizza_merged.date.to_s
-    mov_panini_merged = Movements.find_by_desc( 'Panini' )
+    mov_panini_merged = Movements.match_by_desc( 'Panini' )
     assert_equal "2012-07-21", mov_panini_merged.date.to_s
 
     rep = ACaccess.post( 'movements_put', input.merge( 'movements' => 
           [{ :str => mov_pizza.sub("12.0", "22.0") }.to_json, 
           { :str => mov_panini.sub("14.0", "24.0") }.to_json].to_json))
     assert_equal "ok", rep
-    mov_pizza_merged = Movements.find_by_desc( 'Pizza' )
+    mov_pizza_merged = Movements.match_by_desc( 'Pizza' )
     assert_equal 22.0, mov_pizza_merged.value
-    mov_panini_merged = Movements.find_by_desc( 'Panini' )
+    mov_panini_merged = Movements.match_by_desc( 'Panini' )
     assert_equal 24.0, mov_panini_merged.value
 
   end
@@ -625,15 +625,15 @@ class TC_AfriCompta < Test::Unit::TestCase
   def test_archive_sum_up
     # Make sure that everything still sums up
     setup_clean_accounts
-    assert_equal( 0, Accounts.find_by_name( "Spending" ).total )
+    assert_equal( 0, Accounts.match_by_name( "Spending" ).total )
     add_movs
-    assert_equal( 0, Accounts.find_by_name( "Spending" ).total )
+    assert_equal( 0, Accounts.match_by_name( "Spending" ).total )
     Movements.create( "Year 2012 - 1", "2012-06-01", 20, @spending, @cash )
     
-    assert_equal( -20, Accounts.find_by_name( "Spending" ).total )
-    assert_equal( 40, Accounts.find_by_name( "Cash" ).total )
+    assert_equal( -20, Accounts.match_by_name( "Spending" ).total )
+    assert_equal( 40, Accounts.match_by_name( "Cash" ).total )
     @cash.update_total
-    assert_equal( 40, Accounts.find_by_name( "Cash" ).total )
+    assert_equal( 40, Accounts.match_by_name( "Cash" ).total )
 
     dputs(0){"**** - Archiving for 2012 - *****"}
     Accounts.archive( 6, 2012 )

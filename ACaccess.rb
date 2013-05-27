@@ -46,8 +46,8 @@ class ACaccess < RPCQooxdooPath
     user, pass = id.split(",")
       
     dputs( 1 ){ "get-merge-path #{path} - #{arg} with user #{user} and pass #{pass}" }
-    u = Users.find_by_name( user )
-    u_local = Users.find_by_name('local')
+    u = Users.match_by_name( user )
+    u_local = Users.match_by_name('local')
     if not ( u and u.pass == pass )
       return "User " + user + " not known with pass " +
         pass
@@ -62,7 +62,7 @@ class ACaccess < RPCQooxdooPath
       dputs( 2 ){ "user index is: #{u.account_index}" }
       # Returns only one account
       if $1 == "_one"
-        return Accounts.find_by_global_id( arg ).to_s
+        return Accounts.match_by_global_id( arg ).to_s
       end
       if $1 == "_all"
         dputs( 2 ){ "Putting all accounts" }
@@ -99,7 +99,7 @@ class ACaccess < RPCQooxdooPath
       start, stop = u.movement_index + 1, u_local.movement_index - 1
       # Returns only one account
       if $1 == "_one"
-        return Movements.find_by_global_id( arg ).to_s
+        return Movements.match_by_global_id( arg ).to_s
       end
       if $1 == "_all"
         start, stop = arg.split(/,/)
@@ -127,7 +127,7 @@ class ACaccess < RPCQooxdooPath
     dputs( 1 ){ "post-merge-path #{path} with user #{input['user']} " +
         "and pass #{input['pass']}" }
     user, pass = input['user'], input['pass']
-    u = Users.find_by_name( user )
+    u = Users.match_by_name( user )
     if not ( u and u.pass == pass )
       dputs( 0 ){ "Didn't find user #{user}" }
       return "User " + user + " not known with pass " +
@@ -156,7 +156,7 @@ class ACaccess < RPCQooxdooPath
       end
     when "movement_delete"
       dputs( 3 ){ "Going to delete movement" }
-      mov = Movements.find_by_global_id( input['global_id'] )
+      mov = Movements.match_by_global_id( input['global_id'] )
       dputs(3){"Found movement #{mov.inspect}" }
       mov and mov.delete
       dputs(3){"Finished deleting"}
@@ -167,7 +167,7 @@ class ACaccess < RPCQooxdooPath
       dputs( 2 ){ "Saved account #{acc.global_id}" }
     when "account_delete"
       dputs( 3 ){ "Going to delete account" }
-      Accounts.find_by_global_id( input['global_id'] ).delete( true )
+      Accounts.match_by_global_id( input['global_id'] ).delete( true )
     end
     return "ok"
   end

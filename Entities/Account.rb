@@ -103,7 +103,7 @@ class Accounts < Entities
     a.total = 0
     a.new_index
     if global_id == ""
-      a.global_id = Users.find_by_name('local').full + "-" + a.id.to_s
+      a.global_id = Users.match_by_name('local').full + "-" + a.id.to_s
     end
     a.save
     dputs( 2 ){ "Created account #{a.path_id}" }
@@ -148,16 +148,16 @@ class Accounts < Entities
     dputs( 3 ){ "Here comes the account: " + global_id.to_s }
     dputs( 5 ){ "par: #{par}" }
     if par
-      parent = Accounts.find_by_global_id( par )
+      parent = Accounts.match_by_global_id( par )
       dputs( 5 ){ "parent: #{parent.global_id}" }
     end
     dputs( 3 ){ "global_id: #{global_id}" }
     # Does the account already exist?
     our_a = nil
     pid = par ? parent.id : 0
-    if not ( our_a = Accounts.find_by_global_id(global_id) )
+    if not ( our_a = Accounts.match_by_global_id(global_id) )
       # Create it
-      our_a = Accounts.create( name, desc, Accounts.find_by_id( par ), global_id )
+      our_a = Accounts.create( name, desc, Accounts.match_by_id( par ), global_id )
     end
     # And update it
     our_a.deleted = deleted
@@ -342,7 +342,7 @@ class Accounts < Entities
       now.month < month_start and this_year -= 1
     end
 		
-    root = self.find_by_name( 'Root' )
+    root = self.match_by_name( 'Root' )
     if only_account
       root = only_account
     else
@@ -352,7 +352,7 @@ class Accounts < Entities
       end
     end
 		
-    archive = self.find_by_name( 'Archive' )
+    archive = self.match_by_name( 'Archive' )
     if not archive
       archive = self.create( 'Archive' )
     end
@@ -523,7 +523,7 @@ class Account < Entity
   end
     
   def new_index()
-    u_l = Users.find_by_name('local')
+    u_l = Users.match_by_name('local')
     self.index = u_l.account_index
     u_l.account_index += 1
     u_l.save
@@ -553,7 +553,7 @@ class Account < Entity
       self.total = 0
       # We need to save so that we have an id...
       save
-      self.global_id = User.find_by_name('local').full + "-" + self.id.to_s
+      self.global_id = User.match_by_name('local').full + "-" + self.id.to_s
     end
     self.name, self.desc, self.account_id, self.keep_total = 
       name, desc, parent, keep_total
@@ -656,7 +656,7 @@ class Account < Entity
 	
   # This is the parent account
   def account
-    Accounts.find_by_id( self.account_id )
+    Accounts.match_by_id( self.account_id )
   end
 	
   def account= ( a )
