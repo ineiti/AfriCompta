@@ -42,7 +42,6 @@ class Movements < Entities
       # And update it
       our_m.set( desc, date, value, a_src.id, a_dst.id )
     end
-    our_m.save
     return our_m
   end
 
@@ -50,7 +49,6 @@ class Movements < Entities
     return nil if source == dest
     t = super( :desc => desc, :date => date, :value => 0, 
       :account_src_id => source.id, :account_dst_id => dest.id )
-    #t.save
     t.value = value
     t.global_id = Users.match_by_name("local").full + "-" + t.id.to_s
     t.new_index
@@ -66,7 +64,6 @@ class Movement < Entity
     u_l = Users.match_by_name('local')
     self.index = u_l.movement_index
     u_l.movement_index += 1
-    #u_l.save
     dputs( 3 ){ "index is #{self.index} and date is --#{self.date}--" }
     dputs( 3 ){ "User('local').index is: " + Users.match_by_name('local').movement_index.to_s }
   end
@@ -85,8 +82,6 @@ class Movement < Entity
       diff = value.to_f - v
       account_src.total = account_src.total.to_f + ( diff * account_src.multiplier )
       account_dst.total = account_dst.total.to_f - ( diff * account_dst.multiplier )
-      #account_src.save
-      #account_dst.save
     end
     data_set_log( :_value, v, @proxy.msg, @proxy.undo, @proxy.logging )
   end
@@ -122,9 +117,8 @@ class Movement < Entity
       self.date = Date.from_s(date.to_s)
     end
     self.desc, self.value = desc, value
-    dputs( 4 ){ "Going to save" }
+    dputs( 4 ){ "Getting new index" }
     self.new_index()
-    #save
     dputs( 4 ){ "Date " + self.date.to_s }
   end
     

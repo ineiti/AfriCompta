@@ -28,11 +28,9 @@ end
 class User < Entity
   def update_movement_index
     self.movement_index = Users.match_by_name('local').movement_index - 1
-    save
   end
     
   def update_account_index
     self.account_index = Users.match_by_name('local').account_index - 1
-    save
   end
 end
