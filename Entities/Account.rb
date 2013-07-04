@@ -36,12 +36,12 @@ class AccountRoot
     if count_mov > u_l.movement_index
       dputs(0){ "Error, there is a bigger movement! Fixing" }
       u_l.movement_index = count_mov + 1
-      u_l.save
+      #u_l.save
     end
     if count_acc > u_l.account_index
       dputs(0){ "Error, there is a bigger account! Fixing" }
       u_l.account_index = count_acc + 1
-      u_l.save
+      #u_l.save
     end
     return [ count_mov, bad_mov, count_acc, bad_acc ]
   end
@@ -105,7 +105,7 @@ class Accounts < Entities
     if global_id == ""
       a.global_id = Users.match_by_name('local').full + "-" + a.id.to_s
     end
-    a.save
+    #a.save
     dputs( 2 ){ "Created account #{a.path_id}" }
     a
   end
@@ -163,7 +163,7 @@ class Accounts < Entities
     our_a.deleted = deleted
     our_a.set_nochildmult( name, desc, pid, multiplier, [], keep_total )
     our_a.global_id = global_id
-    our_a.save
+    #our_a.save
     dputs( 2 ){ "Saved account #{name} with index #{our_a.index} and global_id #{our_a.global_id}" }
     return our_a
   end
@@ -526,7 +526,7 @@ class Account < Entity
     u_l = Users.match_by_name('local')
     self.index = u_l.account_index
     u_l.account_index += 1
-    u_l.save
+    #u_l.save
     dputs( 3 ){ "Index for account #{name} is #{index}" }
   end
 	
@@ -552,7 +552,8 @@ class Account < Entity
       dputs( 4 ){ "New record in nochildmult" }
       self.total = 0
       # We need to save so that we have an id...
-      save
+      #save
+      new_index
       self.global_id = User.match_by_name('local').full + "-" + self.id.to_s
     end
     self.name, self.desc, self.account_id, self.keep_total = 
@@ -563,13 +564,13 @@ class Account < Entity
     self.keep_total = keep_total
     update_total
     new_index
-    save
+    #save
   end
   def set( name, desc, parent, multiplier = 1, users = [], keep_total = false )
     set_nochildmult( name, desc, parent, multiplier, users, keep_total )
     # All descendants shall have the same multiplier
     set_child_multiplier_total( multiplier, total )
-    save
+    #save
   end
     
   # Sort first regarding inverse date (newest first), then description, 
@@ -633,7 +634,7 @@ class Account < Entity
     dputs( 3 ){ "Setting multiplier from #{name} to #{m} and keep_total to #{t}" }
     self.multiplier = m
     self.keep_total = t
-    save
+    #save
     return if not accounts
     accounts.each{ |acc|
       acc.set_child_multiplier_total( m, t )
@@ -680,7 +681,7 @@ class Account < Entity
   end
   
   def multiplier
-    data_get(:multiplier).to_i
+    _multiplier.to_i
   end
   
   def delete( force = false )
