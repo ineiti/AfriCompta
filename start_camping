@@ -1,0 +1,12 @@
+#!/bin/bash
+LOG=$1
+shift
+if which unbuffer > /dev/null; then
+  PRE="unbuffer"
+elif which stdbuf > /dev/null; then
+  PRE="stdbuf -i0 -o0 -e0"
+else
+  PRE=""
+fi
+
+$PRE ./camping $@ compta.rb > $LOG

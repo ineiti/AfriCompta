@@ -5,6 +5,7 @@ else
   P=$HOME
   DB=.camping.db
 fi
+mkdir -p Backups
 NAME=Backups/camping-$DB-1.0.1-`date +%Y-%m-%d_%H.%M`.tgz
 tar -C $P -cvzf $NAME $DB
 echo Backupped to $NAME

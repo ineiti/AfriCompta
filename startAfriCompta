@@ -28,11 +28,13 @@ fi
 # Closing old instance
 pkill -9 -f compta.rb
 
+mkdir -p Log
+LOGFILE=Log/$( date +%y%m%d-%H%M%S ).log
 # Starting either in konsole-mode or in nohup
 if [ "$OUT" = "std" ]; then
   ./camping $ARGS compta.rb &
 else
-  nohup ./camping $ARGS compta.rb &
+  nohup ./start_camping $LOGFILE $ARGS &
 fi
 
 # Depending on where we are, "open" or "firefox"
