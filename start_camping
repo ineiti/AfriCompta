@@ -5,8 +5,11 @@ if which unbuffer > /dev/null; then
   PRE="unbuffer"
 elif which stdbuf > /dev/null; then
   PRE="stdbuf -i0 -o0 -e0"
+elif which script > /dev/null; then
+  PRE="script -q /dev/null"
 else
   PRE=""
 fi
 
-$PRE ./camping $@ compta.rb > $LOG
+echo Using $PRE for unbuffering > $LOG
+$PRE ./camping $@ compta.rb >> $LOG
