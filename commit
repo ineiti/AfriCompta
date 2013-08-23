@@ -1,14 +1,21 @@
 #!/bin/bash
+
+git_func(){
+  if [ "$( which git 2>/dev/null )" ]; then
+    git "$@"
+  fi
+}
+
 for a in Gestion QooxView AfriCompta LibNet; do
   echo Doing $a
   cd ../$a
   if [ ! "$1" ]; then
     hg diff
     hg st
-    git status
+    git_func status
     echo
   else
     hg commit -m "$@"
-    git commit -a -m "$@"
+    git_func commit -a -m "$@"
   fi
 done
