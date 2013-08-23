@@ -64,13 +64,15 @@ class Float
   end
 end
 
-require 'ACaccess'
-Dir[File.dirname(__FILE__) + "/Entities/*.rb"].each{|f| 
-  require(f)
-  dputs( 2 ){ "Adding #{f}" }
-}
-
 module ACQooxView
+  def self.load_entities
+    require 'ACaccess'
+    Dir[File.dirname(__FILE__) + "/Entities/*.rb"].each{|f| 
+      require(f)
+      dputs( 2 ){ "Adding #{f}" }
+    }
+  end
+
   def self.check_db
     if Users.search_by_name( 'local' ).count == 0
       Users.create( 'local', MD5::md5( ( rand 2**128 ).to_s ).to_s,
