@@ -2,7 +2,12 @@
 #
 # What follows are some definitions used by other modules
 
-require 'md5'
+# For ruby 2.0 comptability
+begin
+  require 'rack/auth/digest/md5'
+rescue LoadError
+  require 'md5'
+end
 
 # We want a simple time-print
 class Time
