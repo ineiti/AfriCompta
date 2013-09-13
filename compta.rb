@@ -4,7 +4,7 @@ require 'camping'
 #require 'camping/db'
 require 'net/http'
 require 'markaby'
-require 'md5'
+require 'digest/md5'
 
 # 4bits for each version: major-minor-revision-patch
 # Patch is usually not needed.
@@ -165,7 +165,7 @@ module Compta::Models
       end
       
       #      User.create_v01( "local", 
-      #      MD5::md5( ( rand 2**128 ).to_s ).to_s,
+      #      Digest::MD5.hexdigest( ( rand 2**128 ).to_s ).to_s,
       #      rand( 2 ** 128 ).to_s )
     end
   end
@@ -226,7 +226,7 @@ module Compta::Models
       # TODO: check why this doesn't work with a new database -> rm .camping*
       if not User.find_by_name('local')
         User.create( "local", 
-          MD5::md5( ( rand 2**128 ).to_s ).to_s,
+          Digest::MD5.hexdigest( ( rand 2**128 ).to_s ).to_s,
           rand( 2 ** 128 ).to_s )
       end
       User.find( :all ).each{ |u|

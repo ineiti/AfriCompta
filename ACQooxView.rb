@@ -2,12 +2,7 @@
 #
 # What follows are some definitions used by other modules
 
-# For ruby 2.0 comptability
-begin
-  require 'rack/auth/digest/md5'
-rescue LoadError
-  require 'md5'
-end
+require 'digest/md5'
 
 # We want a simple time-print
 class Time
@@ -80,7 +75,7 @@ module ACQooxView
 
   def self.check_db
     if Users.search_by_name( 'local' ).count == 0
-      Users.create( 'local', MD5::md5( ( rand 2**128 ).to_s ).to_s,
+      Users.create( 'local', Digest::MD5.hexdigest( ( rand 2**128 ).to_s ).to_s,
         rand( 2 ** 128 ).to_s )
     end
     if Accounts.search_by_name( 'Root' ).count == 0

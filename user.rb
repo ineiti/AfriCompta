@@ -81,7 +81,7 @@ module Compta::Controllers
         render :user_copied
       when "reset"
         @user = User.find_by_id( arg )
-        @user.full = MD5::md5( ( rand 2**128 ).to_s ).to_s
+        @user.full = Digest::MD5.hexdigest( ( rand 2**128 ).to_s ).to_s
         @user.pass = rand( 2 ** 128 ).to_s
         render :user_edit
       end
