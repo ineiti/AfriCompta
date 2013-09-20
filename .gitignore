@@ -5,3 +5,5 @@ camping-1.5.old
 nohup.out
 .hg
 *.log
+config.yaml
+data

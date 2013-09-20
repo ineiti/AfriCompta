@@ -1,0 +1,3 @@
+class ReportTabs < View
+  
+end
