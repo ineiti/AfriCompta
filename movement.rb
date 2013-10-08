@@ -12,6 +12,7 @@ module Compta::Models
       u_l.save
       debug 3, "index is #{self.index} and date is --#{self.date}--"
       debug 3, "User('local').index is: " + User.find_by_name('local').movement_index.to_s
+      debug 3, "global_id is #{self.global_id}"
     end
     
     def get_index()

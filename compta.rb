@@ -8,7 +8,7 @@ require 'digest/md5'
 
 # 4bits for each version: major-minor-revision-patch
 # Patch is usually not needed.
-$VERSION=0x1010
+$VERSION=0x1011
 
 Camping.goes :Compta
 # Have some nice HTML-output
@@ -24,7 +24,7 @@ class Time
   end
 end
 
-DEBUG_LEVEL=5
+DEBUG_LEVEL=4
 def debug(level, s)
   if level <= DEBUG_LEVEL
     puts " " * level + s

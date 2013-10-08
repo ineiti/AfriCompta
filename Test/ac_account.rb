@@ -34,8 +34,8 @@ class TC_AfriCompta < Test::Unit::TestCase
         }
       }
     }
-    assert_equal nil, @root.delete
-    assert_equal nil, @income.delete
+    assert_equal false, @root.delete
+    assert_equal false, @income.delete
     old_index = @lending.index
     assert_equal true, @lending.delete
     assert_operator old_index, :<, @lending.index

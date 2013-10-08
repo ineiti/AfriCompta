@@ -38,9 +38,10 @@ class Movements < Entities
         a_src, a_dst )
       our_m.global_id = global_id
     else
-      dputs( 2 ){ "Overwriting movement #{global_id}" }
+      dputs( 2 ){ "Overwriting movement at #{our_m.index}:#{our_m.id} -> #{global_id}" }
       # And update it
       our_m.set( desc, date, value, a_src.id, a_dst.id )
+      dputs( 2 ){ "Now we're #{our_m.index}:#{our_m.id} -> #{global_id}" }
     end
     return our_m
   end
@@ -62,8 +63,8 @@ end
 class Movement < Entity
   def new_index()
     u_l = Users.match_by_name('local')
-    self.index = u_l.movement_index
-    u_l.movement_index += 1
+    self.index = u_l.movement_index.to_i
+    u_l.movement_index = self.index + 1
     dputs( 3 ){ "index is #{self.index} and date is --#{self.date}--" }
     dputs( 3 ){ "User('local').index is: " + Users.match_by_name('local').movement_index.to_s }
   end

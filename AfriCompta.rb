@@ -1,6 +1,6 @@
 #!/usr/bin/ruby -I../QooxView -wKU
 
-DEBUG_LVL=3
+DEBUG_LVL=5
 VERSION_AFRICOMPTA="1.1.0"
 require 'fileutils'
 

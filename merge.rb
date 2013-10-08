@@ -58,7 +58,6 @@ module Compta::Controllers
             }
           end
         }
-        u.update_account_index
         return ret
         
         # Gets all movements (for the accounts of that user)
@@ -73,7 +72,6 @@ module Compta::Controllers
           start, stop = arg.split(/,/)
         end
         ret = printMovements( Account.find(:all), start, stop )
-        u.update_movement_index
         debug 3, "Sending:\n #{ret}"
         return ret
         

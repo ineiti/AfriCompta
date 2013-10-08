@@ -50,14 +50,25 @@ module Compta::Controllers
       ret
     end
     
-    def doMerge( path, arg )
-      @remote = Remote.find_by_id( arg )
-      #
+    def check_remote
+      local_id = User.find_by_name('local').full
+      debug 0, "#{local_id}"
+      if ( local_id == getForm("local_id" ) )
+        debug 0, "Both locals have same ID"
+        raise "Same ID for local"
+      end
+
       # Check the versions
       if ( vers = getForm( "version" ) ) != $VERSION.to_s
         debug 0, "Got version #{vers} instead of #{$VERSION.to_s}"
-        return false
-      end
+        raise "Wrong version"
+      end      
+    end
+    
+    def doMerge( path, arg )
+      @remote = Remote.find_by_id( arg )
+      check_remote
+      
       #
       # First get the remote accounts
       u = User.find_by_name('local')
@@ -69,23 +80,27 @@ module Compta::Controllers
         acc = Account.from_s( a )
         debug 2, "Got account #{acc.name}"
       }
-      #
+
       # Now we can send +our_accounts+
       @account_index_start = @remote.account_index + 1
-      debug 1, "Accounts to send: #{@account_index_start}..#{@account_index_stop}"
-      # We have to start at the bottom, else we can get into trouble with regard
-      # to children not having their parents yet...
-      Account.find_all_by_account_id(0).to_a.each{|a|
-        a.get_tree{|acc|
-          debug 3, "Index of #{acc.name} is #{acc.index}"
-          if (@account_index_start..@account_index_stop) === acc.index
-            debug 2, "Account with index #{acc.index} is being transferred"
-            postForm( "account_put", { "account" => acc.to_s } )
-          end
+      if @account_index_start <= @account_index_stop
+        debug 1, "Accounts to send: #{@account_index_start}..#{@account_index_stop}"
+        # We have to start at the bottom, else we can get into trouble with regard
+        # to children not having their parents yet...
+        Account.find_all_by_account_id(0).to_a.each{|a|
+          a.get_tree{|acc|
+            debug 3, "Index of #{acc.name} is #{acc.index}"
+            if (@account_index_start..@account_index_stop) === acc.index
+              debug 2, "Account with index #{acc.index} is being transferred"
+              postForm( "account_put", { "account" => acc.to_s } )
+            end
+          }
         }
-      }
-      # Update the pointer
-      @remote.update_account_index
+        # Update the pointer
+        @remote.update_account_index
+      else
+        debug 1, "No accounts to send"
+      end
       
       debug 1, "Getting movements"
       # Now merge the movements
@@ -95,40 +110,46 @@ module Compta::Controllers
         debug 2, "String is: \n#{m}"
         mov = Movement.from_s( m )
       }
-      #
+
       # Now we can send +our_movements+
       @movement_index_start = @remote.movement_index + 1
-      debug 1, "Movements to send: #{@movement_index_start}.." + 
-        "#{@movement_index_stop}"
-      movements = []
-      Movement.find(:all, :conditions => 
-          {:index => @movement_index_start..@movement_index_stop } ).each{ |m|
-        movements.push( m.to_json )
-      }
-      debug 0, "Having #{movements.size} movements to move"
-      while movements.size > 0
-        # We'll do it by bunches of 10
-        movements_put = movements.shift 10
-        debug 0, "Putting one bunch of 10 movements"
-        debug 4, movements_put.to_json
-        postForm( "movements_put", {"movements" => movements_put.to_json } )
-        # TODO: remove
-        # movements = []
+      @movement_count = 0
+      if @movement_index_start <= @movement_index_stop
+        debug 1, "Movements to send: #{@movement_index_start}.." + 
+          "#{@movement_index_stop}"
+        movements = []
+        Movement.find(:all, :conditions => 
+            {:index => @movement_index_start..@movement_index_stop } ).each{ |m|
+          movements.push( m.to_json )
+        }
+        @movement_count = movements.size
+        debug 0, "Having #{movements.size} movements to send"
+        while movements.size > 0
+          # We'll do it by bunches of 10
+          movements_put = movements.shift 10
+          debug 0, "Putting one bunch of 10 movements"
+          debug 4, movements_put.to_json
+          postForm( "movements_put", {"movements" => movements_put.to_json } )
+          # TODO: remove
+          # movements = []
+        end
+      else
+        debug 1, "No movements to send"
       end
+      
       # Update the pointer
-      @remote.update_movement_index   
+      @remote.update_movement_index
+
+      # Update the remote pointers
+      getForm( "reset_user_indexes" )
       
       return true
     end
     
     def doCopied( path, arg )
       @remote = Remote.find_by_id( arg )
-      #
-      # Check the versions
-      debug 3, "Remote is #{@remote.inspect}"
-      if getForm( "version" ) != $VERSION.to_s
-        return false
-      end
+      
+      check_remote
       
       #
       # First get the remote accounts
@@ -159,12 +180,8 @@ module Compta::Controllers
         end
       end
       @remote = Remote.find_by_id( arg )
-      #
-      # Check the version
-      if ( vers = getForm( "version" ) ) != $VERSION.to_s
-        debug 0, "Wrong version - #{vers} instead of #{$VERSION.to_s}"
-        return false
-      end
+      
+      check_remote
       
       account_max, movement_max = getForm( "index" ).split(",")
       debug 2, "maximum accounts and movements: #{[account_max, movement_max].join(':')}"
@@ -334,7 +351,7 @@ module Compta::Controllers
             if @type == "movement"
               # TODO: put all movements in an array
               postForm( "movements_put", {"movements" => [ element.to_json ].to_json } )
-#                {"movements" => [ element ].to_s } )
+              #                {"movements" => [ element ].to_s } )
             else
               postForm( "#{@type}_put", {"#{@type}" => [ element.to_json ].to_json } )
             end
@@ -360,22 +377,28 @@ module Compta::Controllers
         @remote = Remote.find_by_id( arg )
         render :remote_edit
       when "check"
-        if doCheck( path, arg )
+        begin
+          doCheck( path, arg )
           render :remote_check
-        else
-          render :remote_error_version
+        rescue Exception => e
+          @error = e.to_s
+          render :remote_error
         end
       when "merge"
-        if doMerge( path, arg )
+        begin
+          doMerge( path, arg )
           render :remote_merge
-        else
-          render :remote_error_version
+        rescue Exception => e
+          @error = e.to_s
+          render :remote_error
         end
       when "copied"
-        if doCopied( path, arg )
+        begin
+          doCopied( path, arg )
           render :remote_edit
-        else
-          render :remote_error_version
+        rescue Exception => e
+          @error = e.to_s
+          render :remote_error
         end
       end
     end
@@ -455,14 +478,14 @@ module Compta::Views
   def remote_merge
     p "Merging with " + @remote.url
     p "Got accounts: " + (@remote.account_index-@account_index_stop).to_s
-    p "Put accounts: " + (@account_index_stop-@account_index_start + 1).to_s
+    p "Put accounts: " + (@account_index_stop - @account_index_start + 1).to_s
     p "Got movements: " + (@remote.movement_index-@movement_index_stop).to_s
-    p "Put movements: " + (@movement_index_stop - @movement_index_start + 1).to_s
+    p "Put movements: #{@movement_count} with changes: " + (@movement_index_stop - @movement_index_start + 1).to_s
     a "Back to work", :href => "/movement/list"
   end
   
-  def remote_error_version
-    h1 "Versions are different - I won't merge!"
+  def remote_error
+    h1 "Error occured: #{@error} - I won't merge!"
   end
   
   def remote_check

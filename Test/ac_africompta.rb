@@ -1,5 +1,7 @@
 require 'test/unit'
 
+TESTBIG=false
+
 class TC_AfriCompta < Test::Unit::TestCase
   def setup
     dputs(0){"Setting up"}
@@ -64,18 +66,9 @@ class TC_AfriCompta < Test::Unit::TestCase
         :account_dst_id=>[2]}], 
       movs.collect{ |m| 
       m.to_hash.delete_if{|k,v| k == :date
-      } }
+      } }.sort{|a,b| a[:id] <=> b[:id]}
 			
-    assert_equal [{:global_id=>"5544436cf81115c6faf577a7e2307e92-5",
-        :multiplier=>-1.0,
-        :total=>"0",
-        :desc=>"Full description",
-        :account_id=>1,
-        :name=>"Lending",
-        :index=>9,
-        :deleted=>false,
-        :keep_total=>true,
-        :id=>5},
+    assert_equal [
       {:id=>1,
         :multiplier=>1.0,
         :total=>"0",
@@ -115,8 +108,18 @@ class TC_AfriCompta < Test::Unit::TestCase
         :global_id=>"5544436cf81115c6faf577a7e2307e92-4",
         :deleted=>false,
         :keep_total=>false,
-        :index=>10}], 
-      accs.collect{|a| a.to_hash}
+        :index=>10},
+      {:global_id=>"5544436cf81115c6faf577a7e2307e92-5",
+        :multiplier=>-1.0,
+        :total=>"0",
+        :desc=>"Full description",
+        :account_id=>[1],
+        :name=>"Lending",
+        :index=>9,
+        :deleted=>false,
+        :keep_total=>true,
+        :id=>5}], 
+      accs.collect{|a| a.to_hash}.sort{|a,b| a[:id] <=> b[:id]}
 		
     assert_equal [{:full=>"5544436cf81115c6faf577a7e2307e92",
         :pass=>"152020265102732202950475079275867584513",
@@ -215,7 +218,7 @@ class TC_AfriCompta < Test::Unit::TestCase
   def test_account
     tree = []
     @root.get_tree{|a| tree.push a.name }
-    assert_equal "Root-Lending-Cash-Income-Outcome", tree.join("-")
+    assert_equal %w( Root Lending Cash Income Outcome ).sort, tree.sort
 		
     assert_equal "Root", @root.path
     assert_equal "Root::Outcome", @outcome.path
@@ -334,7 +337,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal "Credit::Card", ccard.get_path
     assert_equal "5544436cf81115c6faf577a7e2307e92-9", ccard.global_id
   end
-	
+
   def test_users
     Users.create( "foo2", "foo foo", "foo2bar" )
     foo = Users.match_by_name( "foo2" )
@@ -348,7 +351,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     foo.update_account_index
     assert_equal 10, foo.account_index
   end
-	
+
   def test_remote
     rem = Remotes.create( :url => "http://localhost:3302/acaccount",
       :name => "foo", :pass => "bar" )
@@ -385,29 +388,29 @@ class TC_AfriCompta < Test::Unit::TestCase
     rep = ACaccess.get( "accounts_get/foo,bar")
     assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
       "Root\t1\t\t\t\n" +
-      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
-      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" +
       "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\t" +
       "Income\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.0\t" +
-      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\n", rep
+      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
+      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n", rep
 
     rep = ACaccess.get( "accounts_get/foo,bar")
     assert_equal "", rep
 
     rep = ACaccess.get( "accounts_get_all/foo,bar")
-    assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
-      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\tRoot::Lending\n" +
-      "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
+    assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
       "Root\t1\t\t\t\tRoot\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" +
       "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\tRoot::Cash\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\t" +
       "Income\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\tRoot::Income\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.0\t" +
-      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\tRoot::Outcome\n", rep
+      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\tRoot::Outcome\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
+      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\tRoot::Lending\n", rep
 		
     rep = ACaccess.get( "movements_get_one/5544436cf81115c6faf577a7e2307e92-4/foo,bar")
     assert_equal "Restaurant\r5544436cf81115c6faf577a7e2307e92-4\t20.0\t" +
@@ -695,7 +698,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     Entities.delete_all_data()
     ACQooxView::check_db
   end
-	
+
   def load_big_data
     dputs(0){"Setting up"}
     Entities.delete_all_data()
@@ -707,14 +710,18 @@ class TC_AfriCompta < Test::Unit::TestCase
     SQLite.dbs_open_load_migrate
   end
 		
-  def tes_big_data_archive
+  def test_big_data_archive
+    TESTBIG or return
+
     require 'benchmark'
     require 'perftools'
     load_big_data
     Accounts.archive( 1, 2012 )
   end
 
-  def tes_big_data_merge
+  def test_big_data_merge
+    TESTBIG or return
+
     require 'benchmark'
     require 'perftools'
     load_big_data
@@ -738,8 +745,10 @@ pprof.rb --pdf perfcheck_merge_2nd > perfcheck_merge_2nd.pdf
 open perfcheck_merge_1st.pdf perfcheck_merge_2nd.pdf
     "
   end
-	
+
   def test_big_data_check
+    TESTBIG or return
+
     load_big_data
     
     ACaccess.get( "reset_user_indexes/ineiti,lasj" )
@@ -754,12 +763,16 @@ open perfcheck_merge_1st.pdf perfcheck_merge_2nd.pdf
   end
 	
   def test_archive_2
+    TESTBIG or return
+
     load_big_data
     Accounts.archive( 1, 2012, 
       Accounts.get_by_path( "Root::Caisses::Centre::Josué" ) )
   end
 
   def test_archive_3
+    TESTBIG or return
+
     load_big_data
     Accounts.archive( 1, 2012, 
       Accounts.get_by_path( "Root::Caisses::Centre::Rubia Centre" ) )
@@ -771,7 +784,8 @@ open perfcheck_merge_1st.pdf perfcheck_merge_2nd.pdf
     assert_equal "Cash", cash.name
   end
 	
-  def test_speed
+  dputs(0){"Disabled test_speed"}
+  def tes_speed
     require 'rubygems'
     require 'perftools'
     PerfTools::CpuProfiler.start("/tmp/profile") do

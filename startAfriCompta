@@ -37,6 +37,8 @@ else
   nohup ./start_camping $LOGFILE $ARGS &
 fi
 
+exit
+
 # Depending on where we are, "open" or "firefox"
 if echo "$MACHTYPE" | grep -q apple; then
   sleep 4

@@ -2,7 +2,7 @@
 # Post/Get-handlers over HTTP
 
 
-$VERSION = 0x1010
+$VERSION = 0x1011
 
 class ACaccess < RPCQooxdooPath
   def self.parse( r, p, q )
@@ -72,7 +72,8 @@ class ACaccess < RPCQooxdooPath
         }
       else
         dputs( 2 ){ "Starting to search accounts" }
-        Accounts.matches_by_account_id(0).to_a.each{|a|
+        Accounts.matches_by_account_id(0).to_a.sort{|a,b|
+          a.global_id <=> b.global_id }.each{|a|
           dputs( 2 ){ "Found one root-account #{a.index} - #{a.path_id}" }
           if a.global_id
             dputs( 2 ){ "It's global" }
@@ -90,7 +91,6 @@ class ACaccess < RPCQooxdooPath
         }
       end
       dputs( 2 ){ "Finished search" }
-      u.update_account_index
       return ret
         
       # Gets all movements (for the accounts of that user)
@@ -105,7 +105,6 @@ class ACaccess < RPCQooxdooPath
         start, stop = arg.split(/,/)
       end
       ret = print_movements( Accounts.search_all, start, stop )
-      u.update_movement_index
       dputs( 3 ){ "Sending:\n #{ret}" }
       return ret
         
@@ -114,6 +113,9 @@ class ACaccess < RPCQooxdooPath
         
     when "index"
       return [ u_local.account_index, u_local.movement_index ].join(",")
+      
+    when "local_id"
+      return u_local.full
                 
     when "reset_user_indexes"
       u.update_account_index
