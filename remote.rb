@@ -191,10 +191,10 @@ module Compta::Controllers
       # This is for debugging purposes - large DBs tend to take a long time
       # to list all movements 
       get_movements = true
+      compare_accounts = true
       u = User.find_by_name('local')
       debug 1, "Getting remotes"
       @account_index_stop = u.account_index - 1
-      accounts_remote = getForm( "accounts_get_all" )
       movements_remote = ""
       # Again to not have to wait too long, we split up the transfer of big tables
       if get_movements
@@ -203,6 +203,9 @@ module Compta::Controllers
           movements_remote += movements_rem
         }
       end
+
+      if compare_accounts
+        accounts_remote = getForm( "accounts_get_all" )
       #
       # Now find out:
       # * accounts_only_remote -  which ones are remote only, 
@@ -228,6 +231,9 @@ module Compta::Controllers
         remote_accounts_global_id.index( a.global_id.to_s ) == nil
       }
       debug 2, "Local has #{@accounts_only_local.size} lone accounts"
+      else
+        @accounts_only_remote = @acounts_only_local = []
+      end
       
       #
       # And do the same for the movements:
