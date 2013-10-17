@@ -96,11 +96,11 @@ module Compta::Controllers
             end
           }
         }
-        # Update the pointer
-        @remote.update_account_index
       else
         debug 1, "No accounts to send"
       end
+      # Update the pointer
+      @remote.update_account_index
       
       debug 1, "Getting movements"
       # Now merge the movements
@@ -136,9 +136,10 @@ module Compta::Controllers
       else
         debug 1, "No movements to send"
       end
-      
+
       # Update the pointer
       @remote.update_movement_index
+      
 
       # Update the remote pointers
       getForm( "reset_user_indexes" )
