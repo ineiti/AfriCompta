@@ -60,8 +60,13 @@ module Compta::Controllers
 
       # Check the versions
       if ( vers = getForm( "version" ) ) != $VERSION.to_s
-        debug 0, "Got version #{vers} instead of #{$VERSION.to_s}"
-        raise "Wrong version"
+        if ( vers =~ /not known/ )
+          debug 0, "Username / password not recognized"
+          raise "Wrong credentials"
+        else
+          debug 0, "Got version #{vers} instead of #{$VERSION.to_s}"
+          raise "Wrong version"
+        end
       end      
     end
     
@@ -192,7 +197,7 @@ module Compta::Controllers
       # This is for debugging purposes - large DBs tend to take a long time
       # to list all movements 
       get_movements = true
-      compare_accounts = true
+      compare_accounts = false
       u = User.find_by_name('local')
       debug 1, "Getting remotes"
       @account_index_stop = u.account_index - 1
@@ -200,38 +205,51 @@ module Compta::Controllers
       # Again to not have to wait too long, we split up the transfer of big tables
       if get_movements
         (0..(movement_max.to_i / 1000 + 1).ceil).each{|pos|
+          debug 2, "Getting remotes from #{pos*1000}..#{pos*1000+999}"
           movements_rem = getForm( "movements_get_all/#{pos*1000},#{pos*1000+999}" )
           movements_remote += movements_rem
         }
       end
+      debug 1, "Finished getting remote movements"
 
       if compare_accounts
-        accounts_remote = getForm( "accounts_get_all" )
-      #
-      # Now find out:
-      # * accounts_only_remote -  which ones are remote only, 
-      # * accounts_only_local - which ones are local only
-      # * accounts_empty - which ones are empty, local or remote
-      remote_accounts_global_id = []
-      @accounts_only_remote = []
-      accounts_remote.split("\n").each{ |str|
-        desc, str = str.split("\r")
-        if not str
-          debug 0, "Invalid account found: #{desc}"
-        else
-          global_id, total, name, multiplier, par, path = str.split("\t")
-          remote_accounts_global_id.push( global_id )
-          if not Account.find_by_global_id( global_id )
-            @accounts_only_remote.push( Account.new(:name=>path, :total=>total, :global_id=>global_id))
-          end
+        accounts_remote = []
+        accounts_remote_count = getForm( "accounts_get_count" ).to_i
+        pos = 0
+        while ( accounts_remote.size < accounts_remote_count ) do
+          accounts_remote.concat( 
+            getForm( "accounts_get_part/#{pos},#{pos+999}" ).split("\n") )
+          pos += 1000
         end
-      }
-      debug 2, "Remote has #{@accounts_only_remote.size} lone accounts"
+        
+        #
+        # Now find out:
+        # * accounts_only_remote -  which ones are remote only, 
+        # * accounts_only_local - which ones are local only
+        # * accounts_empty - which ones are empty, local or remote
+        remote_accounts_global_id = []
+        @accounts_only_remote = []
+        accounts_remote.each{ |str|
+          desc, str = str.split("\r")
+          if not str
+            debug 0, "Invalid account found: #{desc}"
+          else
+            global_id, total, name, multiplier, par, 
+            deleted, keep, path = str.split("\t")
+            remote_accounts_global_id.push( global_id )
+            debug 0, "Remote global-id is #{global_id.inspect}"
+            if not Account.find_by_global_id( global_id )
+              @accounts_only_remote.push( Account.new(:name=>path, :total=>total, :global_id=>global_id))
+            end
+          end
+        }
+        debug 2, "Remote has #{@accounts_only_remote.size} lone accounts"
       
-      @accounts_only_local = Account.find(:all).select{ |a|
-        remote_accounts_global_id.index( a.global_id.to_s ) == nil
-      }
-      debug 2, "Local has #{@accounts_only_local.size} lone accounts"
+        @accounts_only_local = Account.find(:all).select{ |a|
+          debug 0, "Local global-id is #{a.global_id.inspect}"
+          remote_accounts_global_id.index( a.global_id.to_s ) == nil
+        }
+        debug 2, "Local has #{@accounts_only_local.size} lone accounts"
       else
         @accounts_only_remote = @acounts_only_local = []
       end
@@ -247,7 +265,7 @@ module Compta::Controllers
         movements_remote.split("\n").each{ |str|
           desc, str = str.split("\r")
           if not str
-            debug 0, "Invalid account found: #{desc}"
+            debug 0, "Invalid movement found: #{desc}"
           else
             global_id, value, date, src, dst = str.split("\t")
             remote_movements_global_id.push( global_id )
@@ -358,9 +376,8 @@ module Compta::Controllers
             if @type == "movement"
               # TODO: put all movements in an array
               postForm( "movements_put", {"movements" => [ element.to_json ].to_json } )
-              #                {"movements" => [ element ].to_s } )
             else
-              postForm( "#{@type}_put", {"#{@type}" => [ element.to_json ].to_json } )
+              postForm( "account_put", {"account" => element.to_s } )
             end
           end
         end
@@ -374,7 +391,7 @@ module Compta::Controllers
       when "list"
         render :remote_list
       when "add"
-        @remote = Remote.new( :url => "http://localhost:3301", :name => "ineiti", :pass => "lasj" )
+        @remote = Remote.new( :url => "http://localhost:3302/acaccess", :name => "ineiti", :pass => "lasj" )
         render :remote_edit
       when "delete"
         Remote.destroy( arg )
@@ -388,7 +405,7 @@ module Compta::Controllers
           doCheck( path, arg )
           render :remote_check
         rescue Exception => e
-          @error = e.to_s
+          @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
           render :remote_error
         end
       when "merge"
@@ -396,7 +413,7 @@ module Compta::Controllers
           doMerge( path, arg )
           render :remote_merge
         rescue Exception => e
-          @error = e.to_s
+          @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
           render :remote_error
         end
       when "copied"
@@ -404,7 +421,7 @@ module Compta::Controllers
           doCopied( path, arg )
           render :remote_edit
         rescue Exception => e
-          @error = e.to_s
+          @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
           render :remote_error
         end
       end
@@ -492,7 +509,8 @@ module Compta::Views
   end
   
   def remote_error
-    h1 "Error occured: #{@error} - I won't merge!"
+    h1 "Error occured, I won't merge!"
+    pre "#{@error}"
   end
   
   def remote_check

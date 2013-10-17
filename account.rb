@@ -175,7 +175,7 @@ module Compta::Models
       deleted = deleted_s == "true"
       keep_total = keep_total_s == "true"
       debug 3, "Here comes the account: " + global_id.to_s
-      debug 5, "par: #{par}"
+      debug 3, "par: #{par}"
       if par
         parent = Account.find_by_global_id( par )
         debug 5, "parent: #{parent.global_id}"

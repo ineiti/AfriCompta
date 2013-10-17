@@ -6,3 +6,7 @@ nohup.out
 .git
 .buildpath
 .project
+Log
+config.yaml
+data
+webrick.*log

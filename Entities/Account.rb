@@ -25,6 +25,10 @@ class AccountRoot
         a.delete
         bad_acc += 1
       end
+      if ! a.account_id
+        a.delete
+        bad_acc += 1
+      end
       count_acc = [ count_acc, a.index ].max
     }
 
@@ -154,7 +158,7 @@ class Accounts < Entities
     pid = par ? parent.id : 0
     if not ( our_a = Accounts.match_by_global_id(global_id) )
       # Create it
-      our_a = Accounts.create( name, desc, Accounts.match_by_id( par ), global_id )
+      our_a = Accounts.create( name, desc, Accounts.match_by_id( pid ), global_id )
     end
     # And update it
     our_a.deleted = deleted
@@ -594,10 +598,10 @@ class Account < Entity
 	    
   def to_s( add_path = false )
     if account || true
-      # "Account-desc: #{name.to_s}, #{global_id}"
+      ddputs(4){"Account-desc: #{name.to_s}, #{global_id}, #{account_id.inspect}"}
       "#{desc}\r#{global_id}\t" + 
         "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
-        ( ( account_id > 0 ) ? account.global_id.to_s : "" ) +
+        ( account_id ? ( ( account_id > 0 ) ? account.global_id.to_s : "" ) : "" ) +
         "\t#{deleted.to_s}" + "\t#{keep_total.to_s}" + 
         ( add_path ? "\t#{path}" : "" )
     else

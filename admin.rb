@@ -31,6 +31,10 @@ module Compta::Controllers
             Account.destroy(a)
             @bad_accounts += 1
           end
+          if ! a.account_id
+            Account.destroy(a)
+            @bad_accounts += 1
+          end
           @count_acc = [ @count_acc, a.index ].max
         }
 

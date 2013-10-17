@@ -33,7 +33,7 @@ class ACaccess < RPCQooxdooPath
       end
       ret += m.to_s + "\n"
     }
-    dputs( 3 ){ "Found movements: #{ret}" }
+    dputs( 3 ){ "Found movements: #{ret.inspect}" }
     ret
   end
     
@@ -67,6 +67,17 @@ class ACaccess < RPCQooxdooPath
       if $1 == "_all"
         dputs( 2 ){ "Putting all accounts" }
         Accounts.search_all.each{|acc|
+          ddputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
+          ret += "#{acc.to_s( true )}\n"
+        }
+      elsif $1 == "_count"
+        ret += Accounts.search_all.size.to_s
+      elsif $1 == "_part"
+        acc_start, acc_end = arg.split(",")
+        dputs( 2 ){ "Putting accounts #{acc_start}..#{acc_end}"}
+        Accounts.search_all.select{|acc|
+          acc.index >= acc_start.to_i and acc.index <= acc_end.to_i
+        }.each{|acc|
           ddputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
           ret += "#{acc.to_s( true )}\n"
         }
@@ -105,7 +116,7 @@ class ACaccess < RPCQooxdooPath
         start, stop = arg.split(/,/)
       end
       ret = print_movements( Accounts.search_all, start, stop )
-      dputs( 3 ){ "Sending:\n #{ret}" }
+      dputs( 3 ){ "Sending:\n #{ret.inspect}" }
       return ret
         
     when "version"
