@@ -1,7 +1,7 @@
 #!/usr/bin/ruby -I../QooxView -wKU
 
 DEBUG_LVL=5
-VERSION_AFRICOMPTA="1.1.0"
+VERSION_AFRICOMPTA="1.1.2"
 require 'fileutils'
 
 AFRICOMPTA_DIR=File.dirname(__FILE__)

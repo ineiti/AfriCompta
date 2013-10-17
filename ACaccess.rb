@@ -2,7 +2,7 @@
 # Post/Get-handlers over HTTP
 
 
-$VERSION = 0x1011
+$VERSION = 0x1120
 
 class ACaccess < RPCQooxdooPath
   def self.parse( r, p, q )

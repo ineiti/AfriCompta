@@ -8,7 +8,7 @@ require 'digest/md5'
 
 # 4bits for each version: major-minor-revision-patch
 # Patch is usually not needed.
-$VERSION=0x1011
+$VERSION=0x1120
 
 Camping.goes :Compta
 # Have some nice HTML-output
