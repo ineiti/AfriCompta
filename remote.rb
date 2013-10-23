@@ -197,7 +197,7 @@ module Compta::Controllers
       # This is for debugging purposes - large DBs tend to take a long time
       # to list all movements 
       get_movements = true
-      compare_accounts = false
+      compare_accounts = true
       u = User.find_by_name('local')
       debug 1, "Getting remotes"
       @account_index_stop = u.account_index - 1
@@ -371,7 +371,7 @@ module Compta::Controllers
           end
           case @action
           when "delete"
-            element.delete
+            element.destroy
           when "copy", "push", "pull"
             if @type == "movement"
               # TODO: put all movements in an array

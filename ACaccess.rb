@@ -180,7 +180,8 @@ class ACaccess < RPCQooxdooPath
       dputs( 2 ){ "Saved account #{acc.global_id}" }
     when "account_delete"
       dputs( 3 ){ "Going to delete account" }
-      Accounts.match_by_global_id( input['global_id'] ).delete( true )
+      acc = Accounts.match_by_global_id( input['global_id'] )
+      acc.delete( true )
     end
     return "ok"
   end

@@ -151,14 +151,22 @@ module Compta::Models
       accounts.select{|a| not a.deleted }
     end
     
-    def delete
+    def delete( destroy = false )
       if self.is_empty
         debug 2, "Deleting account #{self.name} with #{self.deleted.inspect}"
         self.deleted = true
         self.new_index
         self.save
         debug 2, "account #{self.name} is now #{self.deleted.inspect}"
+        if destroy
+          debug 2, "Destroying account #{self.name}"
+          super()
+        end
       end
+    end
+    
+    def destroy
+      self.delete( true )
     end
     
     # Gets an account from a string, if it doesn't exist yet, creates it.

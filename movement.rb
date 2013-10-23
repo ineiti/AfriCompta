@@ -80,6 +80,10 @@ module Compta::Models
       t
     end
     
+    def destroy
+      self.delete
+    end
+    
     def to_s
       "#{desc}\r#{global_id}\t" + 
         "#{value.to_s}\t#{date.to_s}\t" +

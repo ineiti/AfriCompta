@@ -680,10 +680,15 @@ class Account < Entity
       }
     end
     if is_empty
-      dputs(2){"Deleting account #{self.name}"}
-      self.account_id = nil
-      self.new_index
-      self.deleted = true
+      if force
+        dputs(2){"Destroying account"}
+        super()
+      else
+        dputs(2){"Deleting account #{self.name}"}
+        self.account_id = nil
+        self.new_index
+        self.deleted = true
+      end
     else
       dputs(1){"Refusing to delete account #{name}"}
     end
