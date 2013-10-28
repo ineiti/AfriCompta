@@ -18,15 +18,15 @@ if [ "$1" ]; then
   DB=$1
   shift
 fi
-if [ "$1" ]; then
-  ARGS="$ARGS -p $1"
-fi
-
 # Backing up the DB
 ./backup_bdd $DB
 
-# Closing old instance
-pkill -9 -f compta.rb
+if [ "$1" ]; then
+  ARGS="$ARGS -p $1"
+else
+  # Closing old instance
+  pkill -9 -f compta.rb
+fi
 
 mkdir -p Log
 LOGFILE=Log/$( date +%y%m%d-%H%M%S ).log

@@ -6,7 +6,7 @@ git_func(){
   fi
 }
 
-for a in Gestion QooxView AfriCompta LibNet; do
+for a in Gestion QooxView AfriCompta LibNet Config; do
   echo Doing $a
   cd ../$a
   if [ ! "$1" ]; then
