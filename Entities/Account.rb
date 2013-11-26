@@ -135,6 +135,7 @@ class Accounts < Entities
   # Gets an account from a string, if it doesn't exist yet, creates it.
   # It will update it anyway.
   def self.from_s( str )
+    str.force_encoding( Encoding::UTF_8 )
     desc, str = str.split("\r")
     if not str
       dputs( 0 ){ "Invalid account found: #{desc}" }
@@ -145,20 +146,25 @@ class Accounts < Entities
     total, multiplier = total.to_f, multiplier.to_f
     deleted = deleted_s == "true"
     keep_total = keep_total_s == "true"
-    dputs(5){ "deleted, keep_total is #{deleted.inspect}, #{keep_total.inspect}"}
-    dputs( 3 ){ "Here comes the account: " + global_id.to_s }
-    dputs( 5 ){ "par: #{par}" }
+    ddputs(3){ [ global_id, total, name, multiplier]. inspect }
+    ddputs(3){ [ par, deleted_s, keep_total_s ]. inspect }
+    ddputs(5){ "deleted, keep_total is #{deleted.inspect}, #{keep_total.inspect}"}
+    ddputs( 3 ){ "Here comes the account: " + global_id.to_s }
+    ddputs( 5 ){ "par: #{par}" }
     if par
       parent = Accounts.match_by_global_id( par )
-      dputs( 5 ){ "parent: #{parent.global_id}" }
+      ddputs( 5 ){ "parent: #{parent.global_id}" }
     end
-    dputs( 3 ){ "global_id: #{global_id}" }
+    ddputs( 3 ){ "global_id: #{global_id}" }
     # Does the account already exist?
     our_a = nil
     pid = par ? parent.id : 0
     if not ( our_a = Accounts.match_by_global_id(global_id) )
       # Create it
-      our_a = Accounts.create( name, desc, Accounts.match_by_id( pid ), global_id )
+      ddputs(3){"Pid is #{pid}"}
+      apid = Accounts.match_by_id( pid )
+      ddputs(3){"Creating account #{name} - #{desc} - #{apid} - #{global_id}"}
+      our_a = Accounts.create( name, desc, apid, global_id )
     end
     # And update it
     our_a.deleted = deleted

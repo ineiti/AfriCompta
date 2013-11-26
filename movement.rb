@@ -102,6 +102,7 @@ module Compta::Models
     def Movement.from_s( str )
       desc, str = str.split("\r")
       global_id, value, date, src, dst = str.split("\t")
+      debug 3, "Movement #{desc} - #{str}"
       date = Time.parse(date).to_ss
       value = value.to_f
       a_src = Account.find_by_global_id( src )

@@ -131,6 +131,14 @@ class ACaccess < RPCQooxdooPath
     when "reset_user_indexes"
       u.update_account_index
       u.update_movement_index
+
+    when "movement_delete"
+      ddputs( 3 ){ "Going to delete movement #{arg}" }
+      while mov = Movements.match_by_global_id( arg )
+        ddputs(3){"Found movement #{mov.inspect}" }
+        mov.delete
+      end
+      ddputs(3){"Finished deleting"}
     end
     return ""
   end
@@ -168,13 +176,14 @@ class ACaccess < RPCQooxdooPath
         }
       end
     when "movement_delete"
-      dputs( 3 ){ "Going to delete movement" }
-      mov = Movements.match_by_global_id( input['global_id'] )
-      dputs(3){"Found movement #{mov.inspect}" }
-      mov and mov.delete
+      ddputs( 3 ){ "Going to delete movement" }
+      while mov = Movements.match_by_global_id( input['global_id'] )
+        ddputs(3){"Found movement #{mov.inspect}" }
+        mov.delete
+      end
       dputs(3){"Finished deleting"}
     when "account_put"
-      dputs( 3 ){ "Going to put account" }
+      ddputs( 3 ){ "Going to put account #{input['account'].inspect}" }
       acc = Accounts.from_s( input['account'] )
       u.update_account_index
       dputs( 2 ){ "Saved account #{acc.global_id}" }

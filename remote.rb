@@ -356,7 +356,15 @@ module Compta::Controllers
               account = Account.from_s( getForm("accounts_get_one/#{global_id}") )
               debug 2, "Account is #{account.to_s}"
             when "movement"
-              movement = Movement.from_s( getForm("movements_get_one/#{global_id}") )
+              if mdel= Movement.find_by_global_id( global_id )
+                debug 2, "Found local movement: #{mdel.inspect} - deleting"
+                mdel.delete
+              end
+              remote_str = getForm("movements_get_one/#{global_id}")
+              debug 2, "Remote-str is #{remote_str.inspect}"
+              movement = Movement.from_s( remote_str )
+              getForm("movement_delete/#{global_id}")
+              postForm( "movements_put", {"movements" => [ movement.to_json ].to_json } )
               debug 2, "Movement is #{movement.to_s}"
             end
           end

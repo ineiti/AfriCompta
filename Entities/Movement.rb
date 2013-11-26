@@ -19,6 +19,7 @@ class Movements < Entities
   end
     
   def self.from_s( str )
+    str.force_encoding( Encoding::UTF_8 )
     desc, str = str.split("\r")
     global_id, value, date, src, dst = str.split("\t")
     #date = Time.parse(date).to_ss
