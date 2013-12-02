@@ -604,7 +604,7 @@ class Account < Entity
 	    
   def to_s( add_path = false )
     if account || true
-      ddputs(4){"Account-desc: #{name.to_s}, #{global_id}, #{account_id.inspect}"}
+      dputs(4){"Account-desc: #{name.to_s}, #{global_id}, #{account_id.inspect}"}
       "#{desc}\r#{global_id}\t" + 
         "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
         ( account_id ? ( ( account_id > 0 ) ? account.global_id.to_s : "" ) : "" ) +

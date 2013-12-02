@@ -67,7 +67,7 @@ class ACaccess < RPCQooxdooPath
       if $1 == "_all"
         dputs( 2 ){ "Putting all accounts" }
         Accounts.search_all.each{|acc|
-          ddputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
+          dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
           ret += "#{acc.to_s( true )}\n"
         }
       elsif $1 == "_count"
@@ -78,7 +78,7 @@ class ACaccess < RPCQooxdooPath
         Accounts.search_all.select{|acc|
           acc.index >= acc_start.to_i and acc.index <= acc_end.to_i
         }.each{|acc|
-          ddputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
+          dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
           ret += "#{acc.to_s( true )}\n"
         }
       else
@@ -127,7 +127,7 @@ class ACaccess < RPCQooxdooPath
       
     when "local_id"
       return u_local.full
-                
+
     when "reset_user_indexes"
       u.update_account_index
       u.update_movement_index
