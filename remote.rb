@@ -170,8 +170,9 @@ module Compta::Controllers
       getForm( "reset_user_indexes" )
       return true
     end
-    
-    def doCheck( path, arg )
+
+    # Restrict is to compare only movements and accounts from actual year
+    def doCheck( path, arg, restrict = false )
       # Tries really hard to find an account name
       def accountGet(gid)
         if ( acc = Account.find_by_global_id(gid) )
@@ -206,7 +207,11 @@ module Compta::Controllers
       if get_movements
         (0..(movement_max.to_i / 1000 + 1).ceil).each{|pos|
           debug 2, "Getting remotes from #{pos*1000}..#{pos*1000+999}"
-          movements_rem = getForm( "movements_get_all/#{pos*1000},#{pos*1000+999}" )
+          if restrict
+            movements_rem = getForm( "movements_get_all_actual/#{pos*1000},#{pos*1000+999}" )
+          else
+            movements_rem = getForm( "movements_get_all/#{pos*1000},#{pos*1000+999}" )
+          end
           movements_remote += movements_rem
         }
       end
@@ -408,14 +413,22 @@ module Compta::Controllers
       when "edit"
         @remote = Remote.find_by_id( arg )
         render :remote_edit
-      when "check"
-        begin
-          doCheck( path, arg )
-          render :remote_check
-        rescue Exception => e
-          @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
-          render :remote_error
-        end
+        when "check"
+          begin
+            doCheck( path, arg )
+            render :remote_check
+          rescue Exception => e
+            @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
+            render :remote_error
+          end
+        when "check_actual"
+          begin
+            doCheck( path, arg, true )
+            render :remote_check
+          rescue Exception => e
+            @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
+            render :remote_error
+          end
       when "merge"
         begin
           doMerge( path, arg )
@@ -464,6 +477,7 @@ module Compta::Views
         tr do 
           td.small { a "Merge", :href => "/remote/merge/" + r.id.to_s }
           td.small { a "Check", :href => "/remote/check/" + r.id.to_s }
+          td.small { a "Check actual", :href => "/remote/check_actual/" + r.id.to_s }
           td.small { a "Copied", :href => "/remote/copied/" + r.id.to_s }
           td.small { a "Edit", :href => "/remote/edit/" + r.id.to_s }
           td.small { a "Delete", :href => "/remote/delete/" + r.id.to_s }

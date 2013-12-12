@@ -6,11 +6,11 @@ module Compta::Controllers
   # MERGE-related stuff
   #
   class MergeClasses < R '/merge/(.*)'
-    def printMovements( accounts, start, stop )
+    def printMovements( start, stop )
       start, stop = start.to_i, stop.to_i
       debug 2, "Doing printMovements from #{start.class} to #{stop.class}"
       ret = ""
-      Movement.find(:all, :conditions => 
+      Movement.find(:all, :conditions =>
           {:index => start..stop } ).each{ |m|
         if start > 0
           debug 4, "Mer: Movement #{m.desc}, #{m.value}"
@@ -19,7 +19,7 @@ module Compta::Controllers
       }
       return ret
     end
-    
+
     def get(p)
       # Two cases:
       # path/arg/user,pass - arg is used
@@ -70,8 +70,8 @@ module Compta::Controllers
         end
         if $1 == "_all"
           start, stop = arg.split(/,/)
+          ret = printMovements( start, stop )
         end
-        ret = printMovements( Account.find(:all), start, stop )
         debug 3, "Sending:\n #{ret}"
         return ret
         

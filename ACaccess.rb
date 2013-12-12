@@ -19,14 +19,14 @@ class ACaccess < RPCQooxdooPath
     ret
   end
 
-  def self.print_movements( accounts, start, stop )
+  def self.print_movements( start, stop )
     start, stop = start.to_i, stop.to_i
-    dputs( 2 ){ "Doing print_movements from #{start.class}:#{start}"+ 
+    dputs( 2 ){ "Doing print_movements from #{start.class}:#{start}"+
         " to #{stop.class}:#{stop}" }
     ret = ""
     Movements.search_all.select{|m|
       mi = m.index
-      m and mi and mi >= start and mi <= stop 
+      m and mi and mi >= start and mi <= stop
     }.each{ |m|
       if start > 0
         dputs( 4 ){ "Mer: Movement #{m.desc}, #{m.value}" }
@@ -36,7 +36,34 @@ class ACaccess < RPCQooxdooPath
     dputs( 3 ){ "Found movements: #{ret.inspect}" }
     ret
   end
-    
+
+  def self.print_movements_actual( start, stop )
+    start, stop = start.to_i, stop.to_i
+    dputs( 2 ){ "Doing print_movements_actual from #{start.class}:#{start}"+
+        " to #{stop.class}:#{stop}" }
+    ret = ""
+    actual_ids = []
+    AccountRoot.actual.get_tree{|a|
+      actual_ids.push a.id
+    }
+    movs = Movements.search_all.select{|m|
+      mi = m.index
+      m and mi and mi >= start and mi <= stop and actual_ids.find( m.account_src_id )
+    }
+    dputs( 2 ){ "Found #{movs.length} movements between #{start}..#{stop}"}
+    movs.each{ |m|
+      if start > 0
+        dputs( 4 ){ "Mer: Movement #{m.desc}, #{m.value}" }
+        ai = actual_ids.find( m.account_src_id.id )
+        ddputs( 4 ){ "movement_src is #{m.account_src_id.inspect} from #{ai.inspect}"}
+        ddputs( 4 ){ "actual_ids is #{actual_ids.inspect}"}
+      end
+      ret += m.to_s + "\n"
+    }
+    dputs( 3 ){ "Found movements: #{ret.inspect}" }
+    ret
+  end
+
   def self.get( p )
     # Two cases:
     # path/arg/user,pass - arg is used
@@ -114,8 +141,13 @@ class ACaccess < RPCQooxdooPath
       end
       if $1 == "_all"
         start, stop = arg.split(/,/)
+        ret = print_movements( start, stop )
       end
-      ret = print_movements( Accounts.search_all, start, stop )
+      if $1 == "_all_actual"
+        start, stop = arg.split(/,/)
+        ret = print_movements_actual( start, stop )
+      end
+      dputs( 2 ){ "Sending a total of #{ret.length}"}
       dputs( 3 ){ "Sending:\n #{ret.inspect}" }
       return ret
         

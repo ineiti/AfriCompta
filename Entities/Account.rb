@@ -1,4 +1,9 @@
 class AccountRoot
+
+  def self.actual
+    Accounts.match_by_name( 'Root' )
+  end
+
   def self.accounts
     Accounts.matches_by_account_id( 0 )
   end
