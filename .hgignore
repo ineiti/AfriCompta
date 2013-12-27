@@ -10,3 +10,5 @@ Log
 config.yaml
 data
 webrick.*log
+.idea
+tmp/

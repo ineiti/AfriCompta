@@ -113,7 +113,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :multiplier=>-1.0,
         :total=>"0",
         :desc=>"Full description",
-        :account_id=>[1],
+        :account_id=>1,
         :name=>"Lending",
         :index=>9,
         :deleted=>false,
@@ -397,6 +397,7 @@ class TC_AfriCompta < Test::Unit::TestCase
       "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
       "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n", rep
 
+    ACaccess.get( "reset_user_account_indexes/foo,bar")
     rep = ACaccess.get( "accounts_get/foo,bar")
     assert_equal "", rep
 
@@ -429,6 +430,19 @@ class TC_AfriCompta < Test::Unit::TestCase
       "5544436cf81115c6faf577a7e2307e92-4\t5544436cf81115c6faf577a7e2307e92-2\n", 
       rep
 
+    rep = ACaccess.get( "movements_get/foo,bar")
+    assert_equal "Salary\r5544436cf81115c6faf577a7e2307e92-1\t1000.0\t" +
+      "2012-07-01\t5544436cf81115c6faf577a7e2307e92-2\t" +
+      "5544436cf81115c6faf577a7e2307e92-3\nGift\r" +
+      "5544436cf81115c6faf577a7e2307e92-2\t100.0\t2012-07-10\t" +
+      "5544436cf81115c6faf577a7e2307e92-2\t5544436cf81115c6faf577a7e2307e92-3\n" +
+      "Train\r5544436cf81115c6faf577a7e2307e92-3\t40.0\t2012-07-02\t" +
+      "5544436cf81115c6faf577a7e2307e92-4\t5544436cf81115c6faf577a7e2307e92-2\n" +
+      "Restaurant\r5544436cf81115c6faf577a7e2307e92-4\t20.0\t2012-07-11\t" +
+      "5544436cf81115c6faf577a7e2307e92-4\t5544436cf81115c6faf577a7e2307e92-2\n", 
+      rep
+
+    ACaccess.get( "reset_user_movement_indexes/foo,bar")
     rep = ACaccess.get( "movements_get/foo,bar")
     assert_equal "", rep
   end
@@ -656,13 +670,16 @@ class TC_AfriCompta < Test::Unit::TestCase
     setup_clean_accounts
     add_movs
     Movements.create( "Year 2012 - 1", "2012-06-01", -30, @cash, @spending )
+    Accounts.dump( true )
 
     dputs(0){"**** - Archiving 1st for 2013 - *****"}
     Accounts.archive( 6, 2013 )
+    Accounts.dump( true )
     incomes = get_sorted_accounts( "Income" )
     cash = get_sorted_accounts( "Cash" )
     assert_equal 4, incomes.count
     assert_equal 0, incomes[3].total
+    assert_equal 30, incomes[2].total, incomes[2].inspect
     assert_equal 4, cash.count
     assert_equal 30, cash[3].total
     # check also after re-calculating of the totals!
@@ -677,6 +694,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     spending = Accounts.get_by_path("Root::Spending")
     Movements.create( "Year 2013 - 2", "2013-06-01", -30, cash, spending )
     Accounts.archive( 6, 2014 )
+    Accounts.dump( true )
     
     incomes = get_sorted_accounts( "Income" )
     dputs(3){incomes.inspect}
@@ -685,9 +703,9 @@ class TC_AfriCompta < Test::Unit::TestCase
     # We lost the actual account, as it should be empty
     assert_equal 4, incomes.count
     assert_equal true, incomes[3].deleted
-    assert_equal 0, incomes[2].total
+    assert_equal 30, incomes[2].total, incomes[2].inspect
     assert_equal 4, cash.count
-    assert_equal 0, cash[2].total
+    assert_equal 30, cash[2].total, cash[2].inspect
     
     spending = get_sorted_accounts( "Spending" )
     assert_equal 3, spending.count

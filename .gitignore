@@ -8,3 +8,5 @@ nohup.out
 config.yaml
 data
 tmp/
+.idea
+compta.db.*

@@ -270,6 +270,8 @@ class Accounts < Entities
       dputs( 5 ){ "Date of #{mov.desc} is #{mov.date}" }
       m < month_start and y -= 1
       if years.has_key? y
+        value = mov.value
+        mov.value = 0
         dputs( 5 ){ "Moving to #{years[y].inspect}: " +
             "#{mov.account_src.id} - #{mov.account_dst.id} - #{acc.id}" }
         if mov.account_src.id == acc.id
@@ -279,6 +281,7 @@ class Accounts < Entities
           dputs( 5 ){ "Moving dst" }
           mov.account_dst_id = years[y]
         end
+        mov.value = value
         dputs( 5 ){ "new_index" }
         mov.new_index
         dputs( 5 ){ "new_index finished" }
@@ -384,7 +387,7 @@ class Accounts < Entities
       if years.size > 0
         most_used = last_used = this_year
         if acc.accounts.count == 0
-          most_used = years.index( years.values.max )
+          most_used = years.key( years.values.max )
           last_used = years.keys.max
           years.delete most_used
         end
@@ -408,11 +411,14 @@ class Accounts < Entities
             # Move all movements
             acc.movements.each{|m|
               dputs(4){"Moving movement #{m.to_json}"}
+              value = m.value
+              m.value = 0
               if m.account_src == acc
                 m.account_src_id = double
               else
                 m.account_dst_id = double
               end
+              m.value = value
             }
             # Delete acc
             acc.delete
@@ -461,20 +467,33 @@ class Accounts < Entities
       end
     }
     if DEBUG_LVL >= 3
-      dputs( 3 ){ "Root-tree is now" }
-      root.get_tree_depth{|a|
-        dputs( 3 ){ a.path_id }
+      self.dump
+    end
+  end
+  
+  def self.dump( mov = false )
+    root = self.match_by_name( 'Root' )
+    dputs( 0 ){ "Root-tree is now" }
+    root.get_tree_depth{|a|
+      dputs( 0 ){ a.path_id }
+      if mov
         a.movements.each{|m|
-          dputs(4){"Movement is #{m.to_json}"}
+          dputs(0){"Movement is #{m.to_json}"}
         }
-      }
-      dputs( 3 ){ "Archive-tree is now" }
+      end
+    }
+    if archive = self.match_by_name( 'Archive' )
+      dputs( 0 ){ "Archive-tree is now" }
       archive.get_tree_depth{|a|
-        dputs( 3 ){ a.path_id }
-        a.movements.each{|m|
-          dputs(4){"Movement is #{m.to_json}"}
-        }
+        dputs( 0 ){ a.path_id }
+        if mov
+          a.movements.each{|m|
+            dputs(0){"Movement is #{m.to_json}"}
+          }
+        end
       }
+    else
+      dputs(0){"No archive-tree"}
     end
   end
   
@@ -695,13 +714,15 @@ class Account < Entity
         dputs(2){"Destroying account"}
         super()
       else
-        dputs(2){"Deleting account #{self.name}"}
+        dputs(2){"Deleting account #{self.name}-#{self.id}"}
         self.account_id = nil
         self.new_index
         self.deleted = true
       end
     else
       dputs(1){"Refusing to delete account #{name}"}
+      return false
     end
+    return true
   end
 end

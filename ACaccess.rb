@@ -139,13 +139,14 @@ class ACaccess < RPCQooxdooPath
       if $1 == "_one"
         return Movements.match_by_global_id( arg ).to_s
       end
-      if $1 == "_all"
-        start, stop = arg.split(/,/)
-        ret = print_movements( start, stop )
-      end
       if $1 == "_all_actual"
         start, stop = arg.split(/,/)
         ret = print_movements_actual( start, stop )
+      else
+        if $1 == "_all"
+          start, stop = arg.split(/,/)
+        end
+        ret = print_movements( start, stop )
       end
       dputs( 2 ){ "Sending a total of #{ret.length}"}
       dputs( 3 ){ "Sending:\n #{ret.inspect}" }
@@ -162,6 +163,12 @@ class ACaccess < RPCQooxdooPath
 
     when "reset_user_indexes"
       u.update_account_index
+      u.update_movement_index
+      
+    when "reset_user_account_indexes"
+      u.update_account_index
+      
+    when "reset_user_movement_indexes"
       u.update_movement_index
 
     when "movement_delete"
@@ -202,8 +209,11 @@ class ACaccess < RPCQooxdooPath
       dputs( 3 ){ "movs is now #{movs.inspect}" }
       if movs.size > 0
         movs.each{ |m|
-          mov = Movements.from_json( m )
-          dputs( 2 ){ "Saved movement #{mov.global_id}" }
+          if mov = Movements.from_json( m )
+            dputs( 2 ){ "Saved movement #{mov.global_id}" }
+	  else
+	    dputs( 0 ){ "Error: couldn't create movement from #{m.inspect}" }
+	  end
           u.update_movement_index
         }
       end
