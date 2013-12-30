@@ -1,6 +1,6 @@
 rem To start AfriCompta
 
-set DB=sam
+set DB=test
 set PATH=%PATH%;Windows
 del sqlite3-ruby-1.2.5\lib\sqlite3_api.so
 copy Windows\reloader.rb camping-1.5\lib\camping

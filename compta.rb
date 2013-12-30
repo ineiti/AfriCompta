@@ -304,6 +304,12 @@ module Compta::Views
     else
       html do
         head do
+          debug 2, "layout: refresh is #{@refresh.inspect}"
+          if @refresh
+            tag!(:meta, 
+              'http-equiv' => "refresh",
+              :content => "#{@refresh[0]}; #{@refresh[1]}" )
+          end
           style :type => "text/css", :media => "screen" do
             %[
 body {

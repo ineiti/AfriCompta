@@ -71,85 +71,101 @@ module Compta::Controllers
     end
     
     def doMerge( path, arg )
-      @remote = Remote.find_by_id( arg )
-      check_remote
+      debug 2, "arg is #{arg.inspect}"
+      remote_id, s, is = "#{arg}/0/0/0/0/0/0/0/0".split( "/", 3 )
+      @step = s.to_i
+      @account_index_stop, @movement_index_stop,
+        @got_accounts, @put_accounts,
+        @got_movements, @put_movements, @put_movements_changes = 
+        is.split("/").collect{|i| i.to_i }
       
-      #
-      # First get the remote accounts
+      @remote = Remote.find_by_id( remote_id )
       u = User.find_by_name('local')
-
-      debug 1, "Getting remotes"
-      @account_index_stop = u.account_index - 1
-      accounts = getForm( "accounts_get" )
-      accounts.split("\n").each{ |a|
-        acc = Account.from_s( a )
-        debug 2, "Got account #{acc.name}"
-      }
-
-      # Now we can send +our_accounts+
-      @account_index_start = @remote.account_index + 1
-      if @account_index_start <= @account_index_stop
-        debug 1, "Accounts to send: #{@account_index_start}..#{@account_index_stop}"
-        # We have to start at the bottom, else we can get into trouble with regard
-        # to children not having their parents yet...
-        Account.find_all_by_account_id(0).to_a.each{|a|
-          a.get_tree{|acc|
-            debug 3, "Index of #{acc.name} is #{acc.index}"
-            if (@account_index_start..@account_index_stop) === acc.index
-              debug 2, "Account with index #{acc.index} is being transferred"
-              postForm( "account_put", { "account" => acc.to_s } )
-            end
+      ret = nil
+      
+      case @step
+      when 0
+        check_remote
+      when 1
+        debug 1, "Getting remotes"
+        @account_index_stop = u.account_index - 1
+        accounts = getForm( "accounts_get" )
+        accounts.split("\n").each{ |a|
+          acc = Account.from_s( a )
+          debug 2, "Got account #{acc.name}"
+          @got_accounts += 1
+        }
+      when 2
+        # Now we can send +our_accounts+
+        @account_index_start = @remote.account_index + 1
+        if @account_index_start <= @account_index_stop
+          debug 1, "Accounts to send: #{@account_index_start}..#{@account_index_stop}"
+          # We have to start at the bottom, else we can get into trouble with regard
+          # to children not having their parents yet...
+          Account.find_all_by_account_id(0).to_a.each{|a|
+            a.get_tree{|acc|
+              debug 3, "Index of #{acc.name} is #{acc.index}"
+              if (@account_index_start..@account_index_stop) === acc.index
+                debug 2, "Account with index #{acc.index} is being transferred"
+                postForm( "account_put", { "account" => acc.to_s } )
+                @put_accounts += 1
+              end
+            }
           }
-        }
-      else
-        debug 1, "No accounts to send"
-      end
-      # Update the pointer
-      @remote.update_account_index
-      
-      debug 1, "Getting movements"
-      # Now merge the movements
-      movements = getForm( "movements_get" )
-      @movement_index_stop = u.movement_index - 1
-      movements.split("\n").each{ |m|
-        debug 2, "String is: \n#{m}"
-        mov = Movement.from_s( m )
-      }
-
-      # Now we can send +our_movements+
-      @movement_index_start = @remote.movement_index + 1
-      @movement_count = 0
-      if @movement_index_start <= @movement_index_stop
-        debug 1, "Movements to send: #{@movement_index_start}.." + 
-          "#{@movement_index_stop}"
-        movements = []
-        Movement.find(:all, :conditions => 
-            {:index => @movement_index_start..@movement_index_stop } ).each{ |m|
-          movements.push( m.to_json )
-        }
-        @movement_count = movements.size
-        debug 0, "Having #{movements.size} movements to send"
-        while movements.size > 0
-          # We'll do it by bunches of 10
-          movements_put = movements.shift 10
-          debug 0, "Putting one bunch of 10 movements"
-          debug 4, movements_put.to_json
-          postForm( "movements_put", {"movements" => movements_put.to_json } )
-          # TODO: remove
-          # movements = []
+        else
+          debug 1, "No accounts to send"
         end
-      else
-        debug 1, "No movements to send"
+        # Update the pointer
+        @remote.update_account_index
+      when 3
+        debug 1, "Getting movements"
+        # Now merge the movements
+        movements = getForm( "movements_get" )
+        @movement_index_stop = u.movement_index - 1
+        movements.split("\n").each{ |m|
+          debug 2, "String is: \n#{m}"
+          mov = Movement.from_s( m )
+          @got_movements += 1
+        }
+      when 4
+        # Now we can send +our_movements+
+        @movement_index_start = @remote.movement_index + 1
+        @movement_count = 0
+        if @movement_index_start <= @movement_index_stop
+          debug 1, "Movements to send: #{@movement_index_start}.." + 
+            "#{@movement_index_stop}"
+          movements = []
+          Movement.find(:all, :conditions => 
+              {:index => @movement_index_start..@movement_index_stop } ).each{ |m|
+            movements.push( m.to_json )
+            @put_movements += 1
+          }
+          @movement_count = movements.size
+          debug 0, "Having #{movements.size} movements to send"
+          while movements.size > 0
+            # We'll do it by bunches of 10
+            movements_put = movements.shift 10
+            debug 0, "Putting one bunch of 10 movements"
+            debug 4, movements_put.to_json
+            postForm( "movements_put", {"movements" => movements_put.to_json } )
+            @put_movements_changes += 1
+            # TODO: remove
+            # movements = []
+          end
+        else
+          debug 1, "No movements to send"
+        end
+      when 5
+        # Update the pointer
+        @remote.update_movement_index
+        # Update the remote pointers
+        getForm( "reset_user_indexes" )
       end
-
-      # Update the pointer
-      @remote.update_movement_index
       
-
-      # Update the remote pointers
-      getForm( "reset_user_indexes" )
-      
-      return true
+      ret = [ @account_index_stop, @movement_index_stop,
+        @got_accounts, @put_accounts,
+        @got_movements, @put_movements, @put_movements_changes ].join("/")
+      return "#{remote_id}/#{@step + 1}/#{ret}"
     end
     
     def doCopied( path, arg )
@@ -399,7 +415,7 @@ module Compta::Controllers
     
     def get( p )
       fillGlobal
-      path, arg = p.split("/")
+      path, arg = p.split("/", 2)
       case path
       when "list"
         render :remote_list
@@ -413,25 +429,27 @@ module Compta::Controllers
       when "edit"
         @remote = Remote.find_by_id( arg )
         render :remote_edit
-        when "check"
-          begin
-            doCheck( path, arg )
-            render :remote_check
-          rescue Exception => e
-            @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
-            render :remote_error
-          end
-        when "check_actual"
-          begin
-            doCheck( path, arg, true )
-            render :remote_check
-          rescue Exception => e
-            @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
-            render :remote_error
-          end
+      when "check"
+        begin
+          doCheck( path, arg )
+          render :remote_check
+        rescue Exception => e
+          @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
+          render :remote_error
+        end
+      when "check_actual"
+        begin
+          doCheck( path, arg, true )
+          render :remote_check
+        rescue Exception => e
+          @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
+          render :remote_error
+        end
       when "merge"
         begin
-          doMerge( path, arg )
+          @ret = doMerge( path, arg )
+          @step < 5 and @refresh = [ 1, "/remote/merge/" + @ret ]
+          debug 2, "refresh is #{@refresh} and ret is #{@ret.inspect}"
           render :remote_merge
         rescue Exception => e
           @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
@@ -467,6 +485,10 @@ end
 
 module Compta::Views
   
+  def remote_double
+    h1 "Doubling render-calls"
+  end
+
   #
   # Remote
   #
@@ -522,17 +544,28 @@ module Compta::Views
   end
   
   def remote_merge
-    p "Merging with " + @remote.url
-    p "Got accounts: " + (@remote.account_index-@account_index_stop).to_s
-    p "Put accounts: " + (@account_index_stop - @account_index_start + 1).to_s
-    p "Got movements: " + (@remote.movement_index-@movement_index_stop).to_s
-    p "Put movements: #{@movement_count} with changes: " + (@movement_index_stop - @movement_index_start + 1).to_s
-    a "Back to work", :href => "/movement/list"
+    if @step < 5
+      h3 "Merge in progress with " + @remote.url
+    else
+      h3 "All done - merge is finished"
+    end
+    p "Checked Connection: OK"
+    p "Got accounts: " + ( @step >= 1 ? @got_accounts.to_s : "Waiting" )
+    p "Put accounts: " + (@step >= 2 ? @put_accounts.to_s : "Waiting")
+    p "Got movements: " + (@step >= 3 ? @got_movements.to_s : "Waiting")
+    p "Put movements: " + (@step >= 4 ? 
+      ( "#{@put_movements} with changes: " + (@put_movements_changes).to_s ) :
+      "Waiting")
+    if @step < 5
+      a "Interrupt merge", :href => "/movement/list"
+    else
+      a "Back to work", :href => "/movement/list"
+    end
   end
   
   def remote_error
     h1 "Error occured, I won't merge!"
-    pre "#{@error}"
+    pre @error.split( "\\n" ).join("\n")
   end
   
   def remote_check
