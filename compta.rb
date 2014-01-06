@@ -80,6 +80,16 @@ class Numeric
   end
 end
 
+class Float
+  def round( precision = 0 )
+    if precision > 0
+      return ( self * 10**precision ).round / 10.0**precision
+    else
+      return super()
+    end
+  end
+end
+
 class Array
   def sort_n
     self.sort{|a,b|

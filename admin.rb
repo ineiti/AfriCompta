@@ -31,9 +31,17 @@ module Compta::Controllers
             Account.destroy(a)
             @bad_accounts += 1
           end
-          if ! a.account_id
-            Account.destroy(a)
+          if ! ( a.account_id or a.deleted )
+            debug(2, "Account has undefined parent: #{a.inspect}")
+            a.delete
             @bad_accounts += 1
+          end
+          if a.account_id == 0
+            if ! ( ( a.name =~ /(Root|Archive)/ ) or a.deleted )
+              debug(2, "Account is in root but neither 'Root' nor 'Archive': #{a.inspect}")
+              a.delete
+              @bad_accounts += 1
+            end
           end
           @count_acc = [ @count_acc, a.index ].max
         }

@@ -1,7 +1,11 @@
 class AccountRoot
 
   def self.actual
-    Accounts.match_by_name( 'Root' )
+    self.accounts.find{|a| a.name == "Root" }
+  end
+  
+  def self.archive
+    self.accounts.find{|a| a.name == "Archive" }
   end
 
   def self.accounts
@@ -27,12 +31,21 @@ class AccountRoot
     }
     Accounts.search_all.each{ |a|
       if ( a.account_id and ( a.account_id > 0 ) ) and ( not a.account )
+        dputs(2){"Account has unexistent parent: #{a.inspect}"}
         a.delete
         bad_acc += 1
       end
-      if ! a.account_id
+      if ! ( a.account_id or a.deleted )
+        dputs(2){"Account has undefined parent: #{a.inspect}"}
         a.delete
         bad_acc += 1
+      end
+      if a.account_id == 0
+        if ! ( ( a.name =~ /(Root|Archive)/ ) or a.deleted )
+          dputs(2){"Account is in root but neither 'Root' nor 'Archive': #{a.inspect}"}
+          a.delete
+          bad_acc += 1
+        end
       end
       count_acc = [ count_acc, a.index ].max
     }
@@ -116,7 +129,7 @@ class Accounts < Entities
     a
   end
 	
-  def self.create_path( path, desc, double_last = false, mult = 1, 
+  def self.create_path( path, desc = "", double_last = false, mult = 1, 
       keep_total = false )
     elements = path.split( "::" )
     parent = AccountRoot
@@ -356,7 +369,7 @@ class Accounts < Entities
       now.month < month_start and this_year -= 1
     end
 		
-    root = self.match_by_name( 'Root' )
+    root = AccountRoot.actual
     if only_account
       root = only_account
     else
@@ -366,7 +379,7 @@ class Accounts < Entities
       end
     end
 		
-    archive = self.match_by_name( 'Archive' )
+    archive = AccountRoot.archive
     if not archive
       archive = self.create( 'Archive' )
     end
@@ -472,7 +485,7 @@ class Accounts < Entities
   end
   
   def self.dump( mov = false )
-    root = self.match_by_name( 'Root' )
+    root = AccountRoot.actual
     dputs( 0 ){ "Root-tree is now" }
     root.get_tree_depth{|a|
       dputs( 0 ){ a.path_id }
@@ -482,7 +495,7 @@ class Accounts < Entities
         }
       end
     }
-    if archive = self.match_by_name( 'Archive' )
+    if archive = AccountRoot.archive
       dputs( 0 ){ "Archive-tree is now" }
       archive.get_tree_depth{|a|
         dputs( 0 ){ a.path_id }
@@ -495,6 +508,9 @@ class Accounts < Entities
     else
       dputs(0){"No archive-tree"}
     end
+    AccountRoot.accounts.each{|a|
+      dputs( 0 ){"Root-Account: #{a.inspect}"}
+    }
   end
   
   def migration_1( a )
@@ -625,14 +641,18 @@ class Account < Entity
     }
     sorted
   end
-	    
+
+  def bool_to_s( b )
+    b ? "true" : "false"
+  end
+    
   def to_s( add_path = false )
     if account || true
       dputs(4){"Account-desc: #{name.to_s}, #{global_id}, #{account_id.inspect}"}
       "#{desc}\r#{global_id}\t" + 
-        "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
+        "#{total.to_f.round(3).to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
         ( account_id ? ( ( account_id > 0 ) ? account.global_id.to_s : "" ) : "" ) +
-        "\t#{deleted.to_s}" + "\t#{keep_total.to_s}" + 
+        "\t#{bool_to_s( self.deleted )}" + "\t#{bool_to_s( self.keep_total )}" + 
         ( add_path ? "\t#{path}" : "" )
     else
       "nope"
@@ -710,15 +730,10 @@ class Account < Entity
       }
     end
     if is_empty
-      if force
-        dputs(2){"Destroying account"}
-        super()
-      else
-        dputs(2){"Deleting account #{self.name}-#{self.id}"}
-        self.account_id = nil
-        self.new_index
-        self.deleted = true
-      end
+      dputs(2){"Deleting account #{self.name}-#{self.id}"}
+      self.account_id = nil
+      self.new_index
+      self.deleted = true
     else
       dputs(1){"Refusing to delete account #{name}"}
       return false

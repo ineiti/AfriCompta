@@ -54,7 +54,7 @@ class Movements < Entities
     t.value = value
     t.global_id = Users.match_by_name("local").full + "-" + t.id.to_s
     t.new_index
-    dputs( 4 ){ t.to_json }
+    dputs( 4 ){ t.to_json.inspect }
     t
   end
 end
@@ -148,10 +148,10 @@ class Movement < Entity
   def delete
     dputs(4){"Deleting movement #{desc}"}
     src, dst = account_src, account_dst
-    ddputs(3){"totals before: #{src.get_path}=#{src.total}, " + 
+    dputs(3){"totals before: #{src.get_path}=#{src.total}, " + 
         "#{dst.get_path}=#{dst.total}"}
     self.value = 0
-    ddputs(3){"totals after: #{src.get_path}=#{src.total}, " + 
+    dputs(3){"totals after: #{src.get_path}=#{src.total}, " + 
         "#{dst.get_path}=#{dst.total}"}
     super
   end

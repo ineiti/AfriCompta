@@ -6,7 +6,7 @@ $VERSION = 0x1120
 
 class ACaccess < RPCQooxdooPath
   def self.parse( r, p, q )
-    dputs( 0 ){ "in ACaccess: #{p} - #{q.inspect}" }
+    dputs( 1 ){ "in ACaccess: #{p} - #{q.inspect}" }
     method = p.gsub( /^\/acaccess\/merge\//, '' )
     dputs( 3 ){ "Calling method #{method} of #{r}" }
     case r
@@ -55,8 +55,8 @@ class ACaccess < RPCQooxdooPath
       if start > 0
         dputs( 4 ){ "Mer: Movement #{m.desc}, #{m.value}" }
         ai = actual_ids.find( m.account_src_id.id )
-        ddputs( 4 ){ "movement_src is #{m.account_src_id.inspect} from #{ai.inspect}"}
-        ddputs( 4 ){ "actual_ids is #{actual_ids.inspect}"}
+        dputs( 4 ){ "movement_src is #{m.account_src_id.inspect} from #{ai.inspect}"}
+        dputs( 4 ){ "actual_ids is #{actual_ids.inspect}"}
       end
       ret += m.to_s + "\n"
     }
@@ -133,7 +133,7 @@ class ACaccess < RPCQooxdooPath
         
       # Gets all movements (for the accounts of that user)
     when /movements_get(.*)/
-      dputs( 2 ){ "movements_get#{$1}" }
+      dputs( 2 ){ "movements_get#{$1} with #{arg.inspect}" }
       start, stop = u.movement_index + 1, u_local.movement_index - 1
       # Returns only one account
       if $1 == "_one"
@@ -172,12 +172,12 @@ class ACaccess < RPCQooxdooPath
       u.update_movement_index
 
     when "movement_delete"
-      ddputs( 3 ){ "Going to delete movement #{arg}" }
+      dputs( 3 ){ "Going to delete movement #{arg}" }
       while mov = Movements.match_by_global_id( arg )
-        ddputs(3){"Found movement #{mov.inspect}" }
+        dputs(3){"Found movement #{mov.inspect}" }
         mov.delete
       end
-      ddputs(3){"Finished deleting"}
+      dputs(3){"Finished deleting"}
     end
     return ""
   end
@@ -189,7 +189,7 @@ class ACaccess < RPCQooxdooPath
     user, pass = input['user'], input['pass']
     u = Users.match_by_name( user )
     if not ( u and u.pass == pass )
-      dputs( 0 ){ "Didn't find user #{user}" }
+      dputs( 1 ){ "Didn't find user #{user}" }
       return "User " + user + " not known with pass " +
         pass
     end
@@ -218,14 +218,14 @@ class ACaccess < RPCQooxdooPath
         }
       end
     when "movement_delete"
-      ddputs( 3 ){ "Going to delete movement" }
+      dputs( 3 ){ "Going to delete movement" }
       while mov = Movements.match_by_global_id( input['global_id'] )
-        ddputs(3){"Found movement #{mov.inspect}" }
+        dputs(3){"Found movement #{mov.inspect}" }
         mov.delete
       end
       dputs(3){"Finished deleting"}
     when "account_put"
-      ddputs( 3 ){ "Going to put account #{input['account'].inspect}" }
+      dputs( 3 ){ "Going to put account #{input['account'].inspect}" }
       acc = Accounts.from_s( input['account'] )
       u.update_account_index
       dputs( 2 ){ "Saved account #{acc.global_id}" }

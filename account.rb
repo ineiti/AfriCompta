@@ -122,14 +122,18 @@ module Compta::Models
       a
       debug 2, "Created account #{a.name}"
     end
+
+    def bool_to_s( b )
+      b ? "true" : "false"
+    end
     
     def to_s( add_path = false )
       if account || true
-        "Account-desc: #{name.to_s}, #{global_id}"
+        #debug(4,"Account-desc: #{name.to_s}, #{global_id}")
         "#{desc}\r#{global_id}\t" + 
-          "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
+          "#{total.to_f.round(3).to_s}\t#{name.to_s}\t#{multiplier.to_i.to_s}\t" +
           ( (account_id and account_id > 0 ) ? account.global_id.to_s : "" ) +
-          "\t#{deleted.to_s}" + "\t#{keep_total.to_s}" + 
+          "\t#{bool_to_s( deleted )}" + "\t#{bool_to_s( keep_total )}" + 
           ( add_path ? "\t#{path}" : "" )
       else
         "nope"
@@ -155,6 +159,7 @@ module Compta::Models
       if self.is_empty
         debug 2, "Deleting account #{self.name} with #{self.deleted.inspect}"
         self.deleted = true
+        self.account = nil
         self.new_index
         self.save
         debug 2, "account #{self.name} is now #{self.deleted.inspect}"
@@ -183,8 +188,8 @@ module Compta::Models
       deleted = deleted_s == "true"
       keep_total = keep_total_s == "true"
       debug 3, "Here comes the account: " + global_id.to_s
-      debug 3, "par: #{par}"
-      if par
+      debug 3, "par: #{par.inspect}"
+      if par.to_s.length > 0
         parent = Account.find_by_global_id( par )
         debug 5, "parent: #{parent.global_id}"
       end
@@ -241,6 +246,23 @@ module Compta::Models
         ( not a.account ) and ( not a.deleted )
       }.first
     end
+
+    def update_total( precision = 3 )
+      # Recalculate everything.
+      debug( 4, "Calculating total for #{self.path} with mult #{self.multiplier}" )
+      self.total = ( 0.0 ).to_f
+      debug( 4, "Total before update is #{self.total} - #{self.total.class.name}" )
+      self.movements.each{|m|
+        v = m.getValue( self )
+        debug( 5, "Adding value #{v.inspect} to #{self.total.inspect}" )
+        self.total = self.total.to_f + v.to_f
+        debug( 5, "And getting #{self.total.inspect}" )
+      }
+      self.total = self.total.round( precision )
+      debug( 4, "Final total is #{self.total} - #{self.total.class.name}" )
+      self.save
+    end
+
   end
 end  
 

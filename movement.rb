@@ -145,7 +145,7 @@ module Compta::Controllers
       @show_year = show_year
       debug 0, "Found root-account #{@account_root} for year #{@show_year}"
       @accounts = []
-      @account_root.get_tree{|a| @accounts.push a }
+      @account_root.get_tree{|a| a.deleted or @accounts.push( a ) }
       @account_archive = Account.get_archive
       @remote = Remote.first
       #      @account_lm = Account.find_by_id( 150 )
