@@ -3,7 +3,7 @@
 require 'test/unit'
 
 CONFIG_FILE="config_test.yaml"
-DEBUG_LVL=0
+DEBUG_LVL=2
 
 require 'QooxView'
 require 'ACQooxView'
@@ -19,7 +19,7 @@ Permission.add( 'secretary', 'PersonModify', 'professor' )
 qooxView = QooxView.init( '../Entities', '../Views' )
 
 tests = %w( africompta account )
-tests = %w( africompta )
+#tests = %w( africompta )
 #tests = %w( account )
 tests.each{|t|
   require "ac_#{t}"
