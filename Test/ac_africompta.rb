@@ -38,7 +38,6 @@ class TC_AfriCompta < Test::Unit::TestCase
         :revision=>nil,
         :account_src_id=>[2],
         :global_id=>"5544436cf81115c6faf577a7e2307e92-1",
-        :rev_index=>1,
         :index=>1,
         :account_dst_id=>[3]},
       {:id=>2,
@@ -47,7 +46,6 @@ class TC_AfriCompta < Test::Unit::TestCase
         :revision=>nil,
         :account_src_id=>[2],
         :global_id=>"5544436cf81115c6faf577a7e2307e92-2",
-        :rev_index=>2,
         :index=>2,
         :account_dst_id=>[3]},
       {:id=>3,
@@ -56,7 +54,6 @@ class TC_AfriCompta < Test::Unit::TestCase
         :revision=>nil,
         :account_src_id=>[4],
         :global_id=>"5544436cf81115c6faf577a7e2307e92-3",
-        :rev_index=>3,
         :index=>3,
         :account_dst_id=>[2]},
       {:id=>4,
@@ -65,7 +62,6 @@ class TC_AfriCompta < Test::Unit::TestCase
         :revision=>nil,
         :account_src_id=>[4],
         :global_id=>"5544436cf81115c6faf577a7e2307e92-4",
-        :rev_index=>4,
         :index=>4,
         :account_dst_id=>[2]}], 
       movs.collect{ |m| 
@@ -82,8 +78,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :global_id=>"5544436cf81115c6faf577a7e2307e92-1",
         :deleted=>false,
         :keep_total=>false,
-        :index=>1,
-        :rev_index=>1},
+        :index=>1},
       {:id=>2,
         :multiplier=>-1.0,
         :total=>"1040.0",
@@ -93,8 +88,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :global_id=>"5544436cf81115c6faf577a7e2307e92-2",
         :deleted=>false,
         :keep_total=>true,
-        :index=>5,
-        :rev_index=>2},
+        :index=>5},
       {:id=>3,
         :multiplier=>1.0,
         :total=>"1100.0",
@@ -104,8 +98,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :global_id=>"5544436cf81115c6faf577a7e2307e92-3",
         :deleted=>false,
         :keep_total=>false,
-        :index=>8,
-        :rev_index=>3},
+        :index=>8},
       {:id=>4,
         :multiplier=>1.0,
         :total=>"-60.0",
@@ -115,8 +108,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :global_id=>"5544436cf81115c6faf577a7e2307e92-4",
         :deleted=>false,
         :keep_total=>false,
-        :index=>10,
-        :rev_index=>4},
+        :index=>10},
       {:global_id=>"5544436cf81115c6faf577a7e2307e92-5",
         :multiplier=>-1.0,
         :total=>"0",
@@ -124,7 +116,6 @@ class TC_AfriCompta < Test::Unit::TestCase
         :account_id=>1,
         :name=>"Lending",
         :index=>9,
-        :rev_index=>5,
         :deleted=>false,
         :keep_total=>true,
         :id=>5}], 
@@ -166,9 +157,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :id=>2,
         :deleted=>false,
         :keep_total=>true,
-        :rev_index=>2,
-        :index=>5
-      }, 
+        :index=>5}, 
       mov.get_other_account( mov.account_src ).to_hash )
 		
     # This is 11th of July 2012
@@ -234,9 +223,9 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal "Root", @root.path
     assert_equal "Root::Outcome", @outcome.path
 		
-    assert_equal 4, @outcome.rev_index
+    assert_equal 10, @outcome.index
     @outcome.new_index
-    assert_equal 11, @outcome.rev_index
+    assert_equal 11, @outcome.index
 		
     foo = Users.create( "foo", "foo bar", "foobar" )
     box = Accounts.create( "Cashbox", "Running cash", @cash, 
@@ -257,7 +246,6 @@ class TC_AfriCompta < Test::Unit::TestCase
           :account_dst_id=>[2],
           :global_id=>"5544436cf81115c6faf577a7e2307e92-4",
           :index=>4,
-          :rev_index=>4,
           :id=>4},
         {:value=>100.0,
           :desc=>"Gift",
@@ -266,7 +254,6 @@ class TC_AfriCompta < Test::Unit::TestCase
           :account_dst_id=>[3],
           :global_id=>"5544436cf81115c6faf577a7e2307e92-2",
           :index=>2,
-          :rev_index=>2,
           :id=>2},
         {:value=>40.0,
           :desc=>"Train",
@@ -275,7 +262,6 @@ class TC_AfriCompta < Test::Unit::TestCase
           :account_dst_id=>[2],
           :global_id=>"5544436cf81115c6faf577a7e2307e92-3",
           :index=>3,
-          :rev_index=>3,
           :id=>3},
         {:value=>1000.0,
           :desc=>"Salary",
@@ -284,13 +270,12 @@ class TC_AfriCompta < Test::Unit::TestCase
           :account_dst_id=>[3],
           :global_id=>"5544436cf81115c6faf577a7e2307e92-1",
           :index=>1,
-          :rev_index=>1,
           :id=>1}], 
       @cash.movements.collect{|m| m.to_hash.delete_if{|k,v| k == :date
         }} )
 		
     assert_equal "All money\r5544436cf81115c6faf577a7e2307e92-2\t-1040.0\t" + 
-      "Cash_2\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse", 
+      "Cash_2\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t", 
       @cash.to_s
 		
     assert_equal false, @cash.is_empty
@@ -324,7 +309,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :id=>6,
         :deleted=>false,
         :keep_total=>true,
-        :rev_index=>11}, box.to_hash )
+        :index=>11}, box.to_hash )
     assert_equal "Root::Cash::Cashbox", box.path
     assert_equal( -1, @cash.multiplier )
     assert_equal( -1, box.multiplier )
@@ -342,7 +327,7 @@ class TC_AfriCompta < Test::Unit::TestCase
         :id=>6,
         :deleted=>false,
         :keep_total=>true,
-        :rev_index=>13}, box.to_hash )
+        :index=>13}, box.to_hash )
 		
     course = Accounts.create_path("Root::Income::Course", "course")
     assert_equal "Root::Income::Course", course.get_path
@@ -398,35 +383,35 @@ class TC_AfriCompta < Test::Unit::TestCase
     rep = ACaccess.get( "accounts_get_one/5544436cf81115c6faf577a7e2307e92-2" + 
         "/foo,bar")
     assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-2\t" +
-      "1040.0\tCash\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue", rep
+      "1040.0\tCash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue", rep
 
     rep = ACaccess.get( "accounts_get/foo,bar")
-    assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0.0\t" +
-      "Root\t1\t\tfalse\tfalse\n" +
+    assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
+      "Root\t1\t\t\t\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" +
-      "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\n" +
+      "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\t" +
-      "Income\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse\n" +
+      "Income\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.0\t" +
-      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse\n" +
-      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0.0\t" +
-      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\n", rep
+      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
+      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\n", rep
 
     ACaccess.get( "reset_user_account_indexes/foo,bar")
     rep = ACaccess.get( "accounts_get/foo,bar")
     assert_equal "", rep
 
     rep = ACaccess.get( "accounts_get_all/foo,bar")
-    assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0.0\t" +
-      "Root\t1\t\tfalse\tfalse\tRoot\n" +
+    assert_equal "Full description\r5544436cf81115c6faf577a7e2307e92-1\t0\t" +
+      "Root\t1\t\t\t\tRoot\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-2\t1040.0\t" +
-      "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\tRoot::Cash\n" +
+      "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\tRoot::Cash\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\t" +
-      "Income\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse\tRoot::Income\n" +
+      "Income\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\tRoot::Income\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.0\t" +
-      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse\tRoot::Outcome\n" +
-      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0.0\t" +
-      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\tRoot::Lending\n", rep
+      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\t\t\tRoot::Outcome\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0\t" +
+      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\t\ttrue\tRoot::Lending\n", rep
 		
     rep = ACaccess.get( "movements_get_one/5544436cf81115c6faf577a7e2307e92-4/foo,bar")
     assert_equal "Restaurant\r5544436cf81115c6faf577a7e2307e92-4\t20.0\t" +
@@ -510,11 +495,11 @@ class TC_AfriCompta < Test::Unit::TestCase
   def tes_gettree
     tree = []
     Accounts.matches_by_account_id(0).to_a.each{|a|
-      a.get_tree{ |b| tree.push b.rev_index }
+      a.get_tree{ |b| tree.push b.index }
     }
     tree_d = []
     Accounts.matches_by_account_id(0).to_a.each{|a|
-      a.get_tree_debug{ |b| tree_d.push b.rev_index }
+      a.get_tree_debug{ |b| tree_d.push b.index }
     }
 
     assert_equal 389, tree.count

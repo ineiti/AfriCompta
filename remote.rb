@@ -97,7 +97,6 @@ module Compta::Controllers
         }
       when 2
         # Now we can send +our_accounts+
-        #@remote.account_index = 2693
         @account_index_start = @remote.account_index + 1
         if @account_index_start <= @account_index_stop
           debug 1, "Accounts to send: #{@account_index_start}..#{@account_index_stop}"
@@ -105,11 +104,9 @@ module Compta::Controllers
           # to children not having their parents yet...
           Account.find_all_by_account_id(0).to_a.each{|a|
             a.get_tree{|acc|
-              debug( 3, "Index of #{acc.name} is #{acc.get_index}")
-#              if acc.global_id == "7a32306f2cfd1d386c1d8b6d7442ef4b-1315"
-#              end
-              if (@account_index_start..@account_index_stop) === acc.rev_index
-                debug 2, "Account with index #{acc.rev_index} is being transferred"
+              debug 3, "Index of #{acc.name} is #{acc.index}"
+              if (@account_index_start..@account_index_stop) === acc.index
+                debug 2, "Account with index #{acc.index} is being transferred"
                 postForm( "account_put", { "account" => acc.to_s } )
                 @put_accounts += 1
               end
@@ -218,7 +215,6 @@ module Compta::Controllers
       # to list all movements 
       get_movements = true
       compare_accounts = true
-      
       u = User.find_by_name('local')
       debug 1, "Getting remotes"
       @account_index_stop = u.account_index - 1
@@ -254,43 +250,25 @@ module Compta::Controllers
         # * accounts_empty - which ones are empty, local or remote
         remote_accounts_global_id = []
         @accounts_only_remote = []
-        accounts_remote.each{ |s|
-          desc, str = s.split("\r")
+        accounts_remote.each{ |str|
+          desc, str = str.split("\r")
           if not str
             debug 0, "Invalid account found: #{desc}"
           else
             global_id, total, name, multiplier, par, 
-            deleted, keep, p = str.split("\t")
+            deleted, keep, path = str.split("\t")
             remote_accounts_global_id.push( global_id )
-            if local_account = Account.find_by_global_id( global_id )
-              if local_account.to_s(true) != s
-                debug 1, "Remote and local are not the same."
-                debug 2, "Remote: #{s.inspect}"
-                debug 2, "Local : #{local_account.to_s(true).inspect}"
-                local_account.update_total
-              end
-            else
-              debug 0, "Lone remote global-id is #{global_id.inspect}"
-              debug 1, str.inspect
-              debug 2, "Deleted is: #{deleted}"
-              if deleted == "false"
-                @accounts_only_remote.push( Account.new(:name=>p, :total=>total, 
-                    :global_id=>global_id, :deleted => deleted ) )
-              else
-                debug 2, "Ignoring because it is deleted"
-              end
+            debug 0, "Remote global-id is #{global_id.inspect}"
+            if not Account.find_by_global_id( global_id )
+              @accounts_only_remote.push( Account.new(:name=>path, :total=>total, :global_id=>global_id))
             end
           end
         }
         debug 2, "Remote has #{@accounts_only_remote.size} lone accounts"
       
         @accounts_only_local = Account.find(:all).select{ |a|
-          if remote_accounts_global_id.index( a.global_id.to_s ) == nil
-            debug 0, "Local global-id is #{a.global_id.inspect}"
-            true
-          else
-            false
-          end
+          debug 0, "Local global-id is #{a.global_id.inspect}"
+          remote_accounts_global_id.index( a.global_id.to_s ) == nil
         }
         debug 2, "Local has #{@accounts_only_local.size} lone accounts"
       else
@@ -521,7 +499,7 @@ module Compta::Views
         tr do 
           td.small { a "Merge", :href => "/remote/merge/" + r.id.to_s }
           td.small { a "Check", :href => "/remote/check/" + r.id.to_s }
-          #td.small { a "Check actual", :href => "/remote/check_actual/" + r.id.to_s }
+          td.small { a "Check actual", :href => "/remote/check_actual/" + r.id.to_s }
           td.small { a "Copied", :href => "/remote/copied/" + r.id.to_s }
           td.small { a "Edit", :href => "/remote/edit/" + r.id.to_s }
           td.small { a "Delete", :href => "/remote/delete/" + r.id.to_s }
@@ -576,8 +554,8 @@ module Compta::Views
     p "Put accounts: " + (@step >= 2 ? @put_accounts.to_s : "Waiting")
     p "Got movements: " + (@step >= 3 ? @got_movements.to_s : "Waiting")
     p "Put movements: " + (@step >= 4 ? 
-        ( "#{@put_movements} with changes: " + (@put_movements_changes).to_s ) :
-        "Waiting")
+      ( "#{@put_movements} with changes: " + (@put_movements_changes).to_s ) :
+      "Waiting")
     if @step < 5
       a "Interrupt merge", :href => "/movement/list"
     else
@@ -616,44 +594,37 @@ module Compta::Views
               } } } } }
     end
     def put_table( remote, local, str, fields_remote, fields_local )
-      [[remote, "remote", fields_remote],
-        [local, "local", fields_local]].each{|elements, name_el, fields|
-        
-        p "Found #{str}s only on one side: " + ( elements.size ).to_s
-        form_name = "#{str}_#{name_el}"
-        table :border=>1 do
-          form :action => "/remote/check_fix_#{str}/#{@remote.id.to_s}", 
-          :method => "post", :name => form_name do
-            put_entry( elements, name_el, fields )
-            tr { td :colspan=>2 do
-                input :type => "submit", :value => "Delete", 
-                :onclick => "document.#{form_name}.action.value='delete'"
-                input :type => "submit", :value => "Copy", 
-                :onclick => "document.#{form_name}.action.value='copy'"
-                input :type => 'hidden', :name => "action", :value => "none"
-              end }
-          end
-        end      
-      }
-    end
-    def put_table_mix( remote, str, fields_remote )
-      p "Found #{str}s to be mixed-up: " + remote.size.to_s
+      if remote and local
+        p "Found #{str}s only on one side: " + ( remote.size + local.size ).to_s
+      else
+        p "Found #{str}s to be mixed-up: " + remote.size.to_s
+      end
       table :border=>1 do
         form :action => "/remote/check_fix_#{str}/#{@remote.id.to_s}", 
           :method => "post", :name => str do
-          tr {
-            td ""
-            td "Local"
-            td "Remote"
-          }
-          put_entry( remote, "", fields_remote )
+          if local
+            put_entry( remote, "remote", fields_remote )
+            put_entry( local, "local", fields_local )
+          else
+            tr {
+              td ""
+              td "Local"
+              td "Remote"
+            }
+            put_entry( remote, "", fields_remote )
+          end
           tr { td :colspan=>2 do
               input :type => "submit", :value => "Delete", 
               :onclick => "document.#{str}.action.value='delete'"
-              input :type => "submit", :value=> "Pull",
-              :onclick => "document.#{str}.action.value='pull'"
-              input :type => "submit", :value=> "Push",
-              :onclick => "document.#{str}.action.value='push'"
+              if local
+                input :type => "submit", :value => "Copy", 
+                :onclick => "document.#{str}.action.value='copy'"
+              else
+                input :type => "submit", :value=> "Pull",
+                :onclick => "document.#{str}.action.value='pull'"
+                input :type => "submit", :value=> "Push",
+                :onclick => "document.#{str}.action.value='push'"
+              end
               input :type => 'hidden', :name => "action", :value => "none"
             end }
         end
@@ -663,9 +634,7 @@ module Compta::Views
     ul { 
       li {
         put_table( @accounts_only_remote, @accounts_only_local, "account",
-          # Hack: Remote-accounts have their path copied into "name"
-          ["name", "total", "deleted", "", "global_id"], 
-          ["path", "total", "deleted", "", "global_id"] )
+          ["name", "total", "", "global_id"], ["path", "total", "", "global_id"] )
       }
       li {
         put_table( @movements_only_remote, @movements_only_local, "movement",
@@ -673,8 +642,8 @@ module Compta::Views
           ["date", "value", "desc", "", "src", "dst", "", "global_id"] )
       }
       li {
-        put_table_mix( @movements_mixed, "movement",
-          ["date", "value", "desc", "", "src", "dst", "", "global_id"] )
+        put_table( @movements_mixed, nil, "mixed",
+          ["date", "value", "desc", "", "src", "dst", "", "global_id"], nil)
       }
     }
     a "Home", :href=>"/"

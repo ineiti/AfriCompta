@@ -6,7 +6,7 @@ $VERSION = 0x1120
 
 class ACaccess < RPCQooxdooPath
   def self.parse( r, p, q )
-    dputs( 1 ){ "in ACaccess: #{p} - #{q.inspect}" }
+    dputs( 0 ){ "in ACaccess: #{p} - #{q.inspect}" }
     method = p.gsub( /^\/acaccess\/merge\//, '' )
     dputs( 3 ){ "Calling method #{method} of #{r}" }
     case r
@@ -25,7 +25,7 @@ class ACaccess < RPCQooxdooPath
         " to #{stop.class}:#{stop}" }
     ret = ""
     Movements.search_all.select{|m|
-      mi = m.rev_index
+      mi = m.index
       m and mi and mi >= start and mi <= stop
     }.each{ |m|
       if start > 0
@@ -47,7 +47,7 @@ class ACaccess < RPCQooxdooPath
       actual_ids.push a.id
     }
     movs = Movements.search_all.select{|m|
-      mi = m.rev_index
+      mi = m.index
       m and mi and mi >= start and mi <= stop and actual_ids.find( m.account_src_id )
     }
     dputs( 2 ){ "Found #{movs.length} movements between #{start}..#{stop}"}
@@ -55,8 +55,8 @@ class ACaccess < RPCQooxdooPath
       if start > 0
         dputs( 4 ){ "Mer: Movement #{m.desc}, #{m.value}" }
         ai = actual_ids.find( m.account_src_id.id )
-        dputs( 4 ){ "movement_src is #{m.account_src_id.inspect} from #{ai.inspect}"}
-        dputs( 4 ){ "actual_ids is #{actual_ids.inspect}"}
+        ddputs( 4 ){ "movement_src is #{m.account_src_id.inspect} from #{ai.inspect}"}
+        ddputs( 4 ){ "actual_ids is #{actual_ids.inspect}"}
       end
       ret += m.to_s + "\n"
     }
@@ -94,7 +94,7 @@ class ACaccess < RPCQooxdooPath
       if $1 == "_all"
         dputs( 2 ){ "Putting all accounts" }
         Accounts.search_all.each{|acc|
-          dputs( 4 ){ "Found account #{acc.name} with index #{acc.rev_index}" }
+          dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
           ret += "#{acc.to_s( true )}\n"
         }
       elsif $1 == "_count"
@@ -103,22 +103,22 @@ class ACaccess < RPCQooxdooPath
         acc_start, acc_end = arg.split(",")
         dputs( 2 ){ "Putting accounts #{acc_start}..#{acc_end}"}
         Accounts.search_all.select{|acc|
-          acc.rev_index >= acc_start.to_i and acc.rev_index <= acc_end.to_i
+          acc.index >= acc_start.to_i and acc.index <= acc_end.to_i
         }.each{|acc|
-          dputs( 4 ){ "Found account #{acc.name} with index #{acc.rev_index}" }
+          dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
           ret += "#{acc.to_s( true )}\n"
         }
       else
         dputs( 2 ){ "Starting to search accounts" }
         Accounts.matches_by_account_id(0).to_a.sort{|a,b|
           a.global_id <=> b.global_id }.each{|a|
-          dputs( 2 ){ "Found one root-account #{a.rev_index} - #{a.path_id}" }
+          dputs( 2 ){ "Found one root-account #{a.index} - #{a.path_id}" }
           if a.global_id
             dputs( 2 ){ "It's global" }
             a.get_tree{|acc|
-              dputs( 4 ){ "In get_tree #{acc.rev_index} - #{acc.path_id}" }
-              if acc.rev_index > u.account_index
-                dputs( 4 ){ "Found account #{acc.name} with index #{acc.rev_index}" }
+              dputs( 4 ){ "In get_tree #{acc.index} - #{acc.path_id}" }
+              if acc.index > u.account_index
+                dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
                 ret += "#{acc.to_s}\n"
               end
             }
@@ -133,7 +133,7 @@ class ACaccess < RPCQooxdooPath
         
       # Gets all movements (for the accounts of that user)
     when /movements_get(.*)/
-      dputs( 2 ){ "movements_get#{$1} with #{arg.inspect}" }
+      dputs( 2 ){ "movements_get#{$1}" }
       start, stop = u.movement_index + 1, u_local.movement_index - 1
       # Returns only one account
       if $1 == "_one"
@@ -172,12 +172,12 @@ class ACaccess < RPCQooxdooPath
       u.update_movement_index
 
     when "movement_delete"
-      dputs( 3 ){ "Going to delete movement #{arg}" }
+      ddputs( 3 ){ "Going to delete movement #{arg}" }
       while mov = Movements.match_by_global_id( arg )
-        dputs(3){"Found movement #{mov.inspect}" }
+        ddputs(3){"Found movement #{mov.inspect}" }
         mov.delete
       end
-      dputs(3){"Finished deleting"}
+      ddputs(3){"Finished deleting"}
     end
     return ""
   end
@@ -189,7 +189,7 @@ class ACaccess < RPCQooxdooPath
     user, pass = input['user'], input['pass']
     u = Users.match_by_name( user )
     if not ( u and u.pass == pass )
-      dputs( 1 ){ "Didn't find user #{user}" }
+      dputs( 0 ){ "Didn't find user #{user}" }
       return "User " + user + " not known with pass " +
         pass
     end
@@ -218,14 +218,14 @@ class ACaccess < RPCQooxdooPath
         }
       end
     when "movement_delete"
-      dputs( 3 ){ "Going to delete movement" }
+      ddputs( 3 ){ "Going to delete movement" }
       while mov = Movements.match_by_global_id( input['global_id'] )
-        dputs(3){"Found movement #{mov.inspect}" }
+        ddputs(3){"Found movement #{mov.inspect}" }
         mov.delete
       end
       dputs(3){"Finished deleting"}
     when "account_put"
-      dputs( 3 ){ "Going to put account #{input['account'].inspect}" }
+      ddputs( 3 ){ "Going to put account #{input['account'].inspect}" }
       acc = Accounts.from_s( input['account'] )
       u.update_account_index
       dputs( 2 ){ "Saved account #{acc.global_id}" }
