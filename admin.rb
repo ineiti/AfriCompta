@@ -15,15 +15,15 @@ module Compta::Controllers
         @bad_movements, @bad_accounts = 0, 0
         Movement.find( :all ).each{ |m|
           if not m or not m.date or not m.desc or not m.value or 
-              not m.index or not m.account_src or not m.account_dst
+              not m.rev_index or not m.account_src or not m.account_dst
             if m and m.desc
               debug 1, "Bad movement: #{m.desc}"
             end
             Movement.destroy(m)
             @bad_movements += 1
           end
-          if m.index
-            @count_mov = [ @count_mov, m.index ].max
+          if m.rev_index
+            @count_mov = [ @count_mov, m.rev_index ].max
           end
         }
         Account.find(:all).each{ |a|
@@ -43,7 +43,7 @@ module Compta::Controllers
               @bad_accounts += 1
             end
           end
-          @count_acc = [ @count_acc, a.index ].max
+          @count_acc = [ @count_acc, a.rev_index ].max
         }
 
         # Check also whether our counters are OK

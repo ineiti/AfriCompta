@@ -25,7 +25,7 @@ class ACaccess < RPCQooxdooPath
         " to #{stop.class}:#{stop}" }
     ret = ""
     Movements.search_all.select{|m|
-      mi = m.index
+      mi = m.rev_index
       m and mi and mi >= start and mi <= stop
     }.each{ |m|
       if start > 0
@@ -47,7 +47,7 @@ class ACaccess < RPCQooxdooPath
       actual_ids.push a.id
     }
     movs = Movements.search_all.select{|m|
-      mi = m.index
+      mi = m.rev_index
       m and mi and mi >= start and mi <= stop and actual_ids.find( m.account_src_id )
     }
     dputs( 2 ){ "Found #{movs.length} movements between #{start}..#{stop}"}
@@ -94,7 +94,7 @@ class ACaccess < RPCQooxdooPath
       if $1 == "_all"
         dputs( 2 ){ "Putting all accounts" }
         Accounts.search_all.each{|acc|
-          dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
+          dputs( 4 ){ "Found account #{acc.name} with index #{acc.rev_index}" }
           ret += "#{acc.to_s( true )}\n"
         }
       elsif $1 == "_count"
@@ -103,22 +103,22 @@ class ACaccess < RPCQooxdooPath
         acc_start, acc_end = arg.split(",")
         dputs( 2 ){ "Putting accounts #{acc_start}..#{acc_end}"}
         Accounts.search_all.select{|acc|
-          acc.index >= acc_start.to_i and acc.index <= acc_end.to_i
+          acc.rev_index >= acc_start.to_i and acc.rev_index <= acc_end.to_i
         }.each{|acc|
-          dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
+          dputs( 4 ){ "Found account #{acc.name} with index #{acc.rev_index}" }
           ret += "#{acc.to_s( true )}\n"
         }
       else
         dputs( 2 ){ "Starting to search accounts" }
         Accounts.matches_by_account_id(0).to_a.sort{|a,b|
           a.global_id <=> b.global_id }.each{|a|
-          dputs( 2 ){ "Found one root-account #{a.index} - #{a.path_id}" }
+          dputs( 2 ){ "Found one root-account #{a.rev_index} - #{a.path_id}" }
           if a.global_id
             dputs( 2 ){ "It's global" }
             a.get_tree{|acc|
-              dputs( 4 ){ "In get_tree #{acc.index} - #{acc.path_id}" }
-              if acc.index > u.account_index
-                dputs( 4 ){ "Found account #{acc.name} with index #{acc.index}" }
+              dputs( 4 ){ "In get_tree #{acc.rev_index} - #{acc.path_id}" }
+              if acc.rev_index > u.account_index
+                dputs( 4 ){ "Found account #{acc.name} with index #{acc.rev_index}" }
                 ret += "#{acc.to_s}\n"
               end
             }

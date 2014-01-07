@@ -31,11 +31,17 @@ module Compta::Models
     end
     
     def new_index()
+      debug 2, "Old index for account #{name} is #{self.rev_index}"
       u_l = User.find_by_name('local')
-      self.index = u_l.account_index
+      self.rev_index = u_l.account_index
       u_l.account_index += 1
       u_l.save
-      debug 0, "Index for account #{name} is #{index}"
+      self.save
+      debug 2, "New index for account #{name} is #{self.rev_index}"
+    end
+    
+    def get_index()
+      self.rev_index
     end
     
     # Sets different new parameters.
@@ -157,12 +163,14 @@ module Compta::Models
     
     def delete( destroy = false )
       if self.is_empty
-        debug 2, "Deleting account #{self.name} with #{self.deleted.inspect}"
+        debug 2, "Deleting account #{self.name} with #{self.deleted.inspect} " +
+          "and indx #{self.rev_index}"
         self.deleted = true
         self.account = nil
         self.new_index
         self.save
-        debug 2, "account #{self.name} is now #{self.deleted.inspect}"
+        debug 2, "account #{self.name} is now #{self.deleted.inspect} " +
+          "and index #{self.rev_index}"
         if destroy
           debug 2, "Destroying account #{self.name}"
           super()
@@ -206,7 +214,7 @@ module Compta::Models
       our_a.set_nochildmult( name, desc, pid, multiplier, [], keep_total )
       our_a.global_id = global_id
       our_a.save
-      debug 2, "Saved account #{name} with index #{our_a.index} and global_id #{our_a.global_id}"
+      debug 2, "Saved account #{name} with index #{our_a.rev_index} and global_id #{our_a.global_id}"
       return our_a
     end
     
@@ -298,12 +306,14 @@ module Compta::Controllers
         debug 2, "Account is #{@account.to_s}"
         render :account_edit
       when "delete"
-        @account_deleted_path = Account.find_by_id( arg ).path
+        @account_deleted_orig = Account.find_by_id( arg )
+        @account_deleted_path = @account_deleted_orig.path
         if Account.find_by_id( arg ).delete
           @account_deleted = true
         else
           @account_deleted = false
         end
+        @account_deleted_orig = Account.find_by_id( arg )
         render :account_deleted
       when "list"
         fillGlobal
@@ -372,7 +382,7 @@ module Compta::Views
     a "Home", :href => "/"
     b "-"
     a "Add account", :href=> "/account/add"
-    h1 "Account #{@account_deleted_path} deleted"
+    h1 "Account #{@account_deleted_path} deleted - #{@account_deleted_orig.inspect}"
     a "Home", :href => "/"
     b "-"
     a "Add account", :href=> "/account/add"

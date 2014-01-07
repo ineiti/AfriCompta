@@ -97,6 +97,7 @@ module Compta::Controllers
         }
       when 2
         # Now we can send +our_accounts+
+        #@remote.account_index = 2693
         @account_index_start = @remote.account_index + 1
         if @account_index_start <= @account_index_stop
           debug 1, "Accounts to send: #{@account_index_start}..#{@account_index_stop}"
@@ -104,9 +105,11 @@ module Compta::Controllers
           # to children not having their parents yet...
           Account.find_all_by_account_id(0).to_a.each{|a|
             a.get_tree{|acc|
-              debug 3, "Index of #{acc.name} is #{acc.index}"
-              if (@account_index_start..@account_index_stop) === acc.index
-                debug 2, "Account with index #{acc.index} is being transferred"
+              debug( 3, "Index of #{acc.name} is #{acc.get_index}")
+#              if acc.global_id == "7a32306f2cfd1d386c1d8b6d7442ef4b-1315"
+#              end
+              if (@account_index_start..@account_index_stop) === acc.rev_index
+                debug 2, "Account with index #{acc.rev_index} is being transferred"
                 postForm( "account_put", { "account" => acc.to_s } )
                 @put_accounts += 1
               end
@@ -213,7 +216,7 @@ module Compta::Controllers
       
       # This is for debugging purposes - large DBs tend to take a long time
       # to list all movements 
-      get_movements = false
+      get_movements = true
       compare_accounts = true
       
       u = User.find_by_name('local')

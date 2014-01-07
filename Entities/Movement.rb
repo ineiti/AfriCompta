@@ -3,6 +3,7 @@ class Movements < Entities
     dputs( 0 ){ "init_movements" }
     @default_type = :SQLiteAC
     @data_field_id = :id
+    value_int :index
 
     value_entity_account :account_src_id
     value_entity_account :account_dst_id
@@ -11,7 +12,7 @@ class Movements < Entities
     value_date :date
     value_int :revision
     value_str :global_id
-    value_int :index
+    value_int :rev_index
   end
 
   def self.from_json( str )
@@ -39,10 +40,10 @@ class Movements < Entities
         a_src, a_dst )
       our_m.global_id = global_id
     else
-      dputs( 2 ){ "Overwriting movement at #{our_m.index}:#{our_m.id} -> #{global_id}" }
+      dputs( 2 ){ "Overwriting movement at #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
       # And update it
       our_m.set( desc, date, value, a_src.id, a_dst.id )
-      dputs( 2 ){ "Now we're #{our_m.index}:#{our_m.id} -> #{global_id}" }
+      dputs( 2 ){ "Now we're #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
     end
     return our_m
   end
@@ -57,6 +58,10 @@ class Movements < Entities
     dputs( 4 ){ t.to_json.inspect }
     t
   end
+  
+  def migration_1( m )
+    m.rev_index = m.id
+  end
 end
 
 
@@ -64,14 +69,14 @@ end
 class Movement < Entity
   def new_index()
     u_l = Users.match_by_name('local')
-    self.index = u_l.movement_index.to_i
-    u_l.movement_index = self.index + 1
-    dputs( 3 ){ "index is #{self.index} and date is --#{self.date}--" }
-    dputs( 3 ){ "User('local').index is: " + Users.match_by_name('local').movement_index.to_s }
+    self.rev_index = u_l.movement_index.to_i
+    u_l.movement_index = self.rev_index + 1
+    dputs( 3 ){ "index is #{self.rev_index} and date is --#{self.date}--" }
+    dputs( 3 ){ "User('local').rev_index is: " + Users.match_by_name('local').movement_index.to_s }
   end
     
   def get_index()
-    return self.index
+    return self.rev_index
   end
     
   def is_in_account(a)

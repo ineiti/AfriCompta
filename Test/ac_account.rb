@@ -37,9 +37,9 @@ class TC_AfriCompta < Test::Unit::TestCase
     }
     assert_equal false, @root.delete, @root.inspect
     assert_equal false, @income.delete
-    old_index = @lending.index
+    old_index = @lending.rev_index
     assert_equal true, @lending.delete
-    assert_operator old_index, :<, @lending.index
+    assert_operator old_index, :<, @lending.rev_index
     
     Accounts.create_path("Root::Cash::Foo", "")
   end
@@ -56,12 +56,12 @@ class TC_AfriCompta < Test::Unit::TestCase
     Accounts.create_path( "Test" )
     Accounts.dump
     count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
-    assert_equal [ 4, 0, 6, 1 ], 
+    assert_equal [ 4, 0, 12, 1 ], 
       [ count_mov, bad_mov, count_acc, bad_acc ]
 
     Accounts.dump
     count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
-    assert_equal [ 4, 0, 6, 0 ], 
+    assert_equal [ 4, 0, 12, 0 ], 
       [ count_mov, bad_mov, count_acc, bad_acc ]
   end
 end
