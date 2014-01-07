@@ -60,7 +60,7 @@ class Movements < Entities
   end
   
   def migration_1( m )
-    dputs(1){"Migrating #{m.id} - #{m.name}"}
+    dputs(1){"Migrating #{m.id}"}
     m.rev_index = m.id
   end
 end

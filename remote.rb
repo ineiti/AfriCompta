@@ -139,7 +139,7 @@ module Compta::Controllers
             "#{@movement_index_stop}"
           movements = []
           Movement.find(:all, :conditions => 
-              {:index => @movement_index_start..@movement_index_stop } ).each{ |m|
+              {:rev_index => @movement_index_start..@movement_index_stop } ).each{ |m|
             movements.push( m.to_json )
             @put_movements += 1
           }

@@ -11,7 +11,7 @@ module Compta::Controllers
       debug 2, "Doing printMovements from #{start.class} to #{stop.class}"
       ret = ""
       Movement.find(:all, :conditions =>
-          {:index => start..stop } ).each{ |m|
+          {:rev_index => start..stop } ).each{ |m|
         if start > 0
           debug 4, "Mer: Movement #{m.desc}, #{m.value}"
         end
