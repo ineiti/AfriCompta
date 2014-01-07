@@ -80,6 +80,16 @@ class Numeric
   end
 end
 
+class Float
+  def round( precision = 0 )
+    if precision > 0
+      return ( self * 10**precision ).round / 10.0**precision
+    else
+      return super()
+    end
+  end
+end
+
 class Array
   def sort_n
     self.sort{|a,b|
@@ -268,6 +278,26 @@ module Compta::Models
         acc.keep_total = acc.multiplier == -1
         debug 3, "Account #{acc.path} has keep_total of #{acc.keep_total.inspect}"
         acc.save
+      }
+    end
+  end
+
+  # Getting rid of "index"-column which only wrecked havoc!
+  class CreateCompta04 < V 0.5
+    def self.up
+      # Change "index"-field to "rev_index"
+      add_column :compta_accounts, :rev_index, :integer
+      add_column :compta_movements, :rev_index, :integer
+      
+      Account.find( :all ).each{ |acc|
+        debug 3, "Converting account #{acc.id}"
+        acc.rev_index = acc.id
+        acc.save
+      }
+      Movement.find( :all ).each{ |mov|
+        debug 3, "Converting movement #{mov.id}"
+        mov.rev_index = mov.id
+        mov.save
       }
     end
   end

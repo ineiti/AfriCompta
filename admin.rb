@@ -15,15 +15,15 @@ module Compta::Controllers
         @bad_movements, @bad_accounts = 0, 0
         Movement.find( :all ).each{ |m|
           if not m or not m.date or not m.desc or not m.value or 
-              not m.index or not m.account_src or not m.account_dst
+              not m.rev_index or not m.account_src or not m.account_dst
             if m and m.desc
               debug 1, "Bad movement: #{m.desc}"
             end
             Movement.destroy(m)
             @bad_movements += 1
           end
-          if m.index
-            @count_mov = [ @count_mov, m.index ].max
+          if m.rev_index
+            @count_mov = [ @count_mov, m.rev_index ].max
           end
         }
         Account.find(:all).each{ |a|
@@ -31,11 +31,19 @@ module Compta::Controllers
             Account.destroy(a)
             @bad_accounts += 1
           end
-          if ! a.account_id
-            Account.destroy(a)
+          if ! ( a.account_id or a.deleted )
+            debug(2, "Account has undefined parent: #{a.inspect}")
+            a.delete
             @bad_accounts += 1
           end
-          @count_acc = [ @count_acc, a.index ].max
+          if a.account_id == 0
+            if ! ( ( a.name =~ /(Root|Archive)/ ) or a.deleted )
+              debug(2, "Account is in root but neither 'Root' nor 'Archive': #{a.inspect}")
+              a.delete
+              @bad_accounts += 1
+            end
+          end
+          @count_acc = [ @count_acc, a.rev_index ].max
         }
 
         # Check also whether our counters are OK

@@ -1,7 +1,11 @@
 class AccountRoot
 
   def self.actual
-    Accounts.match_by_name( 'Root' )
+    self.accounts.find{|a| a.name == "Root" }
+  end
+  
+  def self.archive
+    self.accounts.find{|a| a.name == "Archive" }
   end
 
   def self.accounts
@@ -14,27 +18,36 @@ class AccountRoot
     Movements.search_all.each{ |m|
       dputs(4){"Testing movement #{m.inspect}"}
       if not m or not m.date or not m.desc or not m.value or 
-          not m.index or not m.account_src or not m.account_dst
+          not m.rev_index or not m.account_src or not m.account_dst
         if m and m.desc
           dputs(1){ "Bad movement: #{m.desc}" }
         end
         m.delete
         bad_mov += 1
       end
-      if m.index
-        count_mov = [ count_mov, m.index ].max
+      if m.rev_index
+        count_mov = [ count_mov, m.rev_index ].max
       end
     }
     Accounts.search_all.each{ |a|
       if ( a.account_id and ( a.account_id > 0 ) ) and ( not a.account )
+        dputs(2){"Account has unexistent parent: #{a.inspect}"}
         a.delete
         bad_acc += 1
       end
-      if ! a.account_id
+      if ! ( a.account_id or a.deleted )
+        dputs(2){"Account has undefined parent: #{a.inspect}"}
         a.delete
         bad_acc += 1
       end
-      count_acc = [ count_acc, a.index ].max
+      if a.account_id == 0
+        if ! ( ( a.name =~ /(Root|Archive)/ ) or a.deleted )
+          dputs(2){"Account is in root but neither 'Root' nor 'Archive': #{a.inspect}"}
+          a.delete
+          bad_acc += 1
+        end
+      end
+      count_acc = [ count_acc, a.rev_index ].max
     }
 
     # Check also whether our counters are OK
@@ -43,11 +56,11 @@ class AccountRoot
     dputs(1){ "Accounts-index: #{count_acc} - #{u_l.account_index}" }
     @ul_mov, @ul_acc = u_l.movement_index, u_l.account_index
     if count_mov > u_l.movement_index
-      dputs(0){ "Error, there is a bigger movement! Fixing" }
+      dputs( 1 ){ "Error, there is a bigger movement! Fixing" }
       u_l.movement_index = count_mov + 1
     end
     if count_acc > u_l.account_index
-      dputs(0){ "Error, there is a bigger account! Fixing" }
+      dputs( 1 ){ "Error, there is a bigger account! Fixing" }
       u_l.account_index = count_acc + 1
     end
     return [ count_mov, bad_mov, count_acc, bad_acc ]
@@ -78,13 +91,14 @@ class Accounts < Entities
   def setup_data
     @default_type = :SQLiteAC
     @data_field_id = :id
+    value_int :index
     
     value_str :name
     value_str :desc
     value_str :global_id
     value_float :total
     value_int :multiplier
-    value_int :index
+    value_int :rev_index
     value_bool :deleted
     value_bool :keep_total
     value_int :account_id
@@ -97,7 +111,7 @@ class Accounts < Entities
     dputs(5){"Parent is #{parent.inspect}"}
     if parent
       if parent.class != Account and parent != AccountRoot
-        parent = Accounts.matches_by_index( parent ).first
+        parent = Accounts.matches_by_id( parent ).first
       end
       a = super( :name => name, :desc => desc, :account_id => parent.id,
         :global_id => global_id.to_s, :multiplier => parent.multiplier,
@@ -116,7 +130,7 @@ class Accounts < Entities
     a
   end
 	
-  def self.create_path( path, desc, double_last = false, mult = 1, 
+  def self.create_path( path, desc = "", double_last = false, mult = 1, 
       keep_total = false )
     elements = path.split( "::" )
     parent = AccountRoot
@@ -143,7 +157,7 @@ class Accounts < Entities
     str.force_encoding( Encoding::UTF_8 )
     desc, str = str.split("\r")
     if not str
-      dputs( 0 ){ "Invalid account found: #{desc}" }
+      dputs( 0 ){ "Error: Invalid account found: #{desc}" }
       return [ -1, nil ]
     end
     global_id, total, name, multiplier, par, 
@@ -175,7 +189,7 @@ class Accounts < Entities
     our_a.deleted = deleted
     our_a.set_nochildmult( name, desc, pid, multiplier, [], keep_total )
     our_a.global_id = global_id
-    dputs( 2 ){ "Saved account #{name} with index #{our_a.index} and global_id #{our_a.global_id}" }
+    dputs( 2 ){ "Saved account #{name} with index #{our_a.rev_index} and global_id #{our_a.global_id}" }
     return our_a
   end
   
@@ -356,17 +370,17 @@ class Accounts < Entities
       now.month < month_start and this_year -= 1
     end
 		
-    root = self.match_by_name( 'Root' )
+    root = AccountRoot.actual
     if only_account
       root = only_account
     else
       if ( root.account_id > 0 )
-        dputs( 0 ){ "Can't archive with Root is not in root: #{root.account_id.inspect}!" }
+        dputs( 0 ){ "Error: Can't archive with Root is not in root: #{root.account_id.inspect}!" }
         return false
       end
     end
 		
-    archive = self.match_by_name( 'Archive' )
+    archive = AccountRoot.archive
     if not archive
       archive = self.create( 'Archive' )
     end
@@ -472,29 +486,32 @@ class Accounts < Entities
   end
   
   def self.dump( mov = false )
-    root = self.match_by_name( 'Root' )
-    dputs( 0 ){ "Root-tree is now" }
+    root = AccountRoot.actual
+    dputs( 1 ){ "Root-tree is now" }
     root.get_tree_depth{|a|
-      dputs( 0 ){ a.path_id }
+      dputs( 1 ){ a.path_id }
       if mov
         a.movements.each{|m|
-          dputs(0){"Movement is #{m.to_json}"}
+          dputs( 1 ){"Movement is #{m.to_json}"}
         }
       end
     }
-    if archive = self.match_by_name( 'Archive' )
-      dputs( 0 ){ "Archive-tree is now" }
+    if archive = AccountRoot.archive
+      dputs( 1 ){ "Archive-tree is now" }
       archive.get_tree_depth{|a|
-        dputs( 0 ){ a.path_id }
+        dputs( 1 ){ a.path_id }
         if mov
           a.movements.each{|m|
-            dputs(0){"Movement is #{m.to_json}"}
+            dputs( 1 ){"Movement is #{m.to_json}"}
           }
         end
       }
     else
-      dputs(0){"No archive-tree"}
+      dputs( 1 ){"No archive-tree"}
     end
+    AccountRoot.accounts.each{|a|
+      dputs( 1 ){"Root-Account: #{a.inspect}"}
+    }
   end
   
   def migration_1( a )
@@ -504,6 +521,10 @@ class Accounts < Entities
     # gives a good first initialisation
     a.keep_total = a.multiplier == -1
     dputs(4){ "#{a.name}: #{a.deleted.inspect} - #{a.keep_total.inspect}" }
+  end
+  
+  def migration_2( a )
+    a.rev_index = a.id
   end
 
 end
@@ -528,7 +549,7 @@ class Account < Entity
     
   def get_tree_debug( ind = "" )
     yield self
-    dputs( 0 ){ "get_tree_ #{ind}#{self.name}" }
+    dputs( 1 ){ "get_tree_ #{ind}#{self.name}" }
     accounts.sort{|a,b| a.desc <=> b.desc }.each{|a|
       a.get_tree_debug( "#{ind} " ){|b| yield b} 
     }
@@ -554,7 +575,7 @@ class Account < Entity
     
   def new_index()
     u_l = Users.match_by_name('local')
-    self.index = u_l.account_index
+    self.rev_index = u_l.account_index
     u_l.account_index += 1
     dputs( 3 ){ "Index for account #{name} is #{index}" }
   end
@@ -609,7 +630,7 @@ class Account < Entity
         ret = a.date.to_s <=> b.date.to_s
       end
       if ret == 0
-        ret = a.index <=> b.index
+        ret = a.rev_index <=> b.rev_index
 =begin        
         if a.desc and b.desc
           ret = a.desc <=> b.desc
@@ -625,14 +646,18 @@ class Account < Entity
     }
     sorted
   end
-	    
+
+  def bool_to_s( b )
+    b ? "true" : "false"
+  end
+    
   def to_s( add_path = false )
     if account || true
       dputs(4){"Account-desc: #{name.to_s}, #{global_id}, #{account_id.inspect}"}
       "#{desc}\r#{global_id}\t" + 
-        "#{total.to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
+        "#{total.to_f.round(3).to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
         ( account_id ? ( ( account_id > 0 ) ? account.global_id.to_s : "" ) : "" ) +
-        "\t#{deleted.to_s}" + "\t#{keep_total.to_s}" + 
+        "\t#{bool_to_s( self.deleted )}" + "\t#{bool_to_s( self.keep_total )}" + 
         ( add_path ? "\t#{path}" : "" )
     else
       "nope"
@@ -710,15 +735,10 @@ class Account < Entity
       }
     end
     if is_empty
-      if force
-        dputs(2){"Destroying account"}
-        super()
-      else
-        dputs(2){"Deleting account #{self.name}-#{self.id}"}
-        self.account_id = nil
-        self.new_index
-        self.deleted = true
-      end
+      dputs(2){"Deleting account #{self.name}-#{self.id}"}
+      self.account_id = nil
+      self.new_index
+      self.deleted = true
     else
       dputs(1){"Refusing to delete account #{name}"}
       return false

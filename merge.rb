@@ -51,8 +51,8 @@ module Compta::Controllers
         Account.find_all_by_account_id(0).to_a.each{|a|
           if a.global_id
             a.get_tree{|acc|
-              if acc.index > u.account_index or get_all
-                debug 2, "Found account #{acc.name} with index #{acc.index}"
+              if acc.rev_index > u.account_index or get_all
+                debug 2, "Found account #{acc.name} with index #{acc.rev_index}"
                 ret += "#{acc.to_s( get_all )}\n"
               end
             }
