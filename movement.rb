@@ -7,16 +7,16 @@ module Compta::Models
     
     def new_index()
       u_l = User.find_by_name('local')
-      self.index = u_l.movement_index
+      self.rev_index = u_l.movement_index
       u_l.movement_index += 1
       u_l.save
-      debug 3, "index is #{self.index} and date is --#{self.date}--"
-      debug 3, "User('local').index is: " + User.find_by_name('local').movement_index.to_s
+      debug 3, "index is #{self.rev_index} and date is --#{self.date}--"
+      debug 3, "User('local').rev_index is: " + User.find_by_name('local').movement_index.to_s
       debug 3, "global_id is #{self.global_id}"
     end
     
     def get_index()
-      return self.index
+      return self.rev_index
     end
     
     def is_in_account(a)
@@ -145,7 +145,7 @@ module Compta::Controllers
       @show_year = show_year
       debug 0, "Found root-account #{@account_root} for year #{@show_year}"
       @accounts = []
-      @account_root.get_tree{|a| @accounts.push a }
+      @account_root.get_tree{|a| a.deleted or @accounts.push( a ) }
       @account_archive = Account.get_archive
       @remote = Remote.first
       #      @account_lm = Account.find_by_id( 150 )

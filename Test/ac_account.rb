@@ -28,6 +28,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 
   def test_del_account
     AccountRoot.accounts.each{|a|
+      dputs(1){"Found root-account #{a.inspect}"}
       a.get_tree{|t|
         dputs(0){
           "#{t.path} - #{t.deleted.inspect}"
@@ -36,15 +37,31 @@ class TC_AfriCompta < Test::Unit::TestCase
     }
     assert_equal false, @root.delete, @root.inspect
     assert_equal false, @income.delete
-    old_index = @lending.index
+    old_index = @lending.rev_index
     assert_equal true, @lending.delete
-    assert_operator old_index, :<, @lending.index
+    assert_operator old_index, :<, @lending.rev_index
     
     Accounts.create_path("Root::Cash::Foo", "")
   end
   
+  def test_account_root
+    Accounts.create_path( "Root::Archive" )
+    assert_equal nil, AccountRoot.archive
+    
+    Accounts.create_path( "Archive" )
+    assert_not_equal nil, AccountRoot.archive
+  end
+  
   def test_clean
-    a, b, c, d = AccountRoot.clean
-    assert_equal [ 4, 0, 10, 0 ], [ a, b, c, d ]
+    Accounts.create_path( "Test" )
+    Accounts.dump
+    count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
+    assert_equal [ 4, 0, 12, 1 ], 
+      [ count_mov, bad_mov, count_acc, bad_acc ]
+
+    Accounts.dump
+    count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
+    assert_equal [ 4, 0, 12, 0 ], 
+      [ count_mov, bad_mov, count_acc, bad_acc ]
   end
 end
