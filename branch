@@ -3,26 +3,27 @@
 ./commit "Making branch $NEWBRANCH"
 
 NEWBRANCH=${1:-default}
+NEWBRANCHGIT=${1:-master}
 
 dirs_do(){
-  #  echo Doing -$NEWBRANCH-
-  #  return
-  for d in AfriCompta QooxView LibNet Gestion Config; do
+  for d in AfriCompta QooxView LibNet Gestion Config Profeda; do
     echo Doing -$1- in $d
-    cd ../$d
-    $1
+    ( cd $d
+      $1
+    )
   done
 }
 
 if ! hg branches | grep -q "^$NEWBRANCH "; then
   echo HG: Branch $NEWBRANCH doesnt exist, creating
-  dirs_do "hg branch $NEWBRANCH"
+  hg branch $NEWBRANCH
+  hg commit -m added_branch
 fi
 if ! git branch | egrep -q "^..$NEWBRANCH"; then
-  echo Git: Branch $NEWBRANCH doesnt exist, creating
-  dirs_do "git branch $NEWBRANCH"
+  echo Git: Branch $NEWBRANCHGIT doesnt exist, creating
+  git branch $NEWBRANCHGIT
 fi
 
-dirs_do "git checkout $NEWBRANCH"
-dirs_do "hg up -C $NEWBRANCH"
+git checkout $NEWBRANCHGIT
+hg up -C $NEWBRANCH
 
