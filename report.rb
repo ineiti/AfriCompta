@@ -8,13 +8,25 @@ module Compta::Controllers
       @account_root = Account.get_root
       @account_archive = Account.get_archive
     end
+    
     def get_all_sub_accounts( acc )
-      ret = [ acc ]
-      acc.accounts_nondeleted.each { |a|
-        ret = ret + get_all_sub_accounts( a )
+      base = [ acc ]
+      @account_archive.get_tree{|a|
+        a_path = a.path.sub(/^Archive::[0-9]*::/, '')
+        acc_path = acc.path.sub(/^Root(::)*/, '')
+        if a_path == acc_path
+          base.push a
+        end
+      }
+      ret = []
+      base.each{|a|
+        a.get_tree{|b|
+          ret.push b
+        }
       }
       ret
     end
+    
     def get_subsum_abs( account, detail )
       accounts = get_all_sub_accounts( account )
       # Double-indexed hash, first for year, then for month, containing
@@ -45,10 +57,14 @@ module Compta::Controllers
       subsum
     end
     def get_subsum_cumul( account, detail )
+      debug 3, "get_subsum_cumul for #{account.path}"
       accounts = get_all_sub_accounts( account )
+
       # Double-indexed hash, first for year, then for month, containing
       # an integer...
       subsum = Hash.new{ |h,k| h[k] = Hash.new { |h,k| h[k] = 0 } }
+      #return subsum
+      
       accounts.each{|acc|
         acc.movements.each{ |m|
           year, month = m.date.year.to_s, m.date.method(detail).call.to_s
@@ -57,7 +73,7 @@ module Compta::Controllers
           end
         }
       }
-      # Nasty hack to get accounts with movements but sum of 0 to show up anyway
+      debug 3, "Subsum is #{subsum.inspect}"
       subsum
     end
     # Calculate either a moving sum or the sum of each
@@ -83,25 +99,31 @@ module Compta::Controllers
       
       fillGlobal
       @show_year = @start
-      if ( not @account_archive ) or 
-          ( @account_archive.accounts_nondeleted.select{|a|
-            a.name == @show_year
-          }.size == 0 )
-        @show_year = "Actual"
-      end
-      debug 1, "Year to show is #{@show_year}"
-      @accounts = []
-      if @show_year == "Actual"
-        @account_root.get_tree{|a|
-          @accounts.push a
-        }
+      if ( @period != "year" )
+        if ( ( not @account_archive ) or 
+              ( @account_archive.accounts_nondeleted.select{|a|
+                a.name == @show_year
+              }.size == 0 ) )
+          @show_year = "Actual"
+        end
+        debug 1, "Year to show is #{@show_year}"
+        @accounts = []
+        if @show_year == "Actual"
+          @account_root.get_tree{|a|
+            @accounts.push a
+          }
+        else
+          @account_archive.accounts_nondeleted.select{|a|
+            debug 1, "Searching for year #{@show_year} in #{a.name}"
+            a.name == @show_year.to_s
+          }.first.get_tree{|a|
+            @accounts.push a
+          }
+        end
       else
-        @account_archive.accounts_nondeleted.select{|a|
-          debug 1, "Searching for year #{@show_year} in #{a.name}"
-          a.name == @show_year.to_s
-        }.first.get_tree{|a|
-          @accounts.push a
-        }
+        @accounts = []
+        @account_root.get_tree{|a| @accounts.push a}
+        @account_archive.get_tree{|a| @accounts.push a}
       end
       if arg1
         @account = Account.find_by_id( arg1 )
@@ -120,7 +142,7 @@ module Compta::Controllers
       
       # Make a hashed array with the sub-accounts as key and the
       # months as index
-      puts "Period is: #{@period}"
+      debug 1, "Period is: #{@period}"
       calc_subsum( @type, @account, @period, @depth + 1)
       @parent = @account.account
       

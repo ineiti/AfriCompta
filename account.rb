@@ -22,12 +22,10 @@ module Compta::Models
       }
     end
     
-    def path( sep = "::", p="", first=true )
+    def path( sep = "::", first=true )
       if self.account
-        return self.account.path( sep, p, false ) + self.name + ( first ? "" : sep )
-      else
-        return self.name + sep
-      end
+        self.account.path( sep, false )
+      end.to_s + self.name + ( first ? "" : sep )
     end
     
     def new_index()

@@ -6,16 +6,12 @@ git_func(){
   fi
 }
 
-for a in Gestion QooxView AfriCompta LibNet Config; do
-  echo Doing $a
-  cd ../$a
-  if [ ! "$1" ]; then
-    hg diff
-    hg st
-    git_func status
-    echo
-  else
-    hg commit -m "$@"
-    git_func commit -a -m "$@"
-  fi
-done
+if [ ! "$1" ]; then
+  hg diff
+  hg st
+  git_func status
+  echo
+else
+  hg commit -m "$@"
+  git_func commit -a -m "$@"
+fi
