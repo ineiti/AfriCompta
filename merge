@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+./commit "Merging branch $1"
+
+BRANCH=${1:-default}
+BRANCHGIT=${1:-master}
+
+hg merge -r $BRANCH
+hg commit -m 'Merged branch $BRANCH'
+git merge $BRANCHGIT
