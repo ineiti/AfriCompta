@@ -110,7 +110,8 @@ class ACaccess < RPCQooxdooPath
         }
       else
         dputs( 2 ){ "Starting to search accounts" }
-        Accounts.matches_by_account_id(0).to_a.sort{|a,b|
+        Accounts.matches_by_account_id(0).to_a.concat(
+            Accounts.matches_by_account_id( nil ) ).sort{|a,b|
           a.global_id <=> b.global_id }.each{|a|
           dputs( 2 ){ "Found one root-account #{a.rev_index} - #{a.path_id}" }
           if a.global_id

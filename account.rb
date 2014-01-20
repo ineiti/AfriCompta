@@ -195,10 +195,6 @@ module Compta::Models
       keep_total = keep_total_s == "true"
       debug 3, "Here comes the account: " + global_id.to_s
       debug 3, "par: #{par.inspect}"
-      if par.to_s.length > 0
-        parent = Account.find_by_global_id( par )
-        debug 5, "parent: #{parent.global_id}"
-      end
       debug 3, "global_id: #{global_id}"
       # Does the account already exist?
       our_a = nil
@@ -207,7 +203,12 @@ module Compta::Models
         our_a = Account.new
       end
       # And update it
-      pid = par ? parent.id : 0
+      pid = if par.to_s.length > 0
+        Account.find_by_global_id( par ).id
+      else
+        0
+      end
+      debug 5, "parent_id is: #{pid}"
       our_a.deleted = deleted
       our_a.set_nochildmult( name, desc, pid, multiplier, [], keep_total )
       our_a.global_id = global_id

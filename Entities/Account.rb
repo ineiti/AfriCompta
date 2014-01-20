@@ -165,31 +165,34 @@ class Accounts < Entities
     total, multiplier = total.to_f, multiplier.to_f
     deleted = deleted_s == "true"
     keep_total = keep_total_s == "true"
-    ddputs(3){ [ global_id, total, name, multiplier]. inspect }
-    ddputs(3){ [ par, deleted_s, keep_total_s ]. inspect }
-    ddputs(5){ "deleted, keep_total is #{deleted.inspect}, #{keep_total.inspect}"}
-    ddputs( 3 ){ "Here comes the account: " + global_id.to_s }
-    ddputs( 5 ){ "par: #{par}" }
-    if par
+    dputs(3){ [ global_id, total, name, multiplier]. inspect }
+    dputs(3){ [ par, deleted_s, keep_total_s ]. inspect }
+    dputs(5){ "deleted, keep_total is #{deleted.inspect}, #{keep_total.inspect}"}
+    dputs( 3 ){ "Here comes the account: " + global_id.to_s }
+    dputs( 3 ){ "global_id: #{global_id}" }
+    
+    if par.to_s.length > 0
       parent = Accounts.match_by_global_id( par )
-      ddputs( 5 ){ "parent: #{parent.global_id}" }
+      parent_id = parent.id
+      dputs(3){"Parent is #{parent.inspect}"}
+    else
+      parent = nil
+      parent_id = 0
     end
-    ddputs( 3 ){ "global_id: #{global_id}" }
+    
     # Does the account already exist?
     our_a = nil
-    pid = par ? parent.id : 0
     if not ( our_a = Accounts.match_by_global_id(global_id) )
       # Create it
-      ddputs(3){"Pid is #{pid}"}
-      apid = Accounts.match_by_id( pid )
-      ddputs(3){"Creating account #{name} - #{desc} - #{apid} - #{global_id}"}
-      our_a = Accounts.create( name, desc, apid, global_id )
+      dputs(3){"Creating account #{name} - #{desc} - #{parent} - #{global_id}"}
+      our_a = Accounts.create( name, desc, parent, global_id )
     end
     # And update it
     our_a.deleted = deleted
-    our_a.set_nochildmult( name, desc, pid, multiplier, [], keep_total )
+    our_a.set_nochildmult( name, desc, parent_id, multiplier, [], keep_total )
     our_a.global_id = global_id
     dputs( 2 ){ "Saved account #{name} with index #{our_a.rev_index} and global_id #{our_a.global_id}" }
+    dputs(4){"Account is now #{our_a.inspect}"}
     return our_a
   end
   
@@ -667,6 +670,7 @@ class Account < Entity
   def is_empty
     size = self.movements.select{|m| m.value.to_f != 0.0 }.size
     dputs( 2 ){ "Account #{self.name} has #{size} non-zero elements" }
+    dputs( 4 ){ "Non-zero elements: #{movements.inspect}"}
     if size == 0 and self.accounts.size == 0
       return true
     end

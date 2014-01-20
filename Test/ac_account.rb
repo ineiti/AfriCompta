@@ -17,6 +17,9 @@ class TC_AfriCompta < Test::Unit::TestCase
     @income = Accounts.match_by_name( "Income" )
     @outcome = Accounts.match_by_name( "Outcome" )
     @local = Users.match_by_name( 'local' )
+    
+    @user_1 = Users.create( "user1", "", "pass" )
+    @user_2 = Users.create( "user2", "", "pass" )
   end
 
   def teardown
@@ -63,5 +66,41 @@ class TC_AfriCompta < Test::Unit::TestCase
     count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
     assert_equal [ 4, 0, 12, 0 ], 
       [ count_mov, bad_mov, count_acc, bad_acc ]
+  end
+  
+  def test_merge_two_users
+    @user_1.update_all
+    @u1 = {'user' => "user1", 'pass' => "pass"}
+    @user_2.update_all
+    @u2 = {'user' => "user2", 'pass' => "pass"}
+    
+    a_id = ACaccess.post( "account_get_id", @u1.merge( 'account' => "Root" ) )
+    assert_equal "1", a_id
+    
+    assert_equal "", ACaccess.get( "accounts_get/user1,pass" )
+    assert_equal "", ACaccess.get( "accounts_get/user2,pass" )    
+  end
+  
+  def test_merge_account_delete
+    test_merge_two_users
+    
+    @lending.delete
+    dputs(3){@lending.inspect}
+    ACaccess.post( "account_put", @u1.merge( 'account' => @lending.to_s ) )
+    assert_equal "", ACaccess.get( "accounts_get/user1,pass" )
+    assert_equal @lending.to_s, ACaccess.get( "accounts_get/user2,pass" ).chop
+  end
+  
+  def test_merge_account_change
+    test_merge_two_users
+
+    @lending.name = "Lendings"
+    @lending.new_index
+    dputs(3){@lending.inspect}
+    ACaccess.post( "account_put", @u1.merge( 'account' => @lending.to_s ) )
+    assert_equal "", ACaccess.get( "accounts_get/user1,pass" )
+    assert_equal @lending.to_s, ACaccess.get( "accounts_get/user2,pass" ).chop
+    
+    assert_equal 1, @lending.account_id
   end
 end
