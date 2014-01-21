@@ -103,13 +103,11 @@ module Compta::Controllers
           debug 1, "Accounts to send: #{@account_index_start}..#{@account_index_stop}"
           # We have to start at the bottom, else we can get into trouble with regard
           # to children not having their parents yet...
-          Account.find_all_by_account_id(0).to_a.concat(
-            Account.find_all_by_account_id( nil ) ).each{|a|
-            debug 2, "Root is #{a.inspect}"
+          Account.find_all_by_account_id(0).to_a.each{|a|
             a.get_tree{|acc|
               debug( 3, "Index of #{acc.name} is #{acc.get_index}")
-              #              if acc.global_id == "7a32306f2cfd1d386c1d8b6d7442ef4b-1315"
-              #              end
+#              if acc.global_id == "7a32306f2cfd1d386c1d8b6d7442ef4b-1315"
+#              end
               if (@account_index_start..@account_index_stop) === acc.rev_index
                 debug 2, "Account with index #{acc.rev_index} is being transferred"
                 postForm( "account_put", { "account" => acc.to_s } )
@@ -472,7 +470,7 @@ module Compta::Controllers
       when "merge"
         begin
           @ret = doMerge( path, arg )
-          @step < 5 and @refresh = [ 0, "/remote/merge/" + @ret ]
+          @step < 5 and @refresh = [ 1, "/remote/merge/" + @ret ]
           debug 2, "refresh is #{@refresh} and ret is #{@ret.inspect}"
           render :remote_merge
         rescue Exception => e

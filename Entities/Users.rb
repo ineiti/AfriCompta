@@ -33,9 +33,4 @@ class User < Entity
   def update_account_index
     self.account_index = Users.match_by_name('local').account_index - 1
   end
-  
-  def update_all
-    update_movement_index
-    update_account_index
-  end
 end
