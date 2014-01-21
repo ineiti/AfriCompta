@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 BRANCH=${1:-default}
 BRANCHGIT=${1:-master}
