@@ -108,6 +108,8 @@ module Compta::Controllers
             debug 2, "Root is #{a.inspect}"
             a.get_tree{|acc|
               debug( 3, "Index of #{acc.name} is #{acc.get_index}")
+              #              if acc.global_id == "7a32306f2cfd1d386c1d8b6d7442ef4b-1315"
+              #              end
               if (@account_index_start..@account_index_stop) === acc.rev_index
                 debug 2, "Account with index #{acc.rev_index} is being transferred"
                 postForm( "account_put", { "account" => acc.to_s } )
