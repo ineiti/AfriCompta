@@ -1,11 +1,12 @@
 #!/bin/bash -e
 
-./commit "Making branch $NEWBRANCH"
-
 BRANCH=${1:-default}
+BRANCHGIT=${1:-master}
+echo "Merging with $BRANCH / $BRANCHGIT"
 
-git merge $BRANCH
+./commit "Merging with $BRANCH / $BRANCHGIT"
+
+git merge $BRANCHGIT
 hg rev .
 hg merge -r $BRANCH
-hg commit -m 'Merged branch $BRANCH'
-
+hg commit -m "Merged branch $BRANCH / $BRANCH_GIT"
