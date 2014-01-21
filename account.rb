@@ -207,7 +207,12 @@ module Compta::Models
         our_a = Account.new
       end
       # And update it
-      pid = par ? parent.id : 0
+      pid = if par.to_s.length > 0
+        Account.find_by_global_id( par ).id
+      else
+        0
+      end
+      debug 5, "parent_id is: #{pid}"
       our_a.deleted = deleted
       our_a.set_nochildmult( name, desc, pid, multiplier, [], keep_total )
       our_a.global_id = global_id
