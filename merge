@@ -1,0 +1,11 @@
+#!/bin/bash -e
+
+./commit "Making branch $NEWBRANCH"
+
+BRANCH=${1:-default}
+
+git merge $BRANCH
+hg rev .
+hg merge -r $BRANCH
+hg commit -m 'Merged branch $BRANCH'
+
