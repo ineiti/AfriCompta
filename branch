@@ -5,15 +5,6 @@
 NEWBRANCH=${1:-default}
 NEWBRANCHGIT=${1:-master}
 
-dirs_do(){
-  for d in AfriCompta QooxView LibNet Gestion Config Profeda; do
-    echo Doing -$1- in $d
-    ( cd $d
-      $1
-    )
-  done
-}
-
 if ! hg branches | grep -q "^$NEWBRANCH "; then
   echo HG: Branch $NEWBRANCH doesnt exist, creating
   hg branch $NEWBRANCH
