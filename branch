@@ -10,11 +10,15 @@ if ! hg branches | grep -q "^$NEWBRANCH "; then
   hg branch $NEWBRANCH
   hg commit -m added_branch
 fi
-if ! git branch | egrep -q "^..$NEWBRANCHGIT"; then
-  echo Git: Branch $NEWBRANCHGIT doesnt exist, creating
-  git branch $NEWBRANCHGIT
+
+if which git; then
+  if ! git branch | egrep -q "^..$NEWBRANCHGIT"; then
+    echo Git: Branch $NEWBRANCHGIT doesnt exist, creating
+    git branch $NEWBRANCHGIT
+  fi
+
+  git checkout $NEWBRANCHGIT
 fi
 
-git checkout $NEWBRANCHGIT
 hg up -C $NEWBRANCH
 
