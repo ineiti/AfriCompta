@@ -18,6 +18,14 @@ class Movements < Entities
   def self.from_json( str )
     self.from_s( ActiveSupport::JSON.decode( str )["str"] )
   end
+
+  def self.get_accounts( src, dst )
+    [ Accounts.match_by_global_id( src ), Accounts.match_by_global_id( dst ) ]
+  end
+
+  def self.mbgi( global_id )
+    self.match_by_global_id(global_id)
+  end
     
   def self.from_s( str )
     str.force_encoding( Encoding::UTF_8 )
@@ -26,35 +34,43 @@ class Movements < Entities
     #date = Time.parse(date).to_ss
     date = Date.strptime(date, "%Y-%m-%d" )
     value = value.to_f
-    a_src = Accounts.match_by_global_id( src )
-    a_dst = Accounts.match_by_global_id( dst )
+    a_src, a_dst = self.get_accounts( src, dst )
     if not a_src or not a_dst
       dputs( 0 ){ "error: didn't find " + src.to_s + " or " + dst.to_s }
       return [ -1, nil ]
     end
     # Does the movement already exist?
+    dputs(0){"from_s 1"}
     our_m = nil
-    if not ( our_m = self.match_by_global_id(global_id) )
-      dputs( 3 ){ "New movement" }
+    if not ( our_m = self.mbgi( match_by_global_id(global_id) ) )
+      ddputs( 3 ){ "New movement" }
       our_m = self.create( desc, date, value, 
         a_src, a_dst )
+      dputs(0){"from_s 2"}
       our_m.global_id = global_id
     else
-      dputs( 2 ){ "Overwriting movement at #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
+      ddputs( 2 ){ "Overwriting movement at #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
       # And update it
       our_m.set( desc, date, value, a_src.id, a_dst.id )
-      dputs( 2 ){ "Now we're #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
+      ddputs( 2 ){ "Now we're #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
     end
+    dputs(0){"from_s 3"}
     return our_m
   end
 
   def create( desc, date, value, source, dest )
     return nil if source == dest
+    dputs(0){"create - 1"}
     t = super( :desc => desc, :date => date, :value => 0, 
       :account_src_id => source.id, :account_dst_id => dest.id )
+    dputs(0){"create - 2"}
     t.value = value
-    t.global_id = Users.match_by_name("local").full + "-" + t.id.to_s
+    dputs(0){"create - 3"}
+    t.global_id = "afjsdlk-jklds"
+    #t.global_id = Users.match_by_name("local").full + "-" + t.id.to_s
+    dputs(0){"create - 4"}
     t.new_index
+    dputs(0){"create - 5"}
     dputs( 4 ){ t.to_json.inspect }
     t
   end

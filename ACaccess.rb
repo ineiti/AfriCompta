@@ -134,6 +134,7 @@ class ACaccess < RPCQooxdooPath
         
       # Gets all movements (for the accounts of that user)
     when /movements_get(.*)/
+      return nil
       dputs( 2 ){ "movements_get#{$1} with #{arg.inspect}" }
       start, stop = u.movement_index + 1, u_local.movement_index - 1
       # Returns only one account
