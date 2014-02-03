@@ -9,15 +9,21 @@ module Compta::Controllers
       @account_archive = Account.get_archive
     end
     
-    def get_all_sub_accounts( acc )
+    def get_all_sub_accounts( acc, year = nil )
       base = [ acc ]
-      @account_archive.get_tree{|a|
-        a_path = a.path.sub(/^Archive::[0-9]*::/, '')
-        acc_path = acc.path.sub(/^Root(::)*/, '')
-        if a_path == acc_path
-          base.push a
-        end
-      }
+      archive_start = year ? Account.get_path( "Archive::#{year}" ) : 
+        @account_archive
+      if archive_start
+        debug 2, "starting account is #{archive_start.path}"
+        base = []
+        archive_start.get_tree{|a|
+          a_path = a.path.sub(/^Archive::[0-9]*::/, '')
+          acc_path = acc.path.sub(/^Root(::)*/, '')
+          if a_path == acc_path
+            base.push a
+          end
+        }
+      end
       ret = []
       base.each{|a|
         a.get_tree{|b|
@@ -56,9 +62,9 @@ module Compta::Controllers
       }
       subsum
     end
-    def get_subsum_cumul( account, detail )
-      debug 3, "get_subsum_cumul for #{account.path}"
-      accounts = get_all_sub_accounts( account )
+    def get_subsum_cumul( account, detail, year = nil )
+      debug 3, "get_subsum_cumul for #{account.path} - with year #{year.inspect}"
+      accounts = get_all_sub_accounts( account, year )
 
       # Double-indexed hash, first for year, then for month, containing
       # an integer...
@@ -78,17 +84,17 @@ module Compta::Controllers
     end
     # Calculate either a moving sum or the sum of each
     # time, up to "depth" into the tree
-    def calc_subsum( type, account, detail, depth )
+    def calc_subsum( type, account, detail, depth, year )
       account.subsum =
         case type
       when "abs"
         get_subsum_abs( account, detail )
       when "cumul"
-        get_subsum_cumul( account, detail )
+        get_subsum_cumul( account, detail, year )
       end
-      if depth > 0 and account.accounts_nondeleted
+      if depth > 1 and account.accounts_nondeleted
         account.accounts_nondeleted.each{|a|
-          calc_subsum( type, a, detail, depth - 1 )
+          calc_subsum( type, a, detail, depth - 1, year )
         }
       end
     end
@@ -140,14 +146,14 @@ module Compta::Controllers
       end
       @movements = @account.movements
       
-      # Make a hashed array with the sub-accounts as key and the
-      # months as index
-      debug 1, "Period is: #{@period}"
-      calc_subsum( @type, @account, @period, @depth + 1)
-      @parent = @account.account
-      
       not @year and @year = Date.today.year.to_s
       not @depth and @depth = 2
+      
+      # Make a hashed array with the sub-accounts as key and the
+      # months as index
+      debug 1, "Period is: #{@period} - year is #{@year.inspect}"
+      calc_subsum( @type, @account, @period, @depth + 1, @year)
+      @parent = @account.account
       
       case @period
       when "year"
@@ -213,8 +219,12 @@ module Compta::Views
   
   def print_link_type( t, a = @account, y = @year, 
       s = @start, d = @depth )
+    if @period == "year" and y == 0
+      y = s
+    end
     "/report/?type=#{t}&period=#{@period}&" +
-      "account=#{a.id}&year=#{y}&start=#{s}&depth=#{d}"
+      "account=#{a.id}&year=#{y}&start=#{s}" +
+      ( d > 0 ? "&depth=#{d}" : "" )
   end
         
   def print_link(a, y = @year, s = @start, d = @depth )
@@ -236,24 +246,30 @@ module Compta::Views
     table :border => 1 do
       # Go home
       a "Home", :href => "/"
-      b "-"
-      a "+", :href => print_link( @account, @year, @start,
+      b ":"
+      a "+++", :href => print_link( @account, @year, @start,
         @depth + 3 )
-      a "+", :href => print_link( @account, @year, @start,
+      b ":"
+      a "++", :href => print_link( @account, @year, @start,
         @depth + 2 )
+      b ":"
       a "+", :href => print_link( @account, @year, @start,
         @depth + 1 )
-      b "-"
+      b ":"
       a "-", :href => print_link( @account, @year, @start,
         @depth - 1 )
-      a "-", :href => print_link( @account, @year, @start,
+      b ":"
+      a "--", :href => print_link( @account, @year, @start,
         @depth - 2 )
-      a "-", :href => print_link( @account, @year, @start,
+      b ":"
+      a "---", :href => print_link( @account, @year, @start,
         @depth - 3 )
-      [ @start.to_i - 1, @start.to_i + 1 ].each{ |s|
-        b "-"
-        a s, :href => print_link( @account, s, s )
-      }
+      b ":"
+      s = @start.to_i - 1
+      a s, :href => print_link( @account, s, s )
+      b "-"
+      s = @start.to_i + 1
+      a s, :href => print_link( @account, s, s )
 
       # Heading
       tr {

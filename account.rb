@@ -233,6 +233,22 @@ module Compta::Models
       }
     end
     
+    def update_total( precision = 3 )
+      # Recalculate everything.
+      debug( 4, "Calculating total for #{self.path} with mult #{self.multiplier}" )
+      self.total = ( 0.0 ).to_f
+      debug( 4, "Total before update is #{self.total} - #{self.total.class.name}" )
+      self.movements.each{|m|
+        v = m.getValue( self )
+        debug( 5, "Adding value #{v.inspect} to #{self.total.inspect}" )
+        self.total = self.total.to_f + v.to_f
+        debug( 5, "And getting #{self.total.inspect}" )
+      }
+      self.total = self.total.round( precision )
+      debug( 4, "Final total is #{self.total} - #{self.total.class.name}" )
+      self.save
+    end
+    
     def self.find_not_deleted
       Account.find( :all ).select{|a|
         debug 2, "Account #{a.path} is #{a.deleted.inspect}::#{a.keep_total.inspect}"
@@ -258,20 +274,11 @@ module Compta::Models
       }.first
     end
 
-    def update_total( precision = 3 )
-      # Recalculate everything.
-      debug( 4, "Calculating total for #{self.path} with mult #{self.multiplier}" )
-      self.total = ( 0.0 ).to_f
-      debug( 4, "Total before update is #{self.total} - #{self.total.class.name}" )
-      self.movements.each{|m|
-        v = m.getValue( self )
-        debug( 5, "Adding value #{v.inspect} to #{self.total.inspect}" )
-        self.total = self.total.to_f + v.to_f
-        debug( 5, "And getting #{self.total.inspect}" )
+    def self.get_path( path )
+      Account.find(:all).each{|a|
+        a.path == path and return a
       }
-      self.total = self.total.round( precision )
-      debug( 4, "Final total is #{self.total} - #{self.total.class.name}" )
-      self.save
+      return nil
     end
 
   end
