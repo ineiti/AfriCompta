@@ -222,7 +222,11 @@ class Accounts < Entities
     }
     return nil
   end
-	
+  
+  def self.find_by_path( parent )
+    return Accounts.get_by_path( parent )
+  end
+
   def self.get_id_by_path( p )
     if a = get_by_path( p )
       return a.id.to_s
