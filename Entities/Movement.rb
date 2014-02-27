@@ -1,6 +1,5 @@
 class Movements < Entities
   def setup_data
-    dputs( 0 ){ "init_movements" }
     @default_type = :SQLiteAC
     @data_field_id = :id
     value_int :index
@@ -36,42 +35,42 @@ class Movements < Entities
     value = value.to_f
     a_src, a_dst = self.get_accounts( src, dst )
     if not a_src or not a_dst
-      dputs( 0 ){ "error: didn't find " + src.to_s + " or " + dst.to_s }
+      dputs( 0 ){ "Error: didn't find " + src.to_s + " or " + dst.to_s }
       return [ -1, nil ]
     end
     # Does the movement already exist?
-    dputs(0){"from_s 1"}
+    dputs(4){"from_s 1"}
     our_m = nil
     if not ( our_m = self.mbgi( match_by_global_id(global_id) ) )
-      ddputs( 3 ){ "New movement" }
+      dputs( 3 ){ "New movement" }
       our_m = self.create( desc, date, value, 
         a_src, a_dst )
-      dputs(0){"from_s 2"}
+      dputs(4){"from_s 2"}
       our_m.global_id = global_id
     else
-      ddputs( 2 ){ "Overwriting movement at #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
+      dputs( 1 ){ "Overwriting movement\n#{our_m.to_json.inspect} with" }
       # And update it
       our_m.set( desc, date, value, a_src.id, a_dst.id )
-      ddputs( 2 ){ "Now we're #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
+      dputs( 1 ){ "#{our_m.to_json.inspect}" }
+      dputs( 2 ){ "Now we're #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
     end
-    dputs(0){"from_s 3"}
+    dputs(4){"from_s 3"}
     return our_m
   end
 
   def create( desc, date, value, source, dest )
     return nil if source == dest
-    dputs(0){"create - 1"}
+    dputs(4){"create - 1"}
     t = super( :desc => desc, :date => date, :value => 0, 
       :account_src_id => source.id, :account_dst_id => dest.id )
-    dputs(0){"create - 2"}
+    dputs(4){"create - 2"}
     t.value = value
-    dputs(0){"create - 3"}
-    t.global_id = "afjsdlk-jklds"
-    #t.global_id = Users.match_by_name("local").full + "-" + t.id.to_s
-    dputs(0){"create - 4"}
+    dputs(4){"create - 3"}
+    t.global_id = Users.match_by_name("local").full + "-" + t.id.to_s
+    dputs(4){"create - 4"}
     t.new_index
-    dputs(0){"create - 5"}
-    dputs( 4 ){ t.to_json.inspect }
+    dputs(4){"create - 5"}
+    dputs( 1 ){ "Created #{t.to_json.inspect}" }
     t
   end
   

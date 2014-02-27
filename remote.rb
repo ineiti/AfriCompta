@@ -217,7 +217,7 @@ module Compta::Controllers
       # This is for debugging purposes - large DBs tend to take a long time
       # to list all movements 
       get_movements = true
-      compare_accounts = true
+      compare_accounts = false
       
       u = User.find_by_name('local')
       debug 1, "Getting remotes"
@@ -342,10 +342,10 @@ module Compta::Controllers
           end
         }
         debug 2, "Remote has #{@movements_only_remote.size} movements"
-        #return
         
         @movements_only_local = Movement.find(:all).select{|m|
           if ( remote_id = remote_movements_global_id.index( m.global_id.to_s ) ) == nil
+            debug 2, "Missing movement #{m.global_id}"
             m.src = m.account_src.path
             m.dst = m.account_dst.path
             true
@@ -619,21 +619,25 @@ module Compta::Views
       [[remote, "remote", fields_remote],
         [local, "local", fields_local]].each{|elements, name_el, fields|
         
-        p "Found #{str}s only on one side: " + ( elements.size ).to_s
-        form_name = "#{str}_#{name_el}"
-        table :border=>1 do
-          form :action => "/remote/check_fix_#{str}/#{@remote.id.to_s}", 
-          :method => "post", :name => form_name do
-            put_entry( elements, name_el, fields )
-            tr { td :colspan=>2 do
-                input :type => "submit", :value => "Delete", 
-                :onclick => "document.#{form_name}.action.value='delete'"
-                input :type => "submit", :value => "Copy", 
-                :onclick => "document.#{form_name}.action.value='copy'"
-                input :type => 'hidden', :name => "action", :value => "none"
-              end }
+        if elements
+          p "Found #{str}s only on one side: " + ( elements.size ).to_s
+          form_name = "#{str}_#{name_el}"
+          table :border=>1 do
+            form :action => "/remote/check_fix_#{str}/#{@remote.id.to_s}", 
+            :method => "post", :name => form_name do
+              put_entry( elements, name_el, fields )
+              tr { td :colspan=>2 do
+                  input :type => "submit", :value => "Delete", 
+                  :onclick => "document.#{form_name}.action.value='delete'"
+                  input :type => "submit", :value => "Copy", 
+                  :onclick => "document.#{form_name}.action.value='copy'"
+                  input :type => 'hidden', :name => "action", :value => "none"
+                end }
+            end
           end
-        end      
+        else
+          p "No elements only on one side"
+        end
       }
     end
     def put_table_mix( remote, str, fields_remote )

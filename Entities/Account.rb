@@ -102,9 +102,6 @@ class Accounts < Entities
     value_bool :deleted
     value_bool :keep_total
     value_int :account_id
-    
-    dputs(0){"Accounts-init-table"}
-    #init_table
   end
     
   def self.create( name, desc = "Too lazy", parent = nil, global_id = "" )

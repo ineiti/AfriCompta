@@ -6,7 +6,7 @@ $VERSION = 0x1120
 
 class ACaccess < RPCQooxdooPath
   def self.parse( r, p, q )
-    dputs( 1 ){ "in ACaccess: #{p} - #{q.inspect}" }
+    dputs( 2 ){ "in ACaccess: #{p} - #{q.inspect}" }
     method = p.gsub( /^\/acaccess\/merge\//, '' )
     dputs( 3 ){ "Calling method #{method} of #{r}" }
     case r
@@ -72,7 +72,7 @@ class ACaccess < RPCQooxdooPath
     arg, id = id, arg if not id
     user, pass = id.split(",")
       
-    dputs( 1 ){ "get-merge-path #{path} - #{arg} with user #{user} and pass #{pass}" }
+    dputs( 2 ){ "get-merge-path #{path} - #{arg} with user #{user} and pass #{pass}" }
     u = Users.match_by_name( user )
     u_local = Users.match_by_name('local')
     if not ( u and u.pass == pass )
@@ -134,7 +134,6 @@ class ACaccess < RPCQooxdooPath
         
       # Gets all movements (for the accounts of that user)
     when /movements_get(.*)/
-      return nil
       dputs( 2 ){ "movements_get#{$1} with #{arg.inspect}" }
       start, stop = u.movement_index + 1, u_local.movement_index - 1
       # Returns only one account
@@ -186,7 +185,7 @@ class ACaccess < RPCQooxdooPath
     
   def self.post( path, input )
     dputs( 5 ){ "self.post with #{path} and #{input.inspect}" }
-    dputs( 1 ){ "post-merge-path #{path} with user #{input['user']} " +
+    dputs( 2 ){ "post-merge-path #{path} with user #{input['user']} " +
         "and pass #{input['pass']}" }
     user, pass = input['user'], input['pass']
     u = Users.match_by_name( user )
