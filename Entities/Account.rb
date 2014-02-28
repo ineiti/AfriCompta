@@ -646,7 +646,12 @@ class Account < Entity
         end
 =end
       end
-      ret * -1
+      if ret
+        ret * -1
+      else
+        dputs(0){"Error: Ret shouldn't be nil... #{ret.inspect}"}
+        0
+      end
     }
     sorted
   end
