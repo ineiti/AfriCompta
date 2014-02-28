@@ -1,16 +1,16 @@
 require 'test/unit'
 
-class TC_AfriCompta < Test::Unit::TestCase
+class TC_Account < Test::Unit::TestCase
   def setup
-    dputs(0){"Setting up"}
+    dputs(1){"Setting up new data"}
     Entities.delete_all_data()
 
-    dputs(0){"Resetting SQLite"}
+    dputs(2){"Resetting SQLite"}
     SQLite.dbs_close_all
     FileUtils.cp( "db.testGestion", "data/compta.db" )
     SQLite.dbs_open_load_migrate
     
-    dputs(0){"And searching for some accounts"}
+    dputs(2){"And searching for some accounts"}
     @root = Accounts.match_by_name( "Root" )
     @cash = Accounts.match_by_name( "Cash" )
     @lending = Accounts.match_by_name( "Lending" )
@@ -33,7 +33,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     AccountRoot.accounts.each{|a|
       dputs(1){"Found root-account #{a.inspect}"}
       a.get_tree{|t|
-        dputs(0){
+        dputs(1){
           "#{t.path} - #{t.deleted.inspect}"
         }
       }

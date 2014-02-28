@@ -4,16 +4,16 @@ TESTBIG=false
 
 class TC_AfriCompta < Test::Unit::TestCase
   def setup
-    dputs(0){"Setting up"}
+    dputs(1){"Setting up - deleting and reloading everything"}
     Entities.delete_all_data()
 
-    dputs(0){"Resetting SQLite"}
+    dputs(2){"Resetting SQLite"}
     SQLite.dbs_close_all
-    dputs(0){"Putting testGestion"}
+    dputs(2){"Putting testGestion"}
     FileUtils.cp( "db.testGestion", "data/compta.db" )
     SQLite.dbs_open_load_migrate
 
-    dputs(0){"And searching for some accounts"}
+    dputs(3){"And searching for some accounts"}
     @root = Accounts.match_by_name( "Root" )
     @cash = Accounts.match_by_name( "Cash" )
     @income = Accounts.match_by_name( "Income" )
@@ -331,7 +331,7 @@ class TC_AfriCompta < Test::Unit::TestCase
 		
     box_s = box.to_s
     box.delete
-    dputs(0){"box_s is #{box_s.inspect}"}
+    dputs(1){"box_s is #{box_s.inspect}"}
     box = Accounts.from_s( box_s )
     assert_equal( {:multiplier=>-1.0,
         :desc=>"Running cash",
@@ -488,6 +488,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal 14.0, mov_panini_merged.value
     assert_equal( -86.0, @outcome.total )
     assert_equal 1014.0, @cash.total
+    Entities.Movements.save
 		
     Entities.Movements.load
     mov_pizza_merged = Movements.match_by_desc( 'Pizza' )
@@ -495,14 +496,17 @@ class TC_AfriCompta < Test::Unit::TestCase
     mov_panini_merged = Movements.match_by_desc( 'Panini' )
     assert_equal "2012-07-21", mov_panini_merged.date.to_s
 
+    dputs(1){"Going to overwrite pizza and panini"}
+    dputs(2){"Movements are #{Movements.search_all.inspect}"}
     rep = ACaccess.post( 'movements_put', input.merge( 'movements' => 
           [{ :str => mov_pizza.sub("12.0", "22.0") }.to_json, 
           { :str => mov_panini.sub("14.0", "24.0") }.to_json].to_json))
+    dputs(2){"Movements are #{Movements.search_all.inspect}"}
     assert_equal "ok", rep
     mov_pizza_merged = Movements.match_by_desc( 'Pizza' )
-    assert_equal 22.0, mov_pizza_merged.value
+    assert_equal 22.0, mov_pizza_merged.value, mov_pizza_merged.inspect
     mov_panini_merged = Movements.match_by_desc( 'Panini' )
-    assert_equal 24.0, mov_panini_merged.value
+    assert_equal 24.0, mov_panini_merged.value, mov_panini_merged.inspect
 
   end
 	
@@ -630,7 +634,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal 1, incomes[1].movements.length
     assert_equal 1, incomes[2].movements.length
     cash.each{|a|
-      dputs(0){"#{a.path} - #{a.movements.length}"}
+      dputs(1){"#{a.path} - #{a.movements.length}"}
     }
     assert_equal 3, cash.length
     assert_equal 1, cash[0].movements.length
@@ -646,7 +650,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal 1, incomes[1].movements.length
     assert_equal 1, incomes[2].movements.length
     cash.each{|a|
-      dputs(0){"#{a.path} - #{a.movements.length}"}
+      dputs(1){"#{a.path} - #{a.movements.length}"}
     }
     assert_equal 3, cash.length
     assert_equal 1, cash[0].movements.length
@@ -667,7 +671,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     @cash.update_total
     assert_equal( 40, Accounts.match_by_name( "Cash" ).total )
 
-    dputs(0){"**** - Archiving for 2012 - *****"}
+    dputs(2){"**** - Archiving for 2012 - *****"}
     Accounts.archive( 6, 2012 )
     cashs = get_sorted_accounts( "Cash" )
     (0..2).each{|i|
@@ -687,7 +691,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     Movements.create( "Year 2012 - 1", "2012-06-01", -30, @cash, @spending )
     Accounts.dump( true )
 
-    dputs(0){"**** - Archiving 1st for 2013 - *****"}
+    dputs(1){"**** - Archiving 1st for 2013 - *****"}
     Accounts.archive( 6, 2013 )
     Accounts.dump( true )
     incomes = get_sorted_accounts( "Income" )
@@ -703,7 +707,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     cash[3].update_total
     assert_equal 30, cash[3].total
 		
-    dputs(0){"**** - Archiving 2nd for 2014 - *****"}
+    dputs(1){"**** - Archiving 2nd for 2014 - *****"}
     # @cash and @spending are now pointing to the archived ones...
     cash = Accounts.get_by_path("Root::Cash")
     spending = Accounts.get_by_path("Root::Spending")
@@ -733,12 +737,12 @@ class TC_AfriCompta < Test::Unit::TestCase
   end
 
   def load_big_data
-    dputs(0){"Setting up"}
+    dputs(1){"Setting up big data"}
     Entities.delete_all_data()
 
-    dputs(0){"Resetting SQLite"}
+    dputs(2){"Resetting SQLite"}
     SQLite.dbs_close_all
-    dputs(0){"Loading big data"}
+    dputs(2){"Loading big data"}
     FileUtils.cp( "db.solar", "data/compta.db" )
     SQLite.dbs_open_load_migrate
   end
@@ -760,13 +764,13 @@ class TC_AfriCompta < Test::Unit::TestCase
     load_big_data
     
     ACaccess.get( "reset_user_indexes/ineiti,lasj" )
-    dputs(0){ Benchmark.measure{
+    dputs(1){ Benchmark.measure{
         PerfTools::CpuProfiler.start("perfcheck_merge_1st") do
           ACaccess.get( "accounts_get/ineiti,lasj")
         end
       }.to_s
     }
-    dputs(0){ Benchmark.measure{
+    dputs(1){ Benchmark.measure{
         PerfTools::CpuProfiler.start("perfcheck_merge_2nd") do
           ACaccess.get( "accounts_get/ineiti,lasj")
         end
@@ -785,11 +789,11 @@ open perfcheck_merge_1st.pdf perfcheck_merge_2nd.pdf
     load_big_data
     
     ACaccess.get( "reset_user_indexes/ineiti,lasj" )
-    dputs(0){ Benchmark.measure{
+    dputs(1){ Benchmark.measure{
         ACaccess.get( "movements_get_all/1,10000/ineiti,lasj")
       }.to_s
     }
-    dputs(0){ Benchmark.measure{
+    dputs(1){ Benchmark.measure{
         ACaccess.get( "movements_get_all/1,10000/ineiti,lasj")
       }.to_s
     }
@@ -823,7 +827,7 @@ open perfcheck_merge_1st.pdf perfcheck_merge_2nd.pdf
     require 'perftools'
     PerfTools::CpuProfiler.start("/tmp/profile") do
       (2010..2012).each{|year|
-        dputs( 0 ){ "Doing year #{year}" }
+        dputs( 1 ){ "Doing year #{year}" }
         (1..12).each{|month|
           (1..10).each{|day|
             (1..1).each{|t|

@@ -28,6 +28,7 @@ class Movements < Entities
     
   def self.from_s( str )
     str.force_encoding( Encoding::UTF_8 )
+    dputs(3){"Getting movement from #{str.inspect}"}
     desc, str = str.split("\r")
     global_id, value, date, src, dst = str.split("\t")
     #date = Time.parse(date).to_ss
@@ -41,7 +42,7 @@ class Movements < Entities
     # Does the movement already exist?
     dputs(4){"from_s 1"}
     our_m = nil
-    if not ( our_m = self.mbgi( match_by_global_id(global_id) ) )
+    if not ( our_m = self.mbgi( global_id) )
       dputs( 3 ){ "New movement" }
       our_m = self.create( desc, date, value, 
         a_src, a_dst )
