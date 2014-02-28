@@ -1,3 +1,4 @@
+DEBUG_SLOW=4
 class Movements < Entities
   def setup_data
     @default_type = :SQLiteAC
@@ -40,13 +41,13 @@ class Movements < Entities
       return [ -1, nil ]
     end
     # Does the movement already exist?
-    dputs(4){"from_s 1"}
+    dputs(DEBUG_SLOW){"from_s 1"}
     our_m = nil
     if not ( our_m = self.mbgi( global_id) )
       dputs( 3 ){ "New movement" }
       our_m = self.create( desc, date, value, 
         a_src, a_dst )
-      dputs(4){"from_s 2"}
+      dputs(DEBUG_SLOW){"from_s 2"}
       our_m.global_id = global_id
     else
       dputs( 1 ){ "Overwriting movement\n#{our_m.to_json.inspect} with" }
@@ -55,22 +56,22 @@ class Movements < Entities
       dputs( 1 ){ "#{our_m.to_json.inspect}" }
       dputs( 2 ){ "Now we're #{our_m.rev_index}:#{our_m.id} -> #{global_id}" }
     end
-    dputs(4){"from_s 3"}
+    dputs(DEBUG_SLOW){"from_s 3"}
     return our_m
   end
 
   def create( desc, date, value, source, dest )
     return nil if source == dest
-    dputs(4){"create - 1"}
+    dputs(DEBUG_SLOW){"create - 1"}
     t = super( :desc => desc, :date => date, :value => 0, 
       :account_src_id => source.id, :account_dst_id => dest.id )
-    dputs(4){"create - 2"}
+    dputs(DEBUG_SLOW){"create - 2"}
     t.value = value
-    dputs(4){"create - 3"}
+    dputs(DEBUG_SLOW){"create - 3"}
     t.global_id = Users.match_by_name("local").full + "-" + t.id.to_s
-    dputs(4){"create - 4"}
+    dputs(DEBUG_SLOW){"create - debug_slow"}
     t.new_index
-    dputs(4){"create - 5"}
+    dputs(DEBUG_SLOW){"create - 5"}
     dputs( 1 ){ "Created #{t.to_json.inspect}" }
     t
   end
@@ -141,9 +142,9 @@ class Movement < Entity
       self.date = Date.from_s(date.to_s)
     end
     self.desc, self.value = desc, value
-    dputs( 4 ){ "Getting new index" }
+    dputs( debug_slow ){ "Getting new index" }
     self.new_index()
-    dputs( 4 ){ "Date " + self.date.to_s }
+    dputs( debug_slow ){ "Date " + self.date.to_s }
   end
     
   def to_s
@@ -168,7 +169,7 @@ class Movement < Entity
   end
   
   def delete
-    dputs(4){"Deleting movement #{desc}"}
+    dputs(DEBUG_SLOW){"Deleting movement #{desc}"}
     src, dst = account_src, account_dst
     dputs(3){"totals before: #{src.get_path}=#{src.total}, " + 
         "#{dst.get_path}=#{dst.total}"}
