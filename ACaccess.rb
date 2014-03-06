@@ -72,7 +72,7 @@ class ACaccess < RPCQooxdooPath
     arg, id = id, arg if not id
     user, pass = id.split(",")
       
-    dputs( 2 ){ "get-merge-path #{path} - #{arg} with user #{user} and pass #{pass}" }
+    dputs( 1 ){ "get-merge-path #{path} - #{arg} with user #{user} and pass #{pass}" }
     u = Users.match_by_name( user )
     u_local = Users.match_by_name('local')
     if not ( u and u.pass == pass )
@@ -185,7 +185,7 @@ class ACaccess < RPCQooxdooPath
     
   def self.post( path, input )
     dputs( 5 ){ "self.post with #{path} and #{input.inspect}" }
-    dputs( 2 ){ "post-merge-path #{path} with user #{input['user']} " +
+    dputs( 1 ){ "post-merge-path #{path} with user #{input['user']} " +
         "and pass #{input['pass']}" }
     user, pass = input['user'], input['pass']
     u = Users.match_by_name( user )

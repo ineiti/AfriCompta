@@ -142,9 +142,9 @@ class Movement < Entity
       self.date = Date.from_s(date.to_s)
     end
     self.desc, self.value = desc, value
-    dputs( debug_slow ){ "Getting new index" }
+    dputs( DEBUG_SLOW ){ "Getting new index" }
     self.new_index()
-    dputs( debug_slow ){ "Date " + self.date.to_s }
+    dputs( DEBUG_SLOW ){ "Date " + self.date.to_s }
   end
     
   def to_s
