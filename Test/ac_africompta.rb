@@ -23,6 +23,19 @@ class TC_AfriCompta < Test::Unit::TestCase
 
   def teardown
   end
+  
+  # This should work - but for some reason the indexes get mixed up
+  # and end up being strings instead of integers....
+  def tes_load_db
+    setup_clean_accounts
+    Movements.create( "any", "2013-01-01", 10, @cash, @income )
+    
+    SQLite.dbs_close_all
+    Accounts.delete_all( true )
+    SQLite.dbs_open_load
+    
+    Accounts.dump true
+  end
 
   def test_db
     movs = Movements.search_all
@@ -525,7 +538,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     assert_equal 389, tree_d.count
   end
 	
-  def setup_clean_accounts
+  def setup_clean_accounts( loans = false )
     Entities.delete_all_data()
     Users.create( 'local', '123456789', 'bar' )
     @root = Accounts.create( 'Root' )
@@ -534,6 +547,14 @@ class TC_AfriCompta < Test::Unit::TestCase
     @cash = Accounts.create( 'Cash', '', @root )		
     @cash.multiplier = -1
     @cash.keep_total = true
+    if loans
+      @loan = Accounts.create( 'Loan', '', @cash )
+      @loan.multiplier = 1
+      @loan.keep_total = true
+      @zcash = Accounts.create( 'ZCash', '', @cash )
+      @zcash.multiplier = -1
+      @zcash.keep_total = true
+    end
   end
 	
   def get_sorted_accounts( name )
@@ -813,6 +834,110 @@ open perfcheck_merge_1st.pdf perfcheck_merge_2nd.pdf
     load_big_data
     Accounts.archive( 1, 2012, 
       Accounts.get_by_path( "Root::Caisses::Centre::Rubia Centre" ) )
+  end
+  
+  def test_archive_negative
+    setup_clean_accounts true
+    
+    mov = Movements.create 'lending', '2013-01-01', 100, @loan, @income
+    Movements.create 'lending 2', '2013-01-01', 100, @zcash, @income
+    
+    assert_equal -100, @loan.total
+    assert_equal @loan, mov.account_src
+    assert_equal 1, @loan.multiplier
+    Accounts.archive
+    
+    @loan_2013 = Accounts.get_by_path( "Archive::2013::Cash::Loan")
+    assert @loan_2013
+    assert_equal -100, @loan_2013.total
+    assert_equal 1, @loan_2013.multiplier
+    mov = Movements.find_by_desc 'lending'
+    assert_equal @loan_2013, mov.account_src
+  end
+
+  def test_archive_negative_2
+    setup_clean_accounts true
+
+    mov = Movements.create 'lending', '2013-01-01', 100, @loan, @zcash
+    
+    assert_equal -100, @loan.total
+    assert_equal 1, @loan.multiplier
+    assert_equal @loan, mov.account_src
+    Accounts.archive
+    
+    @loan_2013 = Accounts.get_by_path( "Archive::2013::Cash::Loan")
+    assert @loan_2013
+    assert_equal -100, @loan_2013.total
+    assert_equal 1, @loan_2013.multiplier
+    mov = Movements.find_by_desc 'lending'
+    assert_equal @loan_2013, mov.account_src
+  end
+
+  def test_archive_negative_3
+    setup_clean_accounts true
+
+    mov = Movements.create 'lending', '2013-01-01', 100, @loan, @zcash
+    
+    assert_equal -100, @loan.total
+    assert_equal 1, @loan.multiplier
+    assert_equal @loan, mov.account_src
+    Accounts.archive
+    
+    @loan_2013 = Accounts.get_by_path( "Archive::2013::Cash::Loan")
+    assert @loan_2013
+    assert_equal -100, @loan_2013.total
+    assert_equal 1, @loan_2013.multiplier
+    mov = Movements.find_by_desc 'lending'
+    assert_equal @loan_2013, mov.account_src
+  end
+  
+  def test_archive_keep_root
+    setup_clean_accounts
+    Accounts.archive
+    Accounts.dump_raw
+    
+    assert root = Accounts.get_by_path( "Root" )
+    assert_not_equal true, root.deleted
+  end
+  
+  def test_archive_negative_4
+    setup_clean_accounts true
+    Movements.create 'lending 2012-1', '2012-02-02', 100, @loan, @income
+    Movements.create 'lending 2012-2', '2012-02-02', 100, @loan, @outcome
+    
+    assert_equal -200, @loan.total
+    Accounts.archive( 1, 2013 )
+ 
+    assert income = Accounts.get_by_path( "Root::Income" )
+    assert loan = Accounts.get_by_path( "Root::Cash::Loan" )
+
+    mov = Movements.create 'lending 2013-1', '2013-02-02', 100, loan, income
+    mov = Movements.create 'lending 2013-2', '2013-02-02', 100, income, loan
+    Accounts.archive( 1, 2014 )
+
+    archive_2012 = Accounts.get_by_path( "Archive::2012" )
+    assert_equal 2, archive_2012.movements.length
+  end
+  
+  def test_archive_profeda
+    Entities.delete_all_data()
+    SQLite.dbs_close_all
+    FileUtils.cp( "db.profeda", "data/compta.db" )
+    MigrationVersions.create( :class_name => 'Account', :version => 1 )
+    SQLite.dbs_open_load_migrate
+    
+    assert avance = Accounts.find_by_name( 'Avance maintenance' )
+    #avance.dump true
+    dputs(1){"Before archiving: "}
+    #Accounts.get_by_path( "Archive::2012" ).dump true
+    #Accounts.dump
+    assert_equal 1, avance.multiplier
+
+    Accounts.archive
+    dputs(1){"After archiving: "}
+    assert archive_2012 = Accounts.get_by_path( "Archive::2012" )
+    archive_2012.dump true
+    #Accounts.dump
   end
 
   def test_get_by_path

@@ -100,7 +100,7 @@ class Movement < Entity
   def is_in_account(a)
     return ( a == account_src or a == account_dst )
   end
-    
+  
   def value=(v)
     if account_src and account_dst
       dputs( 3 ){ "value=" + v.to_s + ":" + account_src.total.to_s }
@@ -177,5 +177,11 @@ class Movement < Entity
     dputs(3){"totals after: #{src.get_path}=#{src.total}, " + 
         "#{dst.get_path}=#{dst.total}"}
     super
+  end
+  
+  def self.value_form( v )
+    ( v * 1000 + 0.5 ).floor.to_s.tap do |s|
+      :go while s.gsub!(/^([^.]*)(\d)(?=(\d{3})+)/, "\\1\\2,")
+    end
   end
 end

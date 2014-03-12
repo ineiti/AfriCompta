@@ -24,3 +24,8 @@ AfriCompta:
   disabled: true
 
 DiplomaDir: Diplomas
+
+Entities:
+  LogActions:
+    logging: false
+    

@@ -1,3 +1,6 @@
+require 'prawn'
+require "prawn/measurement_extensions"
+
 class AccountRoot
 
   def self.actual
@@ -129,6 +132,7 @@ class Accounts < Entities
 	
   def self.create_path( path, desc = "", double_last = false, mult = 1, 
       keep_total = false )
+    dputs(3){"Path: #{path.inspect}, mult: #{mult}"}
     elements = path.split( "::" )
     parent = AccountRoot
     while elements.size > 0
@@ -145,7 +149,7 @@ class Accounts < Entities
       end
       parent = child
     end
-    parent.set_child_multiplier_total( mult, keep_total )
+    parent.set_nochildmult( name, desc, nil, mult, [], keep_total )
   end
 
   # Gets an account from a string, if it doesn't exist yet, creates it.
@@ -242,6 +246,7 @@ class Accounts < Entities
     # This means we're more than one level below root, so we can't
     # just copy easily
     if acc.path.split('::').count > 2
+      dputs(3){"Creating archive #{acc.path} with mult #{acc.multiplier}"}
       return Accounts.create_path( "Archive::#{year}::"+
           "#{acc.parent.path.gsub(/^Root::/,'')}", "New archive", false,
         acc.multiplier, acc.keep_total )
@@ -267,13 +272,13 @@ class Accounts < Entities
   def create_accounts( acc, years, years_archived, this_year )
     years.keys.each{|y|
       if y == this_year
-        dputs(3){"Creating path #{acc.path}"}
+        dputs(3){"Creating path #{acc.path} with mult #{acc.multiplier}"}
         years[y] = Accounts.create_path( acc.path, acc.desc, 
           true, acc.multiplier, acc.keep_total )
       else
         path = "#{archive_parent( acc, years_archived, y ).path}::" +
           acc.name
-        dputs(3){"Creating other path #{path}"}
+        dputs(3){"Creating other path #{path} with mult #{acc.multiplier}"}
         years[y] = Accounts.create_path( path, acc.desc, false,
           acc.multiplier, acc.keep_total )
       end
@@ -313,7 +318,7 @@ class Accounts < Entities
 		
   def sum_up_total( acc_path, years_archived, month_start )
     a_path = acc_path.sub( /[^:]*::/, '' )
-    dputs( 3 ){ "Summing up account #{a_path}" }
+    dputs( 2 ){ "Summing up account #{a_path}" }
     acc_sum = []
     years_archived.each{|y, a|
       dputs( 5 ){ "Found archived year #{y.inspect} which is #{y.class.name}" }
@@ -330,10 +335,11 @@ class Accounts < Entities
     last_year_acc = nil
     last_year_acc_parent = nil
     last_year = 0
-    dputs( 5 ){ "Sorting account_sum of length #{acc_sum.length}" }
+    dputs( 5 ){ "Sorting account_sums #{acc_sum.length}" }
     acc_sum.sort{|a,b| a[0] <=> b[0]}.each{|y, a, aacc|
-      dputs( 5 ){ "y, a, aacc: #{y}, #{a}, #{aacc.to_s}" }
+      dputs( 5 ){ "y, a, aacc: #{y}, #{a.to_json}, #{aacc.to_json}" }
       if aacc
+        last_year_acc_parent and last_year_acc_parent.dump true
         dputs( 4 ){ "Found archived account #{aacc.get_path} for year #{y}" + 
             " with last_total #{last_total}" }
         dputs( 5 ){ "And has movements" }
@@ -342,11 +348,11 @@ class Accounts < Entities
         }
         if last_total != 0
           desc = "-- Sum of #{last_year} of #{last_year_acc.path}"
-          date = "#{last_year + 1}-#{month_start}-01"
-          dputs( 3 ){ "Deleting old sums" }
+          date = "#{last_year + 1}-#{month_start.to_s.rjust(2,'0')}-01"
+          dputs( 3 ){ "Deleting old sums with date #{date.inspect}" }
           Movements.matches_by_desc( "^#{desc}$" ).each{|m|
-            dputs(3){"Testing movement #{m.to_json}"}
-            if m.date == date
+            dputs(3){"Testing movement with date #{m.date.to_s.inspect}: #{m.to_json}"}
+            if m.date.to_s == date.to_s
               dputs(3){"Deleting it"}
               m.delete
             end
@@ -354,6 +360,7 @@ class Accounts < Entities
           dputs( 3 ){ "Creating movement for the sum of last year: #{last_total}" }
           mov = Movements.create( desc, date, last_total, 
             last_year_acc_parent, aacc )
+          last_year_acc_parent.dump true
           dputs( 3 ){ "Movement is: #{mov.to_json}" }
         end
         aacc.update_total
@@ -377,11 +384,12 @@ class Accounts < Entities
     root = AccountRoot.actual
     if only_account
       root = only_account
-    else
-      if ( root.account_id > 0 )
-        dputs( 0 ){ "Error: Can't archive with Root is not in root: #{root.account_id.inspect}!" }
-        return false
-      end
+    elsif not root
+      dputs( 0 ){ "Error: Root-account not available!" }
+      return false
+    elsif ( root.account_id > 0 )
+      dputs( 0 ){ "Error: Can't archive with Root is not in root: #{root.account_id.inspect}!" }
+      return false
     end
 		
     archive = AccountRoot.archive
@@ -450,7 +458,7 @@ class Accounts < Entities
         # Check whether we need to add the account to the current year
         if ( last_used >= this_year - 1 ) and 
             ( most_used != this_year )
-          dputs( 3 ){ "Adding #{acc_path} to this year" }
+          dputs( 3 ){ "Adding #{acc_path} to this year with mult #{acc.multiplier}" }
           Accounts.create_path( acc_path, "Copied from archive", false,
             acc.multiplier, acc.keep_total )
         end
@@ -473,13 +481,21 @@ class Accounts < Entities
         case movs.count
         when 0
           dputs( 3 ){ "Deleting empty account #{acc.path}" }
-          acc.delete
+          if acc.path != "Root"
+            acc.delete
+          else
+            dputs( 2 ){"Not deleting root!"}
+          end
         when 1
           dputs( 3 ){ "Found only one movement for #{acc.path}" }
           if movs.first.desc =~ /^-- Sum of/
             dputs( 3 ){ "Deleting account which has only a sum" }
             movs.first.delete
-            acc.delete
+            if acc.path != "Root"
+              acc.delete
+            else
+              dputs( 2 ){"Not deleting root!"}
+            end
           end
         end
       end
@@ -489,27 +505,18 @@ class Accounts < Entities
     end
   end
   
-  def self.dump( mov = false )
-    root = AccountRoot.actual
-    dputs( 1 ){ "Root-tree is now" }
-    root.get_tree_depth{|a|
-      dputs( 1 ){ a.path_id }
-      if mov
-        a.movements.each{|m|
-          dputs( 1 ){"Movement is #{m.to_json}"}
-        }
-      end
+  def self.dump_raw( mov = false )
+    Accounts.search_all.each{|a|
+      a.dump( mov )
     }
+  end
+  
+  def self.dump( mov = false )
+    dputs( 1 ){ "Root-tree is now" }
+    AccountRoot.actual.dump_rec( mov )
     if archive = AccountRoot.archive
       dputs( 1 ){ "Archive-tree is now" }
-      archive.get_tree_depth{|a|
-        dputs( 1 ){ a.path_id }
-        if mov
-          a.movements.each{|m|
-            dputs( 1 ){"Movement is #{m.to_json}"}
-          }
-        end
-      }
+      archive.dump_rec( mov )
     else
       dputs( 1 ){"No archive-tree"}
     end
@@ -529,6 +536,14 @@ class Accounts < Entities
   
   def migration_2( a )
     a.rev_index = a.id
+  end
+  
+  def listp_path
+    dputs(3){"Being called"}
+    Accounts.search_all.select{|a| ! a.deleted }.collect{|a| [a.id, a.path] }.
+      sort{|a,b|
+      a[1] <=> b[1]
+    }
   end
 
 end
@@ -600,18 +615,20 @@ class Account < Entity
   end
 
   # Sets different new parameters.
-  def set_nochildmult( name, desc, parent, multiplier = 1, users = [],
+  def set_nochildmult( name, desc, parent = nil, multiplier = 1, users = [],
       keep_total = false )
-    self.name, self.desc, self.account_id, self.keep_total = 
-      name, desc, parent, keep_total
+    self.name, self.desc, self.keep_total = name, desc, keep_total
+    parent and self.account_id = parent
     # TODO: implement link between user-table and account-table
     # self.users = users ? users.join(":") : ""
     self.multiplier = multiplier
     self.keep_total = keep_total
     update_total
     new_index
+    self
   end
   def set( name, desc, parent, multiplier = 1, users = [], keep_total = false )
+    dputs(3){"Going to set #{name}-#{parent}-#{multiplier}"}
     set_nochildmult( name, desc, parent, multiplier, users, keep_total )
     # All descendants shall have the same multiplier
     set_child_multiplier_total( multiplier, total )
@@ -754,5 +771,60 @@ class Account < Entity
       return false
     end
     return true
+  end
+  
+  def print_pdf_document( pdf )
+    sum = 0
+    pdf.font_size 10
+    movs = movements.sort{|a,b| a.date <=> b.date }
+    if movs.length > 0
+      header = [[{ :content => "#{id} - #{path}", :colspan => 5, :align => :center }],
+        ["Date", "Description", "Other", "Value", "Sum"].collect{|ch|
+          {:content => ch, :align => :center}}]
+      pdf.table( header +
+          movs.collect{|m|
+          other = m.get_other_account( self )
+          value = m.get_value( self )
+          [ {:content => m.date.to_s, :align => :center },
+            m.desc,
+            "#{other.id} - #{other.name}",
+            {:content => "#{Movement.value_form( value )}", :align => :right}, 
+            {:content => "#{Movement.value_form( sum += value )}", :align => :right} ]
+        }, :header => true, :column_widths => [70,430,100,80,80] )
+      pdf.move_down( 2.cm )
+    end
+  end
+  
+  def print_pdf( file, recursive = false )
+    Prawn::Document.generate( file,
+      :page_size   => "A4",
+      :page_layout => :landscape) do |pdf|
+      if recursive
+        get_tree_depth{|a|
+          a.print_pdf_document( pdf )
+        }
+      else
+        print_pdf_document( pdf )
+      end
+      pdf.repeat(:all, :dynamic => true) do
+        pdf.draw_text pdf.page_number, :at => [400, 0]
+      end
+    end
+  end
+  
+  def dump( mov = false )
+    t = ( self.keep_total ? 'K' : '.' ) + "#{self.multiplier}"
+    dputs( 1 ){ "#{t} #{self.path_id}#{self.deleted ? ' -- deleted' : ''}" }
+    if mov
+      movements.each{|m|
+        dputs( 1 ){"Movement is #{m.to_json}"}
+      }
+    end
+  end
+  
+  def dump_rec( mov = false )
+    get_tree_depth{|a|
+      a.dump( mov )
+    }
   end
 end

@@ -103,4 +103,8 @@ class TC_Account < Test::Unit::TestCase
     
     assert_equal 1, @lending.account_id
   end
+  
+  def test_print_pdf
+    @root.print_pdf( "test.pdf", true )
+  end
 end
