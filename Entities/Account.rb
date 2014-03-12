@@ -553,14 +553,14 @@ class Account < Entity
   # This gets the tree under that account, breadth-first
   def get_tree
     yield self
-    accounts.sort{|a,b| a.desc <=> b.desc }.each{|a|
+    accounts.sort{|a,b| a.name <=> b.name }.each{|a|
       a.get_tree{|b| yield b} 
     }
   end
     
   # This gets the tree under that account, depth-first
   def get_tree_depth
-    accounts.sort{|a,b| a.desc <=> b.desc }.each{|a|
+    accounts.sort{|a,b| a.name <=> b.name }.each{|a|
       a.get_tree_depth{|b| yield b} 
     }
     yield self
@@ -569,7 +569,7 @@ class Account < Entity
   def get_tree_debug( ind = "" )
     yield self
     dputs( 1 ){ "get_tree_ #{ind}#{self.name}" }
-    accounts.sort{|a,b| a.desc <=> b.desc }.each{|a|
+    accounts.sort{|a,b| a.name <=> b.name }.each{|a|
       a.get_tree_debug( "#{ind} " ){|b| yield b} 
     }
   end
@@ -776,10 +776,13 @@ class Account < Entity
   def print_pdf_document( pdf )
     sum = 0
     pdf.font_size 10
-    movs = movements.sort{|a,b| a.date <=> b.date }
+    movs = movements.select{|m|
+      m.value.abs >= 0.001
+    }.sort{|a,b| a.date <=> b.date }
     if movs.length > 0
-      header = [[{ :content => "#{id} - #{path}", :colspan => 5, :align => :center }],
-        ["Date", "Description", "Other", "Value", "Sum"].collect{|ch|
+      header = [["", { :content => "#{path}", :colspan => 2, :align => :left },
+          {:content => "#{id}", :align => :right }],
+        ["Date", "Description", "Other", "#", "Value", "Sum"].collect{|ch|
           {:content => ch, :align => :center}}]
       pdf.table( header +
           movs.collect{|m|
@@ -787,10 +790,11 @@ class Account < Entity
           value = m.get_value( self )
           [ {:content => m.date.to_s, :align => :center },
             m.desc,
-            "#{other.id} - #{other.name}",
+            other.name,
+            {:content => "#{other.id}", :align => :right },
             {:content => "#{Movement.value_form( value )}", :align => :right}, 
             {:content => "#{Movement.value_form( sum += value )}", :align => :right} ]
-        }, :header => true, :column_widths => [70,430,100,80,80] )
+        }, :header => true, :column_widths => [70,400,100,40,75,75] )
       pdf.move_down( 2.cm )
     end
   end
@@ -798,7 +802,9 @@ class Account < Entity
   def print_pdf( file, recursive = false )
     Prawn::Document.generate( file,
       :page_size   => "A4",
-      :page_layout => :landscape) do |pdf|
+      :page_layout => :landscape,
+      :bottom_margin => 2.cm,
+      :top_margin => 2.cm ) do |pdf|
       if recursive
         get_tree_depth{|a|
           a.print_pdf_document( pdf )
@@ -807,7 +813,8 @@ class Account < Entity
         print_pdf_document( pdf )
       end
       pdf.repeat(:all, :dynamic => true) do
-        pdf.draw_text pdf.page_number, :at => [400, 0]
+        pdf.draw_text self.path, :at => [0, -20]
+        pdf.draw_text pdf.page_number, :at => [14.85.cm, -20]
       end
     end
   end
