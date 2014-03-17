@@ -420,10 +420,10 @@ class TC_AfriCompta < Test::Unit::TestCase
       "Cash\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-3\t1100.0\t" +
       "Income\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse\n" +
-      "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.0\t" +
-      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse\n" +
       "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0.0\t" +
-      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\n", rep
+      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\n" +
+      "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.0\t" +
+      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse\n", rep
 
     ACaccess.get( "reset_user_account_indexes/foo,bar")
     rep = ACaccess.get( "accounts_get/foo,bar")
