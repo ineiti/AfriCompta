@@ -12,3 +12,4 @@ data
 webrick.*log
 .idea
 tmp/
+Test/test.pdf
