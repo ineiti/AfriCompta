@@ -63,8 +63,8 @@ class Movements < Entities
   def create( desc, date, value, source, dest )
     return nil if source == dest
     dputs(DEBUG_SLOW){"create - 1"}
-    t = super( :desc => desc, :date => date, :value => 0, 
-      :account_src_id => source.id, :account_dst_id => dest.id )
+    t = super( :desc => desc, :date => Date.strptime( date, '%Y-%m-%d' ), 
+      :value => 0, :account_src_id => source.id, :account_dst_id => dest.id )
     dputs(DEBUG_SLOW){"create - 2"}
     t.value = value
     dputs(DEBUG_SLOW){"create - 3"}
@@ -177,6 +177,10 @@ class Movement < Entity
     dputs(3){"totals after: #{src.get_path}=#{src.total}, " + 
         "#{dst.get_path}=#{dst.total}"}
     super
+  end
+  
+  def value_form
+    Movement.value_form( value )
   end
   
   def self.value_form( v )
