@@ -63,7 +63,10 @@ class Movements < Entities
   def create( desc, date, value, source, dest )
     return nil if source == dest
     dputs(DEBUG_SLOW){"create - 1"}
-    t = super( :desc => desc, :date => Date.strptime( date, '%Y-%m-%d' ), 
+    if date.class == String
+      date = Date.strptime( date, '%Y-%m-%d' )
+    end
+    t = super( :desc => desc, :date => date, 
       :value => 0, :account_src_id => source.id, :account_dst_id => dest.id )
     dputs(DEBUG_SLOW){"create - 2"}
     t.value = value

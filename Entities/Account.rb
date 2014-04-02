@@ -834,4 +834,13 @@ class Account < Entity
       a.dump( mov )
     }
   end
+  
+  def listp_path
+    acc = []
+    get_tree{|a|
+      acc.push [ a.id, a.path ]
+    }
+    dputs(3){"Ret is #{acc.inspect}"}
+    acc
+  end
 end
