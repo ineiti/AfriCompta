@@ -641,10 +641,11 @@ class Account < Entity
     movs = ( movements_src + movements_dst )
     if ( from != nil and to != nil )
       movs.delete_if{ |m|
-        ( m.date < from or m.date > to )
+        ( m.date < from || m.date > to )
       }
       dputs( 3 ){ "Rejected some elements" }
     end
+    movs.delete_if{|m| m.value == 0}
     sorted = movs.sort{ |a,b|
       ret = 0
       if a.date and b.date
