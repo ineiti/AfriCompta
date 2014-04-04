@@ -108,6 +108,7 @@ class Accounts < Entities
     value_int :rev_index
     value_bool :deleted
     value_bool :keep_total
+    # This is the ID of the parent account
     value_int :account_id
   end
     
