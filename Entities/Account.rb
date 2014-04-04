@@ -7,6 +7,10 @@ class AccountRoot
     self.accounts.find{|a| a.name == "Root" }
   end
   
+  def self.current
+    AccountRoot.actual
+  end
+  
   def self.archive
     self.accounts.find{|a| a.name == "Archive" }
   end
@@ -793,8 +797,8 @@ class Account < Entity
             m.desc,
             other.name,
             {:content => "#{other.id}", :align => :right },
-            {:content => "#{Movement.value_form( value )}", :align => :right}, 
-            {:content => "#{Movement.value_form( sum += value )}", :align => :right} ]
+            {:content => "#{Account.total_form( value )}", :align => :right}, 
+            {:content => "#{Account.total_form( sum += value )}", :align => :right} ]
         }, :header => true, :column_widths => [70,400,100,40,75,75] )
       pdf.move_down( 2.cm )
     end
@@ -844,4 +848,15 @@ class Account < Entity
     dputs(3){"Ret is #{acc.inspect}"}
     acc
   end
+  
+  def total_form
+    Account.total_form( total )
+  end
+  
+  def self.total_form( v )
+    ( v.to_f * 1000 + 0.5 ).floor.to_s.tap do |s|
+      :go while s.gsub!(/^([^.]*)(\d)(?=(\d{3})+)/, "\\1\\2,")
+    end
+  end
+
 end

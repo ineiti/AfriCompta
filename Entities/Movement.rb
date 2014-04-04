@@ -183,12 +183,6 @@ class Movement < Entity
   end
   
   def value_form
-    Movement.value_form( value )
-  end
-  
-  def self.value_form( v )
-    ( v * 1000 + 0.5 ).floor.to_s.tap do |s|
-      :go while s.gsub!(/^([^.]*)(\d)(?=(\d{3})+)/, "\\1\\2,")
-    end
+    Account.total_form( value )
   end
 end
