@@ -124,6 +124,18 @@ class Movement < Entity
   def get_other_account( account )
     account_src == account ? account_dst : account_src
   end
+  
+  def move_from_to( from, to )
+    v = self.value
+    self.value = 0
+    if account_src_id == from
+      self.account_src_id = to
+    end
+    if account_dst_id == from
+      self.account_dst_id = to
+    end
+    self.value = v
+  end
     
   def set( desc, date, value, source, dest )
     dputs( 3 ){ "self.value " + self.value.to_s + " - " + value.to_s }

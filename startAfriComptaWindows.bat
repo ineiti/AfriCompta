@@ -17,4 +17,9 @@ Windows\7z a Backup\%DB%-%T%.zip db.%DB%
 
 START /B CMD /C CALL ruby -Icamping-1.5/lib -Iactiverecord-2.3.5/lib -Iactivesupport-2.3.5/lib -Imarkaby-0.5/lib -Isqlite3-ruby-1.2.5/lib camping --database db.%DB% compta.rb > %LOG% 2>&1
 ping -n 5 localhost
+﻿if EXIST FirefoxPortable\ GOTO FF
 start http://localhost:3301
+GOTO END
+:FF
+FirefoxPortable\FirefoxPortable.exe http://localhost:3301
+:END
