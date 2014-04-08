@@ -867,4 +867,11 @@ class Account < Entity
     end
   end
 
+  def get_archives
+    if archive = AccountRoot.archive
+      archive.accounts.collect{|arch|
+        Accounts.get_by_path( "#{arch.path}::#{path.sub(/^Root::/, '')}")
+      }.select{|a| a }
+    end
+  end
 end

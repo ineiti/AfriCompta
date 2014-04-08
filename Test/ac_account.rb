@@ -107,4 +107,20 @@ class TC_Account < Test::Unit::TestCase
   def test_print_pdf
     @root.print_pdf( "test.pdf", true )
   end
+
+  def test_get_archives
+    (2011..2014).each{|y|
+      Movements.create( "", Date.new(y), 1000, @income, @cash )
+    }
+    Movements.create( "", Date.new(2013, 3, 3), 1000, @outcome, @cash )
+    Accounts.archive( 1, 2014 )
+
+    assert_equal ["Archive::2011::Income", "Archive::2012::Income", 
+      "Archive::2013::Income"], 
+      Accounts.get_by_path( "Root::Income" ).get_archives.collect{|a|
+      a.path }.sort
+    assert_equal ["Archive::2012::Outcome", "Archive::2013::Outcome"], 
+      Accounts.get_by_path( "Root::Outcome" ).get_archives.collect{|a|
+      a.path }.sort
+  end
 end

@@ -3,7 +3,7 @@
 require 'test/unit'
 
 CONFIG_FILE="config_test.yaml"
-DEBUG_LVL=0
+DEBUG_LVL=1
 
 require 'QooxView'
 require 'ACQooxView'
@@ -20,7 +20,7 @@ qooxView = QooxView.init( '../Entities', '../Views' )
 
 tests = %w( africompta account movement )
 #tests = %w( africompta )
-#tests = %w( movement )
+tests = %w( account )
 tests.each{|t|
   require "ac_#{t}"
 }
