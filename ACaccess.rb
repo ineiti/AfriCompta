@@ -72,7 +72,8 @@ class ACaccess < RPCQooxdooPath
     arg, id = id, arg if not id
     user, pass = id.split(",")
       
-    dputs( 1 ){ "get-merge-path #{path} - #{arg} with user #{user} and pass #{pass}" }
+    log_msg "ACaccess.get", "get-merge-path #{path} - #{arg} with " +
+      "user #{user} and pass #{pass}"
     u = Users.match_by_name( user )
     u_local = Users.match_by_name('local')
     if not ( u and u.pass == pass )
@@ -115,7 +116,7 @@ class ACaccess < RPCQooxdooPath
           a.global_id <=> b.global_id }.each{|a|
           dputs( 2 ){ "Found one root-account #{a.rev_index} - #{a.path_id}" }
           if a.global_id
-            dputs( 2 ){ "It's global" }
+            dputs( 3 ){ "It's global" }
             a.get_tree{|acc|
               dputs( 4 ){ "In get_tree #{acc.rev_index} - #{acc.path_id}" }
               if acc.rev_index > u.account_index
@@ -124,12 +125,12 @@ class ACaccess < RPCQooxdooPath
               end
             }
           else
-            dputs( 2 ){ "It's not global" }
+            dputs( 3 ){ "It's not global" }
           end
-          dputs( 2 ){ "Will search for next" }
+          dputs( 3 ){ "Will search for next" }
         }
       end
-      dputs( 2 ){ "Finished search" }
+      dputs( 3 ){ "Finished search" }
       return ret
         
       # Gets all movements (for the accounts of that user)
@@ -185,8 +186,8 @@ class ACaccess < RPCQooxdooPath
     
   def self.post( path, input )
     dputs( 5 ){ "self.post with #{path} and #{input.inspect}" }
-    dputs( 1 ){ "post-merge-path #{path} with user #{input['user']} " +
-        "and pass #{input['pass']}" }
+    log_msg "ACaccess.post", "post-merge-path #{path} with " +
+      "user #{input['user']} and pass #{input['pass']}"
     user, pass = input['user'], input['pass']
     u = Users.match_by_name( user )
     if not ( u and u.pass == pass )

@@ -20,7 +20,7 @@ qooxView = QooxView.init( '../Entities', '../Views' )
 
 tests = %w( africompta account movement )
 #tests = %w( africompta )
-tests = %w( movement )
+#tests = %w( movement )
 tests.each{|t|
   require "ac_#{t}"
 }

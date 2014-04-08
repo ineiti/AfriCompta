@@ -22,12 +22,13 @@ class AccountRoot
   def self.clean
     count_mov, count_acc = 0, 0
     bad_mov, bad_acc = 0, 0
+    log_msg "Account.clean", "starting to clean up"
     Movements.search_all.each{ |m|
       dputs(4){"Testing movement #{m.inspect}"}
       if not m or not m.date or not m.desc or not m.value or 
           not m.rev_index or not m.account_src or not m.account_dst
         if m and m.desc
-          dputs(1){ "Bad movement: #{m.desc}" }
+          log_msg "Account.clean", "Bad movement: #{m.desc}"
         end
         m.delete
         bad_mov += 1
@@ -38,21 +39,27 @@ class AccountRoot
     }
     Accounts.search_all.each{ |a|
       if ( a.account_id and ( a.account_id > 0 ) ) and ( not a.account )
-        dputs(2){"Account has unexistent parent: #{a.inspect}"}
+        log_msg "Account.clean", "Account has unexistent parent: #{a.inspect}"
         a.delete
         bad_acc += 1
       end
       if ! ( a.account_id or a.deleted )
-        dputs(2){"Account has undefined parent: #{a.inspect}"}
+        log_msg "Account.clean", "Account has undefined parent: #{a.inspect}"
         a.delete
         bad_acc += 1
       end
       if a.account_id == 0
         if ! ( ( a.name =~ /(Root|Archive)/ ) or a.deleted )
-          dputs(2){"Account is in root but neither 'Root' nor 'Archive': #{a.inspect}"}
+          log_msg "Account.clean", "Account is in root but neither " +
+            "'Root' nor 'Archive': #{a.inspect}"
           a.delete
           bad_acc += 1
         end
+      end
+      if ! a.rev_index
+        log_msg "Account.clean", "Didn't find rev_index for #{a.inspect}"
+        a.new_index
+        bad_acc += 1
       end
       count_acc = [ count_acc, a.rev_index ].max
     }
@@ -63,11 +70,11 @@ class AccountRoot
     dputs(1){ "Accounts-index: #{count_acc} - #{u_l.account_index}" }
     @ul_mov, @ul_acc = u_l.movement_index, u_l.account_index
     if count_mov > u_l.movement_index
-      dputs( 1 ){ "Error, there is a bigger movement! Fixing" }
+      log_msg "Account.clean", "Error, there is a bigger movement! Fixing"
       u_l.movement_index = count_mov + 1
     end
     if count_acc > u_l.account_index
-      dputs( 1 ){ "Error, there is a bigger account! Fixing" }
+      log_msg "Account.clean", "Error, there is a bigger account! Fixing"
       u_l.account_index = count_acc + 1
     end
     return [ count_mov, bad_mov, count_acc, bad_acc ]
