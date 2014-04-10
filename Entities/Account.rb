@@ -563,10 +563,11 @@ end
 class Account < Entity
 
   # This gets the tree under that account, breadth-first
-  def get_tree
+  def get_tree( depth = -1 )
     yield self
+    return if depth == 0
     accounts.sort{|a,b| a.name <=> b.name }.each{|a|
-      a.get_tree{|b| yield b} 
+      a.get_tree(depth - 1){|b| yield b} 
     }
   end
     
@@ -848,9 +849,9 @@ class Account < Entity
     }
   end
   
-  def listp_path
+  def listp_path( depth = -1 )
     acc = []
-    get_tree{|a|
+    get_tree( depth ){|a|
       acc.push [ a.id, a.path ]
     }
     dputs(3){"Ret is #{acc.inspect}"}
