@@ -230,7 +230,7 @@ class TC_AfriCompta < Test::Unit::TestCase
     newmov.value = 50
     assert_equal( 1000.0, @cash.total )
     newmov = Movements.from_json mov_json
-    assert_equal( 950.0, @cash.total )
+    assert_equal( 900.0, @cash.total )
     assert_equal( 100.0, newmov.value )
 		
     assert_equal 8, @local.movement_index
