@@ -564,17 +564,17 @@ class Account < Entity
 
   # This gets the tree under that account, breadth-first
   def get_tree( depth = -1 )
-    yield self
+    yield self, depth
     return if depth == 0
     accounts.sort{|a,b| a.name <=> b.name }.each{|a|
-      a.get_tree(depth - 1){|b| yield b} 
+      a.get_tree(depth - 1){|b| yield b, depth - 1}
     }
   end
     
   # This gets the tree under that account, depth-first
   def get_tree_depth
     accounts.sort{|a,b| a.name <=> b.name }.each{|a|
-      a.get_tree_depth{|b| yield b} 
+      a.get_tree_depth{|b| yield b}
     }
     yield self
   end
@@ -874,5 +874,9 @@ class Account < Entity
         Accounts.get_by_path( "#{arch.path}::#{path.sub(/^Root::/, '')}")
       }.select{|a| a }
     end
+  end
+  
+  def get_archive( year = Date.today.year - 1, month = Date.today.month )
+    dputs(0){"Error: not implemented yet"}
   end
 end
