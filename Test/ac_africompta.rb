@@ -227,14 +227,15 @@ class TC_AfriCompta < Test::Unit::TestCase
       "2012-07-12\\t5544436cf81115c6faf577a7e2307e92-4\\t" + 
       "5544436cf81115c6faf577a7e2307e92-2\"}", 
       mov_json
+    assert_equal( 950.0, @cash.total )
     newmov.value = 50
     assert_equal( 1000.0, @cash.total )
     newmov = Movements.from_json mov_json
-    assert_equal( 900.0, @cash.total )
+    assert_equal( 950.0, @cash.total )
     assert_equal( 100.0, newmov.value )
-		
+
     assert_equal 8, @local.movement_index
-		
+
     Movements.create( 'test_mov', '2012-02-29', 100.0, @cash, @outcome )
     assert_equal 9, @local.movement_index
   end
