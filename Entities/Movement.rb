@@ -14,6 +14,11 @@ class Movements < Entities
     value_str :global_id
     value_int :rev_index
   end
+  
+  def migration_1( m )
+    dputs(1){"Migrating #{m.id}"}
+    m.rev_index = m.id
+  end
 
   def self.from_json( str )
     self.from_s( ActiveSupport::JSON.decode( str )["str"] )
@@ -79,9 +84,12 @@ class Movements < Entities
     t
   end
   
-  def migration_1( m )
-    dputs(1){"Migrating #{m.id}"}
-    m.rev_index = m.id
+  def search_index_range( from, to )
+    @data.select{|k,v|
+      v._rev_index && v._rev_index >= from && v._rev_index <= to
+    }.map{|k,v|
+      get_data_instance( k )
+    }
   end
 end
 

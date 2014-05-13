@@ -24,10 +24,10 @@ class ACaccess < RPCQooxdooPath
     dputs( 2 ){ "Doing print_movements from #{start.class}:#{start}"+
         " to #{stop.class}:#{stop}" }
     ret = ""
-    Movements.search_all.select{|m|
-      mi = m.rev_index
-      m and mi and mi >= start and mi <= stop
-    }.each{ |m|
+#    Movements.search_all.select{|m|
+#      mi = m.rev_index
+#      m and mi and mi >= start and mi <= stop
+    Movements.search_index_range( start, stop ).each{ |m|
       if start > 0
         dputs( 4 ){ "Mer: Movement #{m.desc}, #{m.value}" }
       end
