@@ -623,7 +623,7 @@ class Account < Entity
       self.total = self.total.to_f + v.to_f
       dputs( 5 ){ "And getting #{self.total.inspect}"}
     }
-    self.total = self.total.round( precision )
+    self.total = self.total.to_f.round( precision )
     dputs( 4 ){ "Final total is #{self.total} - #{self.total.class.name}" }
   end
 
