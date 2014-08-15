@@ -1,5 +1,5 @@
-#!/usr/bin/ruby
 #!/usr/bin/env ruby
+#!/usr/bin/ruby
 
 #require 'rubygems'
 require 'delegate'
@@ -37,10 +37,10 @@ opts = OptionParser.new do |opts|
   opts.separator ""
   opts.separator "Specific options:"
 
-  opts.on("-h", "--host HOSTNAME", "Host for web server to bind to (default is all IPs)") { |conf.host| }
-  opts.on("-p", "--port NUM", "Port for web server (defaults to #{conf.port})") { |conf.port| }
-  opts.on("-d", "--database FILE", "Database file (defaults to #{conf.db})") { |conf.db| }
-  opts.on("-l", "--log FILE", "Start a database log ('-' for STDOUT)") { |conf.log| }
+  opts.on("-h", "--host HOSTNAME", "Host for web server to bind to (default is all IPs)") { |h| conf.host = h }
+  opts.on("-p", "--port NUM", "Port for web server (defaults to #{conf.port})") { |p| conf.port = p }
+  opts.on("-d", "--database FILE", "Database file (defaults to #{conf.db})") { |d| conf.db = d }
+  opts.on("-l", "--log FILE", "Start a database log ('-' for STDOUT)") { |l| conf.log = l }
   opts.on("-C", "--console", "Run in console mode with IRB") { conf.server = :console }
   opts.on("-s", "--server NAME", "Server to force (mongrel, webrick, console)") { |s| conf.server = s.to_sym }
 

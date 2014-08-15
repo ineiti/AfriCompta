@@ -92,7 +92,7 @@ module Compta::Controllers
       when "cumul"
         get_subsum_cumul( account, detail, year )
       end
-      if depth > 1 and account.accounts_nondeleted
+      if depth > 0 and account.accounts_nondeleted
         account.accounts_nondeleted.each{|a|
           calc_subsum( type, a, detail, depth - 1, year )
         }
@@ -367,9 +367,11 @@ module Compta::Views
             :href => print_link( acc )
           }
           # Show the 12 last months
-          total = show_sum( acc.subsum )
-          if @type == "cumul"
-            td.money total.fix( 0, 3 )
+          if acc.subsum
+            total = show_sum( acc.subsum )
+            if @type == "cumul"
+              td.money total.fix( 0, 3 )
+            end
           end
         }
       }

@@ -1,2 +1,2 @@
 DIR=$( pwd )
-export RUBYLIB=$DIR/camping-1.5/lib:$DIR/activerecord-2.3.5/lib:$DIR/activesupport-2.3.5/lib:$DIR/markaby-0.5/lib:$DIR/sqlite3-ruby-1.2.5/lib
+export RUBYLIB=$DIR/camping-1.5/lib:$DIR/activerecord-2.3.5/lib:$DIR/activesupport-2.3.5/lib:$DIR/markaby-0.5/lib:$DIR/sqlite3-1.3.9/lib:$DIR

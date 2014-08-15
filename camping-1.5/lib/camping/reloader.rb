@@ -150,7 +150,7 @@ class Reloader
 
                 if @database and @database[:adapter] == 'sqlite3'
                     begin
-                        require 'sqlite3_api'
+                        require 'sqlite3'
                     rescue LoadError
                         puts "!! Your SQLite3 adapter isn't a compiled extension."
                         abort "!! Please check out http://code.whytheluckystiff.net/camping/wiki/BeAlertWhenOnSqlite3 for tips."
