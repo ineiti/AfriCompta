@@ -1,5 +1,11 @@
-#!/usr/local/bin/ruby -I../../QooxView -I.. -I.
-#!/usr/bin/ruby -I../../QooxView -I.. -wKU
+#!/usr/bin/env ruby
+##!/usr/local/bin/ruby -I.
+##!/usr/bin/ruby -I.. -I../../QooxView -I../../AfriCompta -I../../LibNet -I. -wKU
+%w( QooxView AfriCompta LibNet ).each{|l|
+  $LOAD_PATH.push "../../#{l}"
+}
+$LOAD_PATH.push "."
+
 require 'test/unit'
 
 CONFIG_FILE="config_test.yaml"
