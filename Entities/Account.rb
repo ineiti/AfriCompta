@@ -542,7 +542,7 @@ class Accounts < Entities
     a.deleted = false
     # As most of the accounts in Cash have -1 and shall be kept, this
     # gives a good first initialisation
-    a.keep_total = a.multiplier == -1
+    a.keep_total = ( a.multiplier == -1.0 ) || ( a.multiplier == -1 )
     dputs(4) { "#{a.name}: #{a.deleted.inspect} - #{a.keep_total.inspect}" }
   end
 
