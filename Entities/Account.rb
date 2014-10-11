@@ -142,7 +142,7 @@ class Accounts < Entities
     a
   end
 
-  def self.create_path(path, desc = "", double_last = false, mult = 1,
+  def self.create_path(path, desc = '', double_last = false, mult = 1,
       keep_total = false)
     dputs(3) { "Path: #{path.inspect}, mult: #{mult}" }
     elements = path.split("::")
@@ -524,13 +524,13 @@ class Accounts < Entities
   end
 
   def self.dump(mov = false)
-    dputs(1) { "Root-tree is now" }
+    dputs(1) { 'Root-tree is now' }
     AccountRoot.actual.dump_rec(mov)
     if archive = AccountRoot.archive
-      dputs(1) { "Archive-tree is now" }
+      dputs(1) { 'Archive-tree is now' }
       archive.dump_rec(mov)
     else
-      dputs(1) { "No archive-tree" }
+      dputs(1) { 'No archive-tree' }
     end
     AccountRoot.accounts.each { |a|
       dputs(1) { "Root-Account: #{a.inspect}" }
