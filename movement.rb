@@ -325,6 +325,7 @@ module Compta::Controllers
   end
 end  
 
+CPATH=''
 
 module Compta::Views
   #
@@ -339,15 +340,15 @@ module Compta::Views
       else
         acc, cred = m.account_src, value
       end
-      cred_deb = "<td><a href='/movement/list/#{@show_year}/#{acc.id}'>"+
+      cred_deb = "<td><a href='#{CPATH}movement/list/#{@show_year}/#{acc.id}'>"+
         "#{acc.name}</a></td>" +
         "<td class='money'>#{cred}</td><td class='money'>#{deb}</td>"
       args = "#{@show_year}/#{account.id.to_s}/#{m.id.to_s}"
       text("<tr><td><input type=checkbox name=#{m.id}></td>"+
           "<td>#{m.date.to_s_eu}</td>" +
           "<td>#{m.desc}</td>#{cred_deb}" +
-          "<td><a href=\"/movement/edit/#{args}\">edit</a> " +
-          "<a href=\"/movement/del/#{args}\">del</a></td>" +
+          "<td><a href=\"#{CPATH}movement/edit/#{args}\">edit</a> " +
+          "<a href=\"#{CPATH}movement/del/#{args}\">del</a></td>" +
           "<td>#{total.fix(0,3)}</td>" +
           "</tr>" )
       if m.account_src == account
@@ -370,7 +371,7 @@ module Compta::Views
                 current.checked = ! current.checked;
               } }" do "Inv" end
       
-      url = "/movement/list/#{@show_year}/#{@account.id}?date_from=#{@date_from}&date_to=#{@date_to}&sort="
+      url = "#{CPATH}movement/list/#{@show_year}/#{@account.id}?date_from=#{@date_from}&date_to=#{@date_to}&sort="
       td { a "Date", :href => "#{url}date" }
       td { a "Description", :href => "#{url}desc" }
       td { a "Account", :href => "#{url}account" }
@@ -390,7 +391,7 @@ module Compta::Views
     if acc.account
       str = str + name_rec( acc.account, str ) + "::"
     end
-    str += "<a href='/movement/list/#{@show_year}/#{acc.id}'>#{acc.name}</a>"
+    str += "<a href='#{CPATH}movement/list/#{@show_year}/#{acc.id}'>#{acc.name}</a>"
   end
   def sum_accounts( acc )
     ret = acc.total.to_f
@@ -426,24 +427,24 @@ module Compta::Views
     # Everybody loves tables for layout
     table :border => 1 do
       tr { 
-        a "Home", :href => "/"
+        a "Home", :href => "#{CPATH}"
         b "-"
-        a "Accounts", :href => "/account/list"
+        a "Accounts", :href => "#{CPATH}account/list"
         if @remote
           b "-"
-          a "Merge with base", :href => "/remote/merge/#{@remote.id}"
+          a "Merge with base", :href => "#{CPATH}remote/merge/#{@remote.id}"
         end
         td :align => "center" do
           text( "<h1>#{ name_rec( @account ) }</h1>" )
           p {
             @account.accounts_nondeleted.each{ |a|
-              a a.name, :href => "/movement/list/#{@show_year}/#{a.id}"
+              a a.name, :href => "#{CPATH}movement/list/#{@show_year}/#{a.id}"
             }
           }
           # List of accounts
           perf_mov.timer_start
           
-          form :action => "/movement/list", :method => "post" do
+          form :action => "#{CPATH}movement/list", :method => "post" do
             list_years
             list_accounts( "account_src", @account )
             input :type => 'text', :name => "date_from", :size => "10", :value => @date_from.to_s_eu
@@ -468,7 +469,7 @@ module Compta::Views
             movements_table_headers( @account )
             # A form for a new movement
             action = @movement.new_record? ? "add" : "edit"
-            form :action => "/movement/" + action, :method => "post" do
+            form :action => "#{CPATH}movement/" + action, :method => "post" do
               tr {
                 td ""
                 td { input :type => "text", :name => "date", :size => "10",
@@ -501,7 +502,7 @@ module Compta::Views
             perf_mov.timer_read("Preparing edit-fields: ")
             
             # The movements
-            form :action => "/movement/multi", :method => "post", :name => "multi" do
+            form :action => "#{CPATH}movement/multi", :method => "post", :name => "multi" do
               sum_c, sum_d = 0, 0
               @movements.to_a.each{|m|
                 if m.account_src == @account
@@ -535,12 +536,12 @@ module Compta::Views
         }
       }
     end
-    a "Home", :href => "/"
+    a "Home", :href => "#{CPATH}"
     b "-"
-    a "Accounts", :href => "/account/list"
+    a "Accounts", :href => "#{CPATH}account/list"
     if @remote
       b "-"
-      a "Merge with base", :href => "/remote/merge/#{@remote.id}"
+      a "Merge with base", :href => "#{CPATH}remote/merge/#{@remote.id}"
     end
   end
 end
