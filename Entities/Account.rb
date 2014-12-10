@@ -209,7 +209,7 @@ class Accounts < Entities
     return our_a
   end
 
-  def self.get_by_path_or_create(p, desc, last, mult, keep)
+  def self.get_by_path_or_create(p, desc = '', last = false, mult = 1, keep = false)
     get_by_path(p) or
         create_path(p, desc, last, mult, keep)
   end
