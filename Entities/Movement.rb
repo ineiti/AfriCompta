@@ -111,7 +111,7 @@ class Movements < Entities
     dputs(3) { 'Searching all movements' }
     @check_state = 'Collect local'
     @check_progress = 0.0
-    in_local = Movements.search_all_
+    in_local = Movements.search_all_.reject{|m| m.value.to_f.round(3) == 0.0}
     progress_step = 1.0 / (in_local.size + 1)
     dputs(3) { "Movements total: #{in_local.size}" }
 
