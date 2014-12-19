@@ -50,8 +50,8 @@ class AccountRoot
       end
       if a.account_id == 0
         if !((a.name =~ /(Root|Archive)/) or a.deleted)
-          log_msg 'Account.clean', "Account is in root but neither " +
-              "'Root' nor 'Archive': #{a.inspect}"
+          log_msg 'Account.clean', 'Account is in root but neither ' +
+                                     "'Root' nor 'Archive': #{a.inspect}"
           a.delete
           bad_acc += 1
         end
@@ -102,6 +102,8 @@ class AccountRoot
 end
 
 class Accounts < Entities
+  attr_reader :check_state, :check_progress
+
   def setup_data
     @default_type = :SQLiteAC
     @data_field_id = :id
@@ -119,33 +121,35 @@ class Accounts < Entities
     value_int :account_id
   end
 
-  def self.create(name, desc = 'Too lazy', parent = nil, global_id = "")
+  def self.create(name, desc = 'Too lazy', parent = nil, global_id = '', mult = nil)
     dputs(5) { "Parent is #{parent.inspect}" }
     if parent
       if parent.class != Account and parent != AccountRoot
         parent = Accounts.matches_by_id(parent).first
       end
+      mult ||= parent.multiplier
       a = super(:name => name, :desc => desc, :account_id => parent.id,
-                :global_id => global_id.to_s, :multiplier => parent.multiplier,
+                :global_id => global_id.to_s, :multiplier => mult,
                 :deleted => false, :keep_total => parent.keep_total)
     else
+      mult ||= 1
       a = super(:name => name, :desc => desc, :account_id => 0,
-                :global_id => global_id.to_s, :multiplier => 1,
+                :global_id => global_id.to_s, :multiplier => mult,
                 :deleted => false, :keep_total => false)
     end
     a.total = 0
     a.new_index
-    if global_id == ""
-      a.global_id = Users.match_by_name('local').full + "-" + a.id.to_s
+    if global_id == ''
+      a.global_id = Users.match_by_name('local').full + '-' + a.id.to_s
     end
-    dputs(2) { "Created account #{a.path_id}" }
+    dputs(2) { "Created account #{a.path_id} - #{a.inspect}" }
     a
   end
 
   def self.create_path(path, desc = '', double_last = false, mult = 1,
       keep_total = false)
     dputs(3) { "Path: #{path.inspect}, mult: #{mult}" }
-    elements = path.split("::")
+    elements = path.split('::')
     parent = AccountRoot
     while elements.size > 0
       name = elements.shift
@@ -176,8 +180,8 @@ class Accounts < Entities
     global_id, total, name, multiplier, par,
         deleted_s, keep_total_s = str.split("\t")
     total, multiplier = total.to_f, multiplier.to_f
-    deleted = deleted_s == "true"
-    keep_total = keep_total_s == "true"
+    deleted = deleted_s == 'true'
+    keep_total = keep_total_s == 'true'
     dputs(3) { [global_id, total, name, multiplier].inspect }
     dputs(3) { [par, deleted_s, keep_total_s].inspect }
     dputs(5) { "deleted, keep_total is #{deleted.inspect}, #{keep_total.inspect}" }
@@ -271,7 +275,7 @@ class Accounts < Entities
     years = Hash.new(0)
     acc.movements.each { |mov|
       if not mov.desc =~ /^-- Sum of/
-        y, m, d = mov.date.to_s.split("-").collect { |d| d.to_i }
+        y, m, d = mov.date.to_s.split('-').collect { |d| d.to_i }
         dputs(5) { "Date of #{mov.desc} is #{mov.date}" }
         m < month_start and y -= 1
         years[y] += 1
@@ -301,7 +305,7 @@ class Accounts < Entities
   def move_movements(acc, years, month_start)
     acc.movements.each { |mov|
       dputs(5) { 'Start of each' }
-      y, m, d = mov.date.to_s.split("-").collect { |d| d.to_i }
+      y, m, d = mov.date.to_s.split('-').collect { |d| d.to_i }
       dputs(5) { "Date of #{mov.desc} is #{mov.date}" }
       m < month_start and y -= 1
       if years.has_key? y
@@ -334,7 +338,7 @@ class Accounts < Entities
     acc_sum = []
     years_archived.each { |y, a|
       dputs(5) { "Found archived year #{y.inspect} which is #{y.class.name}" }
-      aacc = Accounts.get_by_path(a.get_path + "::" + a_path)
+      aacc = Accounts.get_by_path(a.get_path + '::' + a_path)
       acc_sum.push [y, a, aacc]
     }
     dputs(5) { 'Trying to add current year' }
@@ -471,7 +475,7 @@ class Accounts < Entities
         if (last_used >= this_year - 1) and
             (most_used != this_year)
           dputs(3) { "Adding #{acc_path} to this year with mult #{acc.multiplier}" }
-          Accounts.create_path(acc_path, "Copied from archive", false,
+          Accounts.create_path(acc_path, 'Copied from archive', false,
                                acc.multiplier, acc.keep_total)
         end
 
@@ -558,6 +562,80 @@ class Accounts < Entities
     }
   end
 
+  def bool_to_s(b)
+    (b && b != 'f') ? 'true' : 'false'
+  end
+
+  def check_against_db(file)
+    dputs_func
+    # First build
+    # in_db - content of 'file' in .to_s format
+    # in_local - content available locally in .to_s format
+    in_db, diff, in_local = [], [], []
+    dputs(3) { 'Searching all accounts' }
+    @check_state = 'Collect local'
+    @check_progress = 0.0
+    in_local = Accounts.search_all_
+    progress_step = 1.0 / (in_local.size + 1)
+    dputs(3) { "Found #{in_local.size} accounts" }
+
+    @check_state = 'Collect local'
+    in_local = in_local.collect { |a|
+      @check_progress += progress_step
+      a.to_s
+    }
+
+    dputs(3) { 'Loading file-db' }
+    @check_state = 'Collect file-DB'
+    @check_progress = 0.0
+    SQLite3::Database.new(file) do |db|
+      db.execute('select id, account_id, name, desc, global_id, total, '+
+                     'multiplier, "index", rev_index, deleted, keep_total '+
+                     'from compta_accounts').sort_by { |a| a[4] }.each do |row|
+        #dputs(3) { "Looking at #{row}" }
+        @check_progress += progress_step
+
+        id_, acc_id_, name_, desc_, gid_, tot_, mult_, ind_, revind_, del_, keep_, = row
+        parent = if acc_id_
+                   acc_id_ == 0 ? '' :
+                       db.execute("select * from compta_accounts where id=#{acc_id_}").first[4]
+                 else
+                   ''
+                 end
+        in_db.push "#{desc_}\r#{gid_}\t" +
+                       "#{sprintf('%.3f', tot_.to_f.round(3))}\t#{name_.to_s}\t"+
+                       "#{mult_.to_i.to_s}\t#{parent}" +
+                       "\t#{bool_to_s(del_)}" + "\t#{bool_to_s(keep_)}"
+      end
+    end
+
+    # Now compare what is available only in db and what is available only locally
+    dputs(3) { 'Comparing local accounts with file-db accounts' }
+    @check_state = 'On one side'
+    @check_progress = 0.0
+    in_db.delete_if { |a|
+      @check_progress += progress_step
+      in_local.delete(a)
+    }
+
+    # And search for accounts with same global-id but different content
+    dputs(3) { 'Seaching mix-ups' }
+    @check_state = 'Mixed-up'
+    @check_progress = 0.0
+    progress_step = 1.0 / (in_db.size + 1)
+    (in_db + in_local).sort_by { |a| a.match(/\r(.*?)\t/)[1] }
+    in_db.delete_if { |a|
+      @check_progress += progress_step
+      gid = a.match(/\r(.*?)\t/)[1]
+      if c = in_local.find { |b| b =~ /\r#{gid}\t/ }
+        diff.push [a, c]
+        in_local.delete c
+      end
+    }
+
+    @check_state = 'Done'
+    [in_db, diff, in_local]
+  end
 end
 
 class Account < Entity
@@ -597,7 +675,7 @@ class Account < Entity
 
   def path_id(sep = '::', p='', first=true)
     (self.account ?
-        "#{self.account.path_id(sep, p, false)}#{sep}" : "") +
+        "#{self.account.path_id(sep, p, false)}#{sep}" : '') +
         "#{self.name}-#{self.id}"
   end
 
@@ -696,10 +774,10 @@ class Account < Entity
     if account || true
       dputs(4) { "Account-desc: #{name.to_s}, #{global_id}, #{account_id.inspect}" }
       "#{desc}\r#{global_id}\t" +
-          "#{total.to_f.round(3).to_s}\t#{name.to_s}\t#{multiplier.to_s}\t" +
-          (account_id ? ((account_id > 0) ? account.global_id.to_s : "") : "") +
+          "#{sprintf('%.3f', total.to_f.round(3))}\t#{name.to_s}\t#{multiplier.to_i.to_s}\t" +
+          (account_id ? ((account_id > 0) ? account.global_id.to_s : '') : '') +
           "\t#{bool_to_s(self.deleted)}" + "\t#{bool_to_s(self.keep_total)}" +
-          (add_path ? "\t#{path}" : "")
+          (add_path ? "\t#{path}" : '')
     else
       'nope'
     end
@@ -873,7 +951,7 @@ class Account < Entity
 
   def self.total_form(v)
     (v.to_f * 1000 + 0.5).floor.to_s.tap do |s|
-      :go while s.gsub!(/^([^.]*)(\d)(?=(\d{3})+)/, "\\1\\2,")
+      :go while s.gsub!(/^([^.]*)(\ d)(?=(\ d { 3 })+)/, "\\1\\2,")
     end
   end
 
@@ -888,4 +966,5 @@ class Account < Entity
   def get_archive(year = Date.today.year - 1, month = Date.today.month)
     dputs(0) { 'Error: not implemented yet' }
   end
+
 end

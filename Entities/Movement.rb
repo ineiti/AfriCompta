@@ -1,5 +1,7 @@
 DEBUG_SLOW=4
 class Movements < Entities
+  attr_reader :check_state, :check_progress
+
   def setup_data
     @default_type = :SQLiteAC
     @data_field_id = :id
@@ -94,11 +96,86 @@ class Movements < Entities
       get_data_instance(k)
     }
   end
+
+  def get_account(db, id)
+    db.execute("select * from compta_accounts where id=#{id}").first[4]
+  end
+
+  def check_against_db(file)
+    dputs_func
+    # First build
+    # in_db - content of 'file' in .to_s format
+    # in_local - content available locally in .to_s format
+    in_db, diff, in_local = [], [], []
+
+    dputs(3) { 'Searching all movements' }
+    @check_state = 'Collect local'
+    @check_progress = 0.0
+    in_local = Movements.search_all_
+    progress_step = 1.0 / (in_local.size + 1)
+    dputs(3) { "Movements total: #{in_local.size}" }
+
+    @check_state = 'Collect local'
+    in_local = in_local.collect { |a|
+      @check_progress += progress_step
+      a.to_s
+    }
+
+    dputs(3) { 'Going to check all movements' }
+    @check_state = 'Collect file-DB'
+    @check_progress = 0.0
+    SQLite3::Database.new(file) do |db|
+      db.execute('select id, desc, global_id, value, date, account_src_id, account_dst_id '+
+                     'from compta_movements').each do |row|
+        @check_progress += progress_step
+        #dputs(3) { "Looking at #{row}" }
+
+        id_, desc_, gid_, value_, date_, src_, dst_ = row
+        if value_.to_f.round(3) != 0.0
+          in_db.push "#{desc_}\r#{gid_}\t" +
+                         "#{sprintf('%.3f', value_.to_f.round(3))}\t#{date_.to_s}\t"+
+                         "#{get_account(db, src_)}\t#{get_account(db, dst_)}"
+        end
+      end
+    end
+
+    # Now compare what is available only in db and what is available only locally
+    dputs(3) { 'Verifying movements on one side only' }
+    @check_state = 'On one side'
+    @check_progress = 0.0
+    in_db.delete_if { |a|
+      @check_progress += progress_step
+      in_local.delete(a)
+    }
+
+    # And search for accounts with same global-id but different content
+    dputs(3) { 'Verifying mixed-up movements' }
+    (in_db + in_local).sort_by { |a| a.match(/\r(.*?)\t/)[1] }
+    @check_state = 'Mixed-up'
+    @check_progress = 0.0
+    progress_step = 1.0 / (in_db.size + 1)
+    in_db.delete_if { |a|
+      @check_progress += progress_step
+      gid = a.match(/\r(.*?)\t/)[1]
+      if c = in_local.find { |b| b =~ /\r#{gid}\t/ }
+        diff.push [a, c]
+        in_local.delete c
+      end
+    }
+
+    @check_state = 'Done'
+    [in_db, diff, in_local]
+  end
+
 end
 
 
 class Movement < Entity
-  def new_index()
+
+  def init_instance
+  end
+
+  def new_index
     u_l = Users.match_by_name('local')
     self.rev_index = u_l.movement_index.to_i
     u_l.movement_index = self.rev_index + 1
@@ -106,7 +183,7 @@ class Movement < Entity
     dputs(3) { "User('local').rev_index is: " + Users.match_by_name('local').movement_index.to_s }
   end
 
-  def get_index()
+  def get_index
     return self.rev_index
   end
 
@@ -117,7 +194,7 @@ class Movement < Entity
   def value=(v)
     if account_src and account_dst
       dputs(3) { 'value=' + v.to_s + ':' + account_src.total.to_s }
-      diff = value.to_f - v
+      diff = value.to_f - v.to_f
       account_src.total = account_src.total.to_f + (diff * account_src.multiplier)
       account_dst.total = account_dst.total.to_f - (diff * account_dst.multiplier)
     end
@@ -175,7 +252,7 @@ class Movement < Entity
   def to_s
     dputs(5) { "I am: #{to_hash.inspect} - my id is: #{global_id}" }
     "#{desc}\r#{global_id}\t" +
-        "#{value.to_s}\t#{date.to_s}\t" +
+        "#{sprintf('%.3f', value.to_f.round(3))}\t#{date.to_s}\t" +
         account_src.global_id.to_s + "\t" +
         account_dst.global_id.to_s
   end

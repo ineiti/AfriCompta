@@ -190,7 +190,8 @@ module Compta::Controllers
       path, arg1, arg2, arg3 = p.split("/")
       @movement = Movement.new( :date => Time.now )
       debug 2, "input is #{input.inspect}"
-      show_year = arg1 || "Actual"
+      p RUBY_VERSION
+      show_year = arg1 || 'Actual'
       if arg2
         @account = Account.find_by_id( arg2 )
       else
@@ -325,7 +326,7 @@ module Compta::Controllers
   end
 end  
 
-CPATH=''
+CPATH='/'
 
 module Compta::Views
   #
