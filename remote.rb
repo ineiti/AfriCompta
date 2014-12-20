@@ -37,7 +37,7 @@ module Compta::Controllers
     def postForm( path, hash )
       debug 5, "Starting postForm with path #{path}"
       Net::HTTP.post_form( URI.parse( @remote.url + "/merge/#{path}" ), 
-        { "user" => @remote.name, "pass" => @remote.pass }.merge( hash ) )
+        { 'user' => @remote.name, 'pass' => @remote.pass }.merge( hash ) )
       debug 5, "Ending postForm with path #{path}"
     end
     
@@ -53,31 +53,31 @@ module Compta::Controllers
     def check_remote
       local_id = User.find_by_name('local').full
       debug 0, "#{local_id}"
-      if ( local_id == getForm("local_id" ) )
-        debug 0, "Both locals have same ID"
-        raise "Same ID for local"
+      if ( local_id == getForm('local_id') )
+        debug 0, 'Both locals have same ID'
+        raise 'Same ID for local'
       end
 
       # Check the versions
-      if ( vers = getForm( "version" ) ) != $VERSION.to_s
+      if ( vers = getForm('version') ) != $VERSION.to_s
         if ( vers =~ /not known/ )
-          debug 0, "Username / password not recognized"
-          raise "Wrong credentials"
+          debug 0, 'Username / password not recognized'
+          raise 'Wrong credentials'
         else
           debug 0, "Got version #{vers} instead of #{$VERSION.to_s}"
-          raise "Wrong version"
+          raise 'Wrong version'
         end
       end      
     end
     
     def doMerge( path, arg )
       debug 2, "arg is #{arg.inspect}"
-      remote_id, s, is = "#{arg}/0/0/0/0/0/0/0/0".split( "/", 3 )
+      remote_id, s, is = "#{arg}/0/0/0/0/0/0/0/0".split( '/', 3 )
       @step = s.to_i
       @account_index_stop, @movement_index_stop,
         @got_accounts, @put_accounts,
         @got_movements, @put_movements, @put_movements_changes = 
-        is.split("/").collect{|i| i.to_i }
+        is.split('/').collect{|i| i.to_i }
       
       @remote = Remote.find_by_id( remote_id )
       u = User.find_by_name('local')
@@ -87,9 +87,9 @@ module Compta::Controllers
       when 0
         check_remote
       when 1
-        debug 1, "Getting remotes"
+        debug 1, 'Getting remotes'
         @account_index_stop = u.account_index - 1
-        accounts = getForm( "accounts_get" )
+        accounts = getForm('accounts_get')
         accounts.split("\n").each{ |a|
           acc = Account.from_s( a )
           debug 2, "Got account #{acc.name}"
@@ -110,20 +110,20 @@ module Compta::Controllers
               debug( 3, "Index of #{acc.name} is #{acc.get_index}")
               if (@account_index_start..@account_index_stop) === acc.rev_index
                 debug 2, "Account with index #{acc.rev_index} is being transferred"
-                postForm( "account_put", { "account" => acc.to_s } )
+                postForm( 'account_put', { 'account' => acc.to_s } )
                 @put_accounts += 1
               end
             }
           }
         else
-          debug 1, "No accounts to send"
+          debug 1, 'No accounts to send'
         end
         # Update the pointer
         @remote.update_account_index
       when 3
-        debug 1, "Getting movements"
+        debug 1, 'Getting movements'
         # Now merge the movements
-        movements = getForm( "movements_get" )
+        movements = getForm('movements_get')
         @movement_index_stop = u.movement_index - 1
         movements.split("\n").each{ |m|
           debug 2, "String is: \n#{m}"
@@ -148,26 +148,26 @@ module Compta::Controllers
           while movements.size > 0
             # We'll do it by bunches of 10
             movements_put = movements.shift 10
-            debug 0, "Putting one bunch of 10 movements"
+            debug 0, 'Putting one bunch of 10 movements'
             debug 4, movements_put.to_json
-            postForm( "movements_put", {"movements" => movements_put.to_json } )
+            postForm( 'movements_put', {'movements' => movements_put.to_json } )
             @put_movements_changes += 1
             # TODO: remove
             # movements = []
           end
         else
-          debug 1, "No movements to send"
+          debug 1, 'No movements to send'
         end
       when 5
         # Update the pointer
         @remote.update_movement_index
         # Update the remote pointers
-        getForm( "reset_user_indexes" )
+        getForm('reset_user_indexes')
       end
       
       ret = [ @account_index_stop, @movement_index_stop,
         @got_accounts, @put_accounts,
-        @got_movements, @put_movements, @put_movements_changes ].join("/")
+        @got_movements, @put_movements, @put_movements_changes ].join('/')
       return "#{remote_id}/#{@step + 1}/#{ret}"
     end
     
@@ -179,14 +179,14 @@ module Compta::Controllers
       #
       # First get the remote accounts
       u = User.find_by_name('local')
-      debug 1, "Getting remotes"
+      debug 1, 'Getting remotes'
       @remote.update_account_index
       
-      debug 1, "Getting movements"
+      debug 1, 'Getting movements'
       @remote.update_movement_index
       
-      debug 1, "Asking remote to clean us"
-      getForm( "reset_user_indexes" )
+      debug 1, 'Asking remote to clean us'
+      getForm('reset_user_indexes')
       return true
     end
 
@@ -209,7 +209,7 @@ module Compta::Controllers
       
       check_remote
       
-      account_max, movement_max = getForm( "index" ).split(",")
+      account_max, movement_max = getForm('index').split(',')
       debug 2, "maximum accounts and movements: #{[account_max, movement_max].join(':')}"
       #
       # First get the remote accounts
@@ -220,9 +220,9 @@ module Compta::Controllers
       compare_accounts = false
       
       u = User.find_by_name('local')
-      debug 1, "Getting remotes"
+      debug 1, 'Getting remotes'
       @account_index_stop = u.account_index - 1
-      movements_remote = ""
+      movements_remote = ''
       # Again to not have to wait too long, we split up the transfer of big tables
       if get_movements
         (0..(movement_max.to_i / 1000 + 1).ceil).each{|pos|
@@ -235,11 +235,11 @@ module Compta::Controllers
           movements_remote += movements_rem
         }
       end
-      debug 1, "Finished getting remote movements"
+      debug 1, 'Finished getting remote movements'
 
       if compare_accounts
         accounts_remote = []
-        accounts_remote_count = getForm( "accounts_get_count" ).to_i
+        accounts_remote_count = getForm('accounts_get_count').to_i
         pos = 0
         while ( accounts_remote.size < accounts_remote_count ) do
           accounts_remote.concat( 
@@ -264,7 +264,7 @@ module Compta::Controllers
             remote_accounts_global_id.push( global_id )
             if local_account = Account.find_by_global_id( global_id )
               if local_account.to_s(true) != s
-                debug 1, "Remote and local are not the same."
+                debug 1, 'Remote and local are not the same.'
                 debug 2, "Remote: #{s.inspect}"
                 debug 2, "Local : #{local_account.to_s(true).inspect}"
                 local_account.update_total
@@ -273,11 +273,11 @@ module Compta::Controllers
               debug 0, "Lone remote global-id is #{global_id.inspect}"
               debug 1, str.inspect
               debug 2, "Deleted is: #{deleted}"
-              if deleted == "false"
+              if deleted == 'false'
                 @accounts_only_remote.push( Account.new(:name=>p, :total=>total, 
                     :global_id=>global_id, :deleted => deleted ) )
               else
-                debug 2, "Ignoring because it is deleted"
+                debug 2, 'Ignoring because it is deleted'
               end
             end
           end
@@ -334,7 +334,7 @@ module Compta::Controllers
                 mov.src = mov.account_src.path
                 mov.dst = mov.account_dst.path
       	        @movements_mixed.push( [ mov, mov_rem ] )
-      	        debug 0, "DIFFERENT MOVEMENT WITH SAME GLOBAL-ID!"
+      	        debug 0, 'DIFFERENT MOVEMENT WITH SAME GLOBAL-ID!'
       	        debug 0, "Local is:  #{mov.global_id} - #{mov.desc} - #{mov.value.to_s} - #{mov.date.to_s} - #{mov.account_src.path} - #{mov.account_dst.path}"
       	        debug 0, "Remote is: #{global_id} - #{desc} - #{value} - #{date} - #{src} - #{dst}"
       	      end
@@ -366,7 +366,7 @@ module Compta::Controllers
       
       # Kind of element to fix: movement or account
       # if it's "mixed", it should be "movement" anyway...
-      @type = path.gsub( /check_fix_/, "" ) == "account" ? "account" : "movement"
+      @type = path.gsub( /check_fix_/, '') == 'account' ? 'account' : 'movement'
       # Action: delete or copy
       @action = input.action
       # To show off once it's done
@@ -374,31 +374,31 @@ module Compta::Controllers
       # Get all accounts, but sort them as we got them, because the
       # Hashes don't keep the order of the accounts!
       input.select{ |k,v| 
-        v == "on" 
+        v == 'on'
       }.sort{ |a,b|
         a[0].sub(/_.*/, '').to_i <=> b[0].sub(/_.*/, '').to_i
       }.each{|e|
         location, global_id = e[0].match(/.*_(.*)_(.*)/)[1,2]
-        debug 2, [ e[0], location, global_id ].join("-")
+        debug 2, [ e[0], location, global_id ].join('-')
         # The mixed movements don't have a default location, because they're
         # "wrong" on both sides...
-        if location == ""
-          location = @action == "pull" ? "remote" : "local"
+        if location == ''
+          location = @action == 'pull' ? 'remote' : 'local'
         end 
         @elements.push("#{location} - #{global_id}")
-        if location == "remote"
+        if location == 'remote'
           debug 5, "#{location} #{@remote.url} /merge/#{@type}_#{@action} #{@remote.name}"
           case @action
-          when "delete"
+          when 'delete'
             # Deleting is simple
-            postForm( "#{@type}_#{@action}", {"global_id" => global_id})
-          when "copy", "push", "pull"
+            postForm( "#{@type}_#{@action}", {'global_id' => global_id})
+          when 'copy', 'push', 'pull'
             # Copying is more complicated
             case @type
-            when "account"
+            when 'account'
               account = Account.from_s( getForm("accounts_get_one/#{global_id}") )
               debug 2, "Account is #{account.to_s}"
-            when "movement"
+            when 'movement'
               if mdel= Movement.find_by_global_id( global_id )
                 debug 2, "Found local movement: #{mdel.inspect} - deleting"
                 mdel.delete
@@ -407,7 +407,7 @@ module Compta::Controllers
               debug 2, "Remote-str is #{remote_str.inspect}"
               movement = Movement.from_s( remote_str )
               getForm("movement_delete/#{global_id}")
-              postForm( "movements_put", {"movements" => [ movement.to_json ].to_json } )
+              postForm( 'movements_put', {'movements' => [ movement.to_json ].to_json } )
               debug 2, "Movement is #{movement.to_s}"
             end
           end
@@ -415,20 +415,20 @@ module Compta::Controllers
           debug 2, "#{location} #{@type}_#{@action} #{global_id}"
           element = nil
           case @type
-          when "account"
+          when 'account'
             element = Account.find_by_global_id( global_id )
-          when "movement"
+          when 'movement'
             element = Movement.find_by_global_id( global_id )
           end
           case @action
-          when "delete"
+          when 'delete'
             element.destroy
-          when "copy", "push", "pull"
-            if @type == "movement"
+          when 'copy', 'push', 'pull'
+            if @type == 'movement'
               # TODO: put all movements in an array
-              postForm( "movements_put", {"movements" => [ element.to_json ].to_json } )
+              postForm( 'movements_put', {'movements' => [ element.to_json ].to_json } )
             else
-              postForm( "account_put", {"account" => element.to_s } )
+              postForm( 'account_put', {'account' => element.to_s } )
             end
           end
         end
@@ -437,21 +437,21 @@ module Compta::Controllers
     
     def get( p )
       fillGlobal
-      path, arg = p.split("/", 2)
+      path, arg = p.split('/', 2)
       case path
-      when "list"
+      when 'list'
         render :remote_list
-      when "add"
-        @remote = Remote.new( :url => "http://localhost:3302/acaccess", :name => "ineiti", :pass => "lasj" )
+      when 'add'
+        @remote = Remote.new( :url => 'http://localhost:3302/acaccess', :name => 'ineiti', :pass => 'lasj')
         render :remote_edit
-      when "delete"
+      when 'delete'
         Remote.destroy( arg )
         fillGlobal
         render :remote_list        
-      when "edit"
+      when 'edit'
         @remote = Remote.find_by_id( arg )
         render :remote_edit
-      when "check"
+      when 'check'
         begin
           doCheck( path, arg )
           render :remote_check
@@ -459,7 +459,7 @@ module Compta::Controllers
           @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
           render :remote_error
         end
-      when "check_actual"
+      when 'check_actual'
         begin
           doCheck( path, arg, true )
           render :remote_check
@@ -467,17 +467,17 @@ module Compta::Controllers
           @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
           render :remote_error
         end
-      when "merge"
+      when 'merge'
         begin
           @ret = doMerge( path, arg )
-          @step < 5 and @refresh = [ 0, "/remote/merge/" + @ret ]
+          @step < 5 and @refresh = [ 0, '/remote/merge/' + @ret ]
           debug 2, "refresh is #{@refresh} and ret is #{@ret.inspect}"
           render :remote_merge
         rescue Exception => e
           @error = "#{e.to_s}\n#{e.backtrace.join('\n')}"
           render :remote_error
         end
-      when "copied"
+      when 'copied'
         begin
           doCopied( path, arg )
           render :remote_edit
@@ -488,9 +488,9 @@ module Compta::Controllers
       end
     end
     def post( p )
-      path, arg = p.split("/")
+      path, arg = p.split('/')
       case path
-      when "edit"
+      when 'edit'
         r = Remote.find_or_initialize_by_id( input.rid )
         r.set( input.url, input.name, input.pass )
         r.save
@@ -508,23 +508,23 @@ end
 module Compta::Views
   
   def remote_double
-    h1 "Doubling render-calls"
+    h1 'Doubling render-calls'
   end
 
   #
   # Remote
   #
   def remote_list
-    h1 "Remotes active:"
+    h1 'Remotes active:'
     table do
       @remotes.to_a.each{ |r|
         tr do 
-          td.small { a "Merge", :href => "/remote/merge/" + r.id.to_s }
-          td.small { a "Check", :href => "/remote/check/" + r.id.to_s }
+          td.small { a 'Merge', :href => '/remote/merge/' + r.id.to_s }
+          td.small { a 'Check', :href => '/remote/check/' + r.id.to_s }
           #td.small { a "Check actual", :href => "/remote/check_actual/" + r.id.to_s }
-          td.small { a "Copied", :href => "/remote/copied/" + r.id.to_s }
-          td.small { a "Edit", :href => "/remote/edit/" + r.id.to_s }
-          td.small { a "Delete", :href => "/remote/delete/" + r.id.to_s }
+          td.small { a 'Copied', :href => '/remote/copied/' + r.id.to_s }
+          td.small { a 'Edit', :href => '/remote/edit/' + r.id.to_s }
+          td.small { a 'Delete', :href => '/remote/delete/' + r.id.to_s }
           td {
             pre r.url
           }
@@ -532,56 +532,56 @@ module Compta::Views
       }
     end
     p { 
-      a "Add remote", :href=> "/remote/add"
-      text( "-" )
-      a "Home", :href=>"/"
+      a 'Add remote', :href=> '/remote/add'
+      text('-')
+      a 'Home', :href=> '/'
     }
   end
   
   def remote_edit
-    form :action => "/remote/edit", :method => 'post' do
+    form :action => '/remote/edit', :method => 'post' do
       table do
         tr{ 
-          td "Remote URL"
-          td { input :type => 'text', :name => "url", :value => @remote.url }
+          td 'Remote URL'
+          td { input :type => 'text', :name => 'url', :value => @remote.url }
         }
         tr{ 
-          td "Remote name"
-          td { input :type => 'text', :name => "name", :value => @remote.name }
+          td 'Remote name'
+          td { input :type => 'text', :name => 'name', :value => @remote.name }
         }
         tr{
-          td "Password"
-          td { input :type => 'text', :name => "pass", :value => @remote.pass }
+          td 'Password'
+          td { input :type => 'text', :name => 'pass', :value => @remote.pass }
         }
-        ["movement_index","account_index"].each{ |ind| 
+        ['movement_index', 'account_index'].each{ |ind|
           tr{
             td ind
             td { @remote[ind].to_s }
           }
         }        
       end
-      input :type => 'hidden', :name => "rid", :value => @remote.id
-      input :type => 'submit', :value => @remote.new_record? ? "Add remote" : "Save changes"
+      input :type => 'hidden', :name => 'rid', :value => @remote.id
+      input :type => 'submit', :value => @remote.new_record? ? 'Add remote' : 'Save changes'
     end
   end
   
   def remote_merge
     if @step < 5
-      h3 "Merge in progress with " + @remote.url
+      h3 'Merge in progress with ' + @remote.url
     else
-      h3 "All done - merge is finished"
+      h3 'All done - merge is finished'
     end
-    p "Checked Connection: OK"
-    p "Got accounts: " + ( @step >= 1 ? @got_accounts.to_s : "Waiting" )
-    p "Put accounts: " + (@step >= 2 ? @put_accounts.to_s : "Waiting")
-    p "Got movements: " + (@step >= 3 ? @got_movements.to_s : "Waiting")
-    p "Put movements: " + (@step >= 4 ? 
+    p 'Checked Connection: OK'
+    p 'Got accounts: ' + ( @step >= 1 ? @got_accounts.to_s : 'Waiting')
+    p 'Put accounts: ' + (@step >= 2 ? @put_accounts.to_s : 'Waiting')
+    p 'Got movements: ' + (@step >= 3 ? @got_movements.to_s : 'Waiting')
+    p 'Put movements: ' + (@step >= 4 ?
         ( "#{@put_movements} with changes: " + (@put_movements_changes).to_s ) :
-        "Waiting")
+          'Waiting')
     if @step < 5
-      a "Interrupt merge", :href => "/movement/list"
+      a 'Interrupt merge', :href => '/movement/list'
     else
-      a "Back to work", :href => "/movement/list"
+      a 'Back to work', :href => '/movement/list'
     end
   end
   
@@ -598,45 +598,45 @@ module Compta::Views
         tr {
           td {
             text( "<input type=checkbox name=#{counter}_#{str}_#{es[0].global_id}" +
-                " checked>" ) 
+                      ' checked>')
             strong str
             counter += 1
           }
           es.each{|e|
             td {
-              seperator = ""
+              seperator = ''
               values.each{|s|
                 if s.empty?
                   br
-                  seperator = ""
+                  seperator = ''
                 else
                   text( seperator + e.send(s).to_s )
-                  seperator = " - "
+                  seperator = ' - '
                 end
               } } } } }
     end
     def put_table( remote, local, str, fields_remote, fields_local )
-      [[remote, "remote", fields_remote],
-        [local, "local", fields_local]].each{|elements, name_el, fields|
+      [[remote, 'remote', fields_remote],
+        [local, 'local', fields_local]].each{|elements, name_el, fields|
         
         if elements
           p "Found #{str}s only on one side: " + ( elements.size ).to_s
           form_name = "#{str}_#{name_el}"
           table :border=>1 do
             form :action => "/remote/check_fix_#{str}/#{@remote.id.to_s}", 
-            :method => "post", :name => form_name do
+            :method => 'post', :name => form_name do
               put_entry( elements, name_el, fields )
               tr { td :colspan=>2 do
-                  input :type => "submit", :value => "Delete", 
+                  input :type => 'submit', :value => 'Delete',
                   :onclick => "document.#{form_name}.action.value='delete'"
-                  input :type => "submit", :value => "Copy", 
+                  input :type => 'submit', :value => 'Copy',
                   :onclick => "document.#{form_name}.action.value='copy'"
-                  input :type => 'hidden', :name => "action", :value => "none"
+                  input :type => 'hidden', :name => 'action', :value => 'none'
                 end }
             end
           end
         else
-          p "No elements only on one side"
+          p 'No elements only on one side'
         end
       }
     end
@@ -644,21 +644,21 @@ module Compta::Views
       p "Found #{str}s to be mixed-up: " + remote.size.to_s
       table :border=>1 do
         form :action => "/remote/check_fix_#{str}/#{@remote.id.to_s}", 
-          :method => "post", :name => str do
+          :method => 'post', :name => str do
           tr {
-            td ""
-            td "Local"
-            td "Remote"
+            td ''
+            td 'Local'
+            td 'Remote'
           }
-          put_entry( remote, "", fields_remote )
+          put_entry( remote, '', fields_remote )
           tr { td :colspan=>2 do
-              input :type => "submit", :value => "Delete", 
+              input :type => 'submit', :value => 'Delete',
               :onclick => "document.#{str}.action.value='delete'"
-              input :type => "submit", :value=> "Pull",
+              input :type => 'submit', :value=> 'Pull',
               :onclick => "document.#{str}.action.value='pull'"
-              input :type => "submit", :value=> "Push",
+              input :type => 'submit', :value=> 'Push',
               :onclick => "document.#{str}.action.value='push'"
-              input :type => 'hidden', :name => "action", :value => "none"
+              input :type => 'hidden', :name => 'action', :value => 'none'
             end }
         end
       end
@@ -666,35 +666,35 @@ module Compta::Views
     end
     ul { 
       li {
-        put_table( @accounts_only_remote, @accounts_only_local, "account",
+        put_table( @accounts_only_remote, @accounts_only_local, 'account',
           # Hack: Remote-accounts have their path copied into "name"
-          ["name", "total", "deleted", "", "global_id"], 
-          ["path", "total", "deleted", "", "global_id"] )
+          ['name', 'total', 'deleted', '', 'global_id'],
+          ['path', 'total', 'deleted', '', 'global_id'] )
       }
       li {
-        put_table( @movements_only_remote, @movements_only_local, "movement",
-          ["date", "value", "desc", "", "src", "dst", "", "global_id"], 
-          ["date", "value", "desc", "", "src", "dst", "", "global_id"] )
+        put_table( @movements_only_remote, @movements_only_local, 'movement',
+          ['date', 'value', 'desc', '', 'src', 'dst', '', 'global_id'],
+          ['date', 'value', 'desc', '', 'src', 'dst', '', 'global_id'] )
       }
       li {
-        put_table_mix( @movements_mixed, "movement",
-          ["date", "value", "desc", "", "src", "dst", "", "global_id"] )
+        put_table_mix( @movements_mixed, 'movement',
+          ['date', 'value', 'desc', '', 'src', 'dst', '', 'global_id'] )
       }
     }
-    a "Home", :href=>"/"
+    a 'Home', :href=> '/'
   end
   
   def remote_check_fix
-    h1 "Remote check-fix"
+    h1 'Remote check-fix'
     p text( "Doing <strong>#{@action}</strong> on <strong>#{@type}</strong> for the following elements:" )
     ul {
       @elements.each{|a|
         li a
       }
     }
-    a "Home", :href=>"/"
-    b "-"
-    a "Check", :href=>"/remote/check/#{@remote.id}"
+    a 'Home', :href=> '/'
+    b '-'
+    a 'Check', :href=>"/remote/check/#{@remote.id}"
   end
   
 end
