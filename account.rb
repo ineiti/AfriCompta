@@ -7,8 +7,10 @@ module Compta::Models
   class Account < Base;
     include Performance
     
-    has_many :movements_src, :foreign_key => "account_src_id", :class_name => "Movement";
-    has_many :movements_dst, :foreign_key => "account_dst_id", :class_name => "Movement";
+    has_many :movements_src, :foreign_key => 'account_src_id', :class_name => 'Movement'
+    ;
+    has_many :movements_dst, :foreign_key => 'account_dst_id', :class_name => 'Movement'
+    ;
     has_many :accounts;
     belongs_to :account;
     has_and_belongs_to_many :users;
@@ -22,10 +24,10 @@ module Compta::Models
       }
     end
     
-    def path( sep = "::", first=true )
+    def path( sep = '::', first=true )
       if self.account
         self.account.path( sep, false )
-      end.to_s + self.name + ( first ? "" : sep )
+      end.to_s + self.name + ( first ? '' : sep )
     end
     
     def new_index()
@@ -46,11 +48,11 @@ module Compta::Models
     def set_nochildmult( name, desc, parent, multiplier = 1, users = [],
         keep_total = false )
       if self.new_record?
-        debug 4, "New record in nochildmult"
+        debug 4, 'New record in nochildmult'
         self.total = 0
         # We need to save so that we have an id...
         save
-        self.global_id = User.find_by_name('local').full + "-" + self.id.to_s
+        self.global_id = User.find_by_name('local').full + '-' + self.id.to_s
       end
       self.name, self.desc, self.account_id, self.keep_total = 
         name, desc, parent.to_i, keep_total
@@ -73,22 +75,23 @@ module Compta::Models
       set_nochildmult( name, desc, parent, multiplier, users, keep_total )
       # All descendants shall have the same multiplier
       set_child_multiplier_total( multiplier, keep_total )
+      new_index
       save
     end
     
     # Sort first regarding inverse date (newest first), then description, 
     # and finally the value
     def movements( from = nil, to = nil )
-      debug 5, "Account::movements"
+      debug 5, 'Account::movements'
       timer_start
       movs = ( movements_src + movements_dst )
       if ( from != nil and to != nil )
         movs.delete_if{ |m|
           ( m.date < from or m.date > to )
         }
-        debug 3, "Rejected some elements"
+        debug 3, 'Rejected some elements'
       end
-      timer_read("rejected elements")
+      timer_read('rejected elements')
       sorted = movs.sort{ |a,b|
         ret = 0
         if a.date and b.date
@@ -106,7 +109,7 @@ module Compta::Models
         end
         ret
       }
-      timer_read( "Sorting movements: " )
+      timer_read('Sorting movements: ')
       sorted
     end
     
@@ -114,7 +117,7 @@ module Compta::Models
       parent = parent.to_i
       a = Account.new( :name => name, :desc => desc, :account_id => parent,
         :global_id => global_id.to_s )
-      a.total = "0"
+      a.total = '0'
       # TODO: u_l.save?
       if parent > 0
         a.multiplier = Account.find_by_id( parent ).multiplier
@@ -128,7 +131,7 @@ module Compta::Models
     end
 
     def bool_to_s( b )
-      b ? "true" : "false"
+      b ? 'true' : 'false'
     end
     
     def to_s( add_path = false )
@@ -136,11 +139,11 @@ module Compta::Models
         #debug(4,"Account-desc: #{name.to_s}, #{global_id}")
         "#{desc}\r#{global_id}\t" + 
           "#{total.to_f.round(3).to_s}\t#{name.to_s}\t#{multiplier.to_i.to_s}\t" +
-          ( (account_id and account_id > 0 ) ? account.global_id.to_s : "" ) +
+          ( (account_id and account_id > 0 ) ? account.global_id.to_s : '') +
           "\t#{bool_to_s( deleted )}" + "\t#{bool_to_s( keep_total )}" + 
-          ( add_path ? "\t#{path}" : "" )
+          ( add_path ? "\t#{path}" : '')
       else
-        "nope"
+        'nope'
       end
     end
     
@@ -191,9 +194,9 @@ module Compta::Models
       global_id, total, name, multiplier, par, 
         deleted_s, keep_total_s = str.split("\t")
       total, multiplier = total.to_f, multiplier.to_f
-      deleted = deleted_s == "true"
-      keep_total = keep_total_s == "true"
-      debug 3, "Here comes the account: " + global_id.to_s
+      deleted = deleted_s == 'true'
+      keep_total = keep_total_s == 'true'
+      debug 3, 'Here comes the account: ' + global_id.to_s
       debug 3, "par: #{par.inspect}"
       if par.to_s.length > 0
         parent = Account.find_by_global_id( par )
@@ -216,6 +219,7 @@ module Compta::Models
       our_a.deleted = deleted
       our_a.set_nochildmult( name, desc, pid, multiplier, [], keep_total )
       our_a.global_id = global_id
+      our_a.new_index
       our_a.save
       debug 2, "Saved account #{name} with index #{our_a.rev_index} and global_id #{our_a.global_id}"
       return our_a
@@ -226,6 +230,7 @@ module Compta::Models
       debug 3, "Setting multiplier from #{name} to #{m}"
       self.multiplier = m
       self.keep_total = t
+      new_index
       save
       return if not accounts
       accounts.each{ |acc|
@@ -246,6 +251,7 @@ module Compta::Models
       }
       self.total = self.total.round( precision )
       debug( 4, "Final total is #{self.total} - #{self.total.class.name}" )
+      new_index
       self.save
     end
     
@@ -257,7 +263,7 @@ module Compta::Models
     end
     
     def self.get_root
-      acc_root = Account.find_by_name( "Root" )
+      acc_root = Account.find_by_name('Root')
       debug 0, "Found account_root: #{acc_root.inspect}"
       acc_root and [acc_root].flatten.select{|a|
         debug 0, "#{a.name} - #{a.account_id} - #{a.deleted}"
@@ -266,7 +272,7 @@ module Compta::Models
     end
 
     def self.get_archive
-      acc_archive = Account.find_by_name( "Archive" )
+      acc_archive = Account.find_by_name('Archive')
       debug 0, "Found account_archive: #{acc_archive.inspect}"
       acc_archive and [acc_archive].flatten.select{|a|
         debug 0, "#{a.name} - #{a.account_id} - #{a.deleted}"
@@ -299,23 +305,23 @@ module Compta::Controllers
     end
     def get( p )
       fillGlobal
-      path, arg = p.split("/")
-      debug 1, path + "<->" + arg.to_s
+      path, arg = p.split('/')
+      debug 1, path + '<->' + arg.to_s
       case path
-      when "add"
+      when 'add'
         parent = Account.find_by_id( arg.to_i )
         if not parent
           parent = Account.new( :multiplier => 1 )
         end
-        @account = Account.new( :name => "Short name", :desc => "Full description", 
+        @account = Account.new( :name => 'Short name', :desc => 'Full description',
           :account => parent, :multiplier => parent.multiplier,
           :keep_total => parent.keep_total )
         render :account_edit
-      when "edit"
+      when 'edit'
         @account = Account.find_by_id( arg )
         debug 2, "Account is #{@account.to_s}"
         render :account_edit
-      when "delete"
+      when 'delete'
         @account_deleted_orig = Account.find_by_id( arg )
         @account_deleted_path = @account_deleted_orig.path
         if Account.find_by_id( arg ).delete
@@ -325,7 +331,7 @@ module Compta::Controllers
         end
         @account_deleted_orig = Account.find_by_id( arg )
         render :account_deleted
-      when "list"
+      when 'list'
         fillGlobal
         render :account_list
       end
@@ -333,10 +339,10 @@ module Compta::Controllers
     
     def post( p )
       fillGlobal
-      path, arg = p.split("/")
-      debug 1, path + "<->" + arg.to_s
+      path, arg = p.split('/')
+      debug 1, path + '<->' + arg.to_s
       case path
-      when "edit"
+      when 'edit'
         a = Account.find_or_initialize_by_id( input.aid )
         a.set( input.name, input.desc, input.parent, input.multiplier, 
           input.users.to_a, input.keep_total )
@@ -357,25 +363,25 @@ module Compta::Views
   # Accounts
   #  
   def account_list
-    a "Home", :href => "/"
-    b "-"
-    a "Add account", :href=> "/account/add"
-    h1 "Available accounts:"
+    a 'Home', :href => '/'
+    b '-'
+    a 'Add account', :href=> '/account/add'
+    h1 'Available accounts:'
     table do
       list_sub( @account_root.to_a ){ |acc, str|
         tr do 
-          td.small { a "Edit", :href => "/account/edit/" + acc.id.to_s }
+          td.small { a 'Edit', :href => '/account/edit/' + acc.id.to_s }
           td.small {
             if acc.is_empty
-              a "Delete", :href => "/account/delete/" + acc.id.to_s
+              a 'Delete', :href => '/account/delete/' + acc.id.to_s
             else
-              "NE"
+              'NE'
             end
           }
-          td.small { a "Add", :href => "/account/add/" + acc.id.to_s }
+          td.small { a 'Add', :href => '/account/add/' + acc.id.to_s }
           td.small {
-            ( acc.multiplier < 0 ? "-" : "+" ) +
-              ( acc.keep_total ? "K" : "." )
+            ( acc.multiplier < 0 ? '-' : '+') +
+              ( acc.keep_total ? 'K' : '.')
           }
           td {
             pre str
@@ -383,39 +389,39 @@ module Compta::Views
         end
       }
     end
-    a "Home", :href => "/"
-    b "-"
-    a "Add account", :href=> "/account/add"
+    a 'Home', :href => '/'
+    b '-'
+    a 'Add account', :href=> '/account/add'
   end
   
   def account_deleted
-    a "Home", :href => "/"
-    b "-"
-    a "Add account", :href=> "/account/add"
+    a 'Home', :href => '/'
+    b '-'
+    a 'Add account', :href=> '/account/add'
     h1 "Account #{@account_deleted_path} deleted - #{@account_deleted_orig.inspect}"
-    a "Home", :href => "/"
-    b "-"
-    a "Add account", :href=> "/account/add"
+    a 'Home', :href => '/'
+    b '-'
+    a 'Add account', :href=> '/account/add'
   end
   
   def account_edit
-    form :action => "/account/edit", :method => 'post' do
+    form :action => '/account/edit', :method => 'post' do
       table do
         tr{ 
-          td "Account name"
-          td { input :type => 'text', :name => "name", :value => @account.name }
+          td 'Account name'
+          td { input :type => 'text', :name => 'name', :value => @account.name }
         }
         tr{
-          td "Description"
-          td { input :type => 'text', :name => "desc", :value => @account.desc }
+          td 'Description'
+          td { input :type => 'text', :name => 'desc', :value => @account.desc }
         }
         tr {
-          td "Multiplier"
+          td 'Multiplier'
           td { 
-            select :name => "multiplier", :size => "1" do
+            select :name => 'multiplier', :size => '1' do
               [ 1, -1 ].each{ |v| 
                 if @account.multiplier == v
-                  option v, :value => v, :selected => ""
+                  option v, :value => v, :selected => ''
                 else
                   option v, :value => v
                 end
@@ -424,12 +430,12 @@ module Compta::Views
           }
         }
         tr {
-          td "Keep Total"
+          td 'Keep Total'
           td { 
-            select :name => "keep_total", :size => "1" do
+            select :name => 'keep_total', :size => '1' do
               [ true, false ].each{ |v|
                 if ( not @account.keep_total ) == ( not v )
-                  option v, :value => v, :selected => ""
+                  option v, :value => v, :selected => ''
                 else
                   option v, :value => v
                 end
@@ -438,13 +444,13 @@ module Compta::Views
           }
         }
         tr{
-          td "Top-Account"
+          td 'Top-Account'
           td { 
-            select :name => "parent", :size => "1" do
-              option "Top-account", :value => "0"
+            select :name => 'parent', :size => '1' do
+              option 'Top-account', :value => '0'
               list_sub( @account_root.to_a ){ |acc, str|
                 if acc == @account.account
-                  option str, :value => acc.id, :selected => ""
+                  option str, :value => acc.id, :selected => ''
                 elsif acc.id != @account.id
                   option str, :value => acc.id
                 end
@@ -453,12 +459,12 @@ module Compta::Views
           }
         }
         tr {
-          td "Users"
+          td 'Users'
           td {
-            select :name => "users", :size => "5", :multiple => "" do
+            select :name => 'users', :size => '5', :multiple => '' do
               @users.each{ |u|
                 if @account.users.find_by_name( u.name )
-                  option u.name, :selected => ""
+                  option u.name, :selected => ''
                 else
                   option u.name
                 end
@@ -466,15 +472,15 @@ module Compta::Views
             end
           }
         }
-        ["id","global_id","account_id"].each{ |ind| 
+        ['id', 'global_id', 'account_id'].each{ |ind|
           tr{
             td ind
             td { @account[ind].to_s }
           }
         }
       end
-      input :type => 'hidden', :name => "aid", :value => @account.id
-      input :type => 'submit', :value => @account.new_record? ? "Add account" : "Save changes"
+      input :type => 'hidden', :name => 'aid', :value => @account.id
+      input :type => 'submit', :value => @account.new_record? ? 'Add account' : 'Save changes'
     end
   end
 end

@@ -31,6 +31,8 @@ module Compta::Models
         diff = value.to_f - v
         account_src.total = account_src.total.to_f + ( diff * account_src.multiplier )
         account_dst.total = account_dst.total.to_f - ( diff * account_dst.multiplier )
+        account_src.new_index
+        account_dst.new_index
         account_src.save
         account_dst.save
       end
