@@ -59,12 +59,12 @@ class TC_Account < Test::Unit::TestCase
     Accounts.create_path( "Test" )
     Accounts.dump
     count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
-    assert_equal [ 4, 0, 13, 1 ], 
+    assert_equal [ 4, 0, 60, 1 ],
       [ count_mov, bad_mov, count_acc, bad_acc ]
 
     Accounts.dump
     count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
-    assert_equal [ 4, 0, 13, 0 ], 
+    assert_equal [ 4, 0, 60, 0 ],
       [ count_mov, bad_mov, count_acc, bad_acc ]
   end
   

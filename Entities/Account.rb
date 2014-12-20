@@ -138,7 +138,6 @@ class Accounts < Entities
                 :deleted => false, :keep_total => false)
     end
     a.total = 0
-    a.new_index
     if global_id == ''
       a.global_id = Users.match_by_name('local').full + '-' + a.id.to_s
     end
@@ -321,9 +320,6 @@ class Accounts < Entities
           mov.account_dst_id = years[y]
         end
         mov.value = value
-        dputs(5) { 'new_index' }
-        mov.new_index
-        dputs(5) { 'new_index finished' }
       end
     }
     dputs(5) { "Movements left in account #{acc.path}:" }
@@ -467,7 +463,6 @@ class Accounts < Entities
           else
             dputs(3) { "Moving account #{acc.path_id} to #{parent.path_id}" }
             acc.parent = parent
-            acc.new_index
           end
         end
 
@@ -567,7 +562,6 @@ class Accounts < Entities
   end
 
   def check_against_db(file)
-    dputs_func
     # First build
     # in_db - content of 'file' in .to_s format
     # in_local - content available locally in .to_s format
@@ -640,6 +634,14 @@ end
 
 class Account < Entity
 
+  def data_set(f, v)
+    if f != :_rev_index && ! @proxy.loading
+      dputs(4){"Updating index for field #{f.inspect} - #{@pre_init} - #{@proxy.loading} - #{caller}"}
+      new_index
+    end
+    super(f, v)
+  end
+
   # This gets the tree under that account, breadth-first
   def get_tree(depth = -1)
     yield self, depth
@@ -684,7 +686,10 @@ class Account < Entity
   end
 
   def new_index()
-    u_l = Users.match_by_name('local')
+    if ! u_l = Users.match_by_name('local')
+      dputs(0){"Oups - user 'local' was not here: #{caller}"}
+      u_l = Users.create('local')
+    end
     self.rev_index = u_l.account_index
     u_l.account_index += 1
     dputs(3) { "Index for account #{name} is #{index}" }
@@ -715,7 +720,6 @@ class Account < Entity
     self.multiplier = multiplier
     self.keep_total = keep_total
     update_total
-    new_index
     self
   end
 
@@ -857,7 +861,6 @@ class Account < Entity
     if is_empty
       dputs(2) { "Deleting account #{self.name}-#{self.id}" }
       self.account_id = nil
-      self.new_index
       self.deleted = true
     else
       dputs(1) { "Refusing to delete account #{name}" }

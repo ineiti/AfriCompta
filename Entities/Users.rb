@@ -13,6 +13,11 @@ class Users < Entities
     # The last movement_index that got transmitted
     value_int :movement_index
   end
+
+  def migration_1(u)
+    u.account_index ||= 0
+    u.movement_index ||= 0
+  end
 	
   def create( name, full = nil, pass = nil )
     if not full or not pass
@@ -20,7 +25,7 @@ class Users < Entities
       name, full, pass = name[:name], name[:full], name[:pass]
     end
     new_user = super( :name => name, :full => full, :pass => pass )
-    new_user.account_index = new_user.movement_index = 0
+    new_user.account_index, new_user.movement_index = 0, 0
     new_user
   end
 end

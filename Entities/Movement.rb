@@ -82,9 +82,7 @@ class Movements < Entities
     t.value = value
     dputs(DEBUG_SLOW) { 'create - 3' }
     t.global_id = Users.match_by_name('local').full + '-' + t.id.to_s
-    dputs(DEBUG_SLOW) { 'create - debug_slow' }
-    t.new_index
-    dputs(DEBUG_SLOW) { 'create - 5' }
+    dputs(DEBUG_SLOW) { 'create - 4' }
     dputs(1) { "Created #{t.to_json.inspect}" }
     t
   end
@@ -102,7 +100,6 @@ class Movements < Entities
   end
 
   def check_against_db(file)
-    dputs_func
     # First build
     # in_db - content of 'file' in .to_s format
     # in_local - content available locally in .to_s format
@@ -111,7 +108,7 @@ class Movements < Entities
     dputs(3) { 'Searching all movements' }
     @check_state = 'Collect local'
     @check_progress = 0.0
-    in_local = Movements.search_all_.reject{|m| m.value.to_f.round(3) == 0.0}
+    in_local = Movements.search_all_.reject { |m| m.value.to_f.round(3) == 0.0 }
     progress_step = 1.0 / (in_local.size + 1)
     dputs(3) { "Movements total: #{in_local.size}" }
 
@@ -173,6 +170,14 @@ end
 class Movement < Entity
 
   def init_instance
+  end
+
+  def data_set(f, v)
+    if f != :_rev_index
+      dputs(3){"Updating index for field #{f.inspect}"}
+      new_index
+    end
+    super(f, v)
   end
 
   def new_index
@@ -245,7 +250,7 @@ class Movement < Entity
     end
     self.desc, self.value = desc, value
     dputs(DEBUG_SLOW) { 'Getting new index' }
-    self.new_index()
+    self.new_index
     dputs(DEBUG_SLOW) { 'Date ' + self.date.to_s }
   end
 

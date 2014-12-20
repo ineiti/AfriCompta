@@ -24,9 +24,9 @@ Permission.add( 'secretary', 'PersonModify', 'professor' )
 
 qooxView = QooxView.init( '../Entities', '../Views' )
 
-tests = %w( africompta account movement )
+tests = %w( africompta account movement sqlite )
 #tests = %w( africompta )
-tests = %w( sqlite )
+#tests = %w( sqlite )
 tests.each{|t|
   require "ac_#{t}"
 }
