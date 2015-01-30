@@ -251,7 +251,6 @@ module Compta::Models
       }
       self.total = self.total.round( precision )
       debug( 4, "Final total is #{self.total} - #{self.total.class.name}" )
-      new_index
       self.save
     end
     

@@ -16,18 +16,18 @@ Markaby::Builder.set(:indent, 2)
 # We want a simple time-print
 class Time
   def to_s
-    day.to_s + "/" + month.to_s
+    day.to_s + '/' + month.to_s
   end
   
   def to_ss
-    to_s + "/" + year.to_s
+    to_s + '/' + year.to_s
   end
 end
 
 DEBUG_LEVEL=4
 def debug(level, s)
   if level <= DEBUG_LEVEL
-    puts " " * level + s
+    puts ' ' * level + s
   end
 end
 
@@ -39,8 +39,8 @@ end
 
 class Date
   def month_s
-    [ "janvier", "février", "mars", "avril", "mai", "juin",
-      "juillet", "août", "septembre", "octobre", "novembre", "décembre" ][month-1]
+    [ 'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][month-1]
   end
   
   def to_s_eu
@@ -51,18 +51,18 @@ class Date
     # Do some date-magic, so that we can give either the day, day and month or
     # a complete date. The rest is filled up with todays date.
     date = []
-    if s.index("/")
-      date = s.split("/")
+    if s.index('/')
+      date = s.split('/')
     else
-      date = s.split("-").reverse
+      date = s.split('-').reverse
     end
     da = Date.today
     d = [ da.day, da.month, da.year ]
     date += d.last( 3 - date.size )
     if date[2].to_s.size > 2
-      date = Date.strptime( date.join("/"), "%d/%m/%Y" )
+      date = Date.strptime( date.join('/'), '%d/%m/%Y')
     else
-      date = Date.strptime( date.join("/"), "%d/%m/%y" )
+      date = Date.strptime( date.join('/'), '%d/%m/%y')
     end
     return date
   end
@@ -74,9 +74,9 @@ class Numeric
     m = 10**post
     # Round on "post" digits after the "."
     f = ( to_f * m ).round / m.to_f
-    a, b = f.to_s.split( "." )
-    b = "" if not b
-    "#{a.rjust(pre)}.#{b.ljust(post,"0")}"
+    a, b = f.to_s.split('.')
+    b = '' if not b
+    "#{a.rjust(pre)}.#{b.ljust(post, '0')}"
   end
 end
 
@@ -235,7 +235,7 @@ module Compta::Models
       # the next index
       # TODO: check why this doesn't work with a new database -> rm .camping*
       if not User.find_by_name('local')
-        User.create( "local", 
+        User.create( 'local',
           Digest::MD5.hexdigest( ( rand 2**128 ).to_s ).to_s,
           rand( 2 ** 128 ).to_s )
       end
@@ -316,14 +316,14 @@ end
 module Compta::Views
   @debug = false
   
-  def list_sub( accs, indent = "" )
+  def list_sub( accs, indent = '')
     accs.sort!{ |a,b| 
       a.name <=> b.name
     }
     accs.each{ |a|
       if not a.deleted
         yield a, indent + a.name # + ", id: " + a.id.to_s + ", parent-account: " + a.account_id.to_s
-        list_sub( a.accounts, indent + "+" ){ |a, s| yield a, s }
+        list_sub( a.accounts, indent + '+'){ |a, s| yield a, s }
       end
     }
   end
@@ -337,11 +337,11 @@ module Compta::Views
           debug 2, "layout: refresh is #{@refresh.inspect}"
           if @refresh
             tag!(:meta, 
-              'http-equiv' => "refresh",
+              'http-equiv' => 'refresh',
               :content => "#{@refresh[0]}; #{@refresh[1]}" )
           end
-          style :type => "text/css", :media => "screen" do
-            %[
+          style :type => 'text/css', :media => 'screen' do
+            '
 body {
  background-color:#55ff55;
 }
@@ -361,38 +361,38 @@ a {
  text-decoration:none;
 }
 
-td.small { 
-  font-size: 9px; 
-  valign: center 
+td.small {
+  font-size: 9px;
+  valign: center
 }
 
 td.money {
   text-align: right;
   font-family: monospace
 }
-            ]
+            '
           end
-          style :type => "text/css", :media => "print" do
-            %[
-            td.small { 
-              font-size: 9px; 
-              valign: center 
+          style :type => 'text/css', :media => 'print' do
+            '
+            td.small {
+              font-size: 9px;
+              valign: center
             }
-            
+
             td.money {
               text-align: right;
               font-family: monospace
-            } 
+            }
 
             a {
              color:#000000;
              text-decoration:none;
             }
-            ]           
+            '
           end
         end
         body do
-          div :class => "main" do
+          div :class => 'main' do
             self << yield
           end
         end
@@ -402,27 +402,28 @@ td.money {
 end
 
 def index
-  h1 "AfriCompta - page principale"
-  h2 "Listes"
+  h1 'AfriCompta - page principale'
+  h2 'Listes'
   ul {
-    li { a "Movements", :href => "/movement/list" }
-    li { a "Comptes", :href => "/account/list" }
+    li { a 'Movements', :href => '/movement/list' }
+    li { a 'Comptes', :href => '/account/list' }
     #li { a "Salaires", :href => "/salary/list" }
-    li { a "Grand livre", :href => "/global/list"}
-    li { a "Utilisateurs", :href => "/user/list" }
+    li { a 'Grand livre', :href => '/global/list'
+    }
+    li { a 'Utilisateurs', :href => '/user/list' }
     #li { a "Employées", :href => "/employee/list" }
-    li { a "Destinations", :href => "/remote/list" }
+    li { a 'Destinations', :href => '/remote/list' }
   }
-  h2 "Rapports"
+  h2 'Rapports'
   ul {
     li {
-      table :border=>"0" do
-        [ [ "annuel", "year" ], [ "mensuel", "month"] , [ "hébdomadaire", "cweek" ] ].each{|per|
+      table :border=> '0' do
+        [ [ 'annuel', 'year'], [ 'mensuel', 'month'] , [ 'hébdomadaire', 'cweek'] ].each{|per|
           tr {
             td per[0]
-            td { a "séparé", :href => "/report/?type=cumul&period=#{per[1]}" }
-            td { a "absolu", :href => "/report/?type=abs&period=#{per[1]}" }
-            td { a "arbre", :href => "/report/?type=cumul&period=#{per[1]}&depth=1" }
+            td { a 'séparé', :href => "/report/?type=cumul&period=#{per[1]}" }
+            td { a 'absolu', :href => "/report/?type=abs&period=#{per[1]}" }
+            td { a 'arbre', :href => "/report/?type=cumul&period=#{per[1]}&depth=1" }
           }
         }
       end
@@ -435,9 +436,10 @@ def index
   #  li { a "une destination", :href => "/remote/add" }
   #  li { a "un employée", :href => "/employee/add" }
   #}
-  h2 "Suppléments"
+  h2 'Suppléments'
   ul {
-    li { a "ranger un peu", :href => "/admin/clean"}
+    li { a 'ranger un peu', :href => '/admin/clean'
+    }
   }
 end
 
