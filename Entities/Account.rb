@@ -635,9 +635,11 @@ end
 class Account < Entity
 
   def data_set(f, v)
-    if f != :_rev_index && ! @proxy.loading
-      dputs(4){"Updating index for field #{f.inspect} - #{@pre_init} - #{@proxy.loading} - #{caller}"}
-      new_index
+    if !@proxy.loading
+      if !%w( total _rev_index ).index(f.to_s)
+        ddputs(4) { "Updating index for field #{f.inspect} - #{@pre_init} - #{@proxy.loading} - #{caller}" }
+        new_index
+      end
     end
     super(f, v)
   end
@@ -686,8 +688,8 @@ class Account < Entity
   end
 
   def new_index()
-    if ! u_l = Users.match_by_name('local')
-      dputs(0){"Oups - user 'local' was not here: #{caller}"}
+    if !u_l = Users.match_by_name('local')
+      dputs(0) { "Oups - user 'local' was not here: #{caller}" }
       u_l = Users.create('local')
     end
     self.rev_index = u_l.account_index
