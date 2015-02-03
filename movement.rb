@@ -1,13 +1,11 @@
 module Compta::Models
   class Movement < Base;
     belongs_to :account_src, :class_name => 'Account', :foreign_key => 'account_src_id'
-    ;
     belongs_to :account_dst, :class_name => 'Account', :foreign_key => 'account_dst_id'
-    ;
-    attr_writer :src, :dst;
-    attr_reader :src, :dst;
+    attr_writer :src, :dst
+    attr_reader :src, :dst
     
-    def new_index()
+    def new_index
       u_l = User.find_by_name('local')
       self.rev_index = u_l.movement_index
       u_l.movement_index += 1
@@ -17,7 +15,7 @@ module Compta::Models
       debug 3, "global_id is #{self.global_id}"
     end
     
-    def get_index()
+    def get_index
       return self.rev_index
     end
     
@@ -31,10 +29,6 @@ module Compta::Models
         diff = value.to_f - v
         account_src.total = account_src.total.to_f + ( diff * account_src.multiplier )
         account_dst.total = account_dst.total.to_f - ( diff * account_dst.multiplier )
-        account_src.new_index
-        account_dst.new_index
-        account_src.save
-        account_dst.save
       end
       new_index
       super( v )

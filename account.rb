@@ -4,16 +4,14 @@ module Compta::Models
   # meaning (expenses, incomes)
   #  Accounts are stored in a hierarchical way, so there are sub-accounts
   # and more. The top-account has an +:account_id+ of +null+
-  class Account < Base;
+  class Account < Base
     include Performance
     
     has_many :movements_src, :foreign_key => 'account_src_id', :class_name => 'Movement'
-    ;
     has_many :movements_dst, :foreign_key => 'account_dst_id', :class_name => 'Movement'
-    ;
-    has_many :accounts;
-    belongs_to :account;
-    has_and_belongs_to_many :users;
+    has_many :accounts
+    belongs_to :account
+    has_and_belongs_to_many :users
     attr :subsum, true
     
     # This gets the tree under that account, breadth-first
