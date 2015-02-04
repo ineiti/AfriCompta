@@ -637,7 +637,7 @@ class Account < Entity
   def data_set(f, v)
     if !@proxy.loading
       if !%w( _total _rev_index ).index(f.to_s)
-        ddputs(4) { "Updating index for field #{f.inspect} - #{@pre_init} - #{@proxy.loading} - #{caller}" }
+        dputs(4) { "Updating index for field #{f.inspect} - #{@pre_init} - #{@proxy.loading} - #{caller}" }
         new_index
       end
     end
