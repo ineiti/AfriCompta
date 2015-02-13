@@ -3,7 +3,6 @@
 # What follows are some definitions used by other modules
 
 require 'digest/md5'
-require 'sqlite3'
 
 # We want a simple time-print
 class Time
