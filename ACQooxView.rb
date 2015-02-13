@@ -3,6 +3,7 @@
 # What follows are some definitions used by other modules
 
 require 'digest/md5'
+require 'sqlite3'
 
 # We want a simple time-print
 class Time
@@ -45,7 +46,6 @@ class Date
     return date
   end
 end
-
 
 class SQLiteAC < SQLite
   def configure(config)
