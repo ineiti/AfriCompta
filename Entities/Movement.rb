@@ -203,7 +203,7 @@ class Movement < Entity
       account_src.total = account_src.total.to_f + (diff * account_src.multiplier)
       account_dst.total = account_dst.total.to_f - (diff * account_dst.multiplier)
     end
-    data_set_log(:_value, v, @proxy.msg, @proxy.undo, @proxy.logging)
+    data_set(:_value, v)
   end
 
   def get_value(account)
