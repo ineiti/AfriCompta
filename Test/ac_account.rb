@@ -62,12 +62,12 @@ class TC_Account < Test::Unit::TestCase
     Accounts.create_path('Test')
     Accounts.dump
     count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
-    assert_equal [ 4, 0, 21, 1 ],
+    assert_equal [ 4, 0, 19, 1 ],
       [ count_mov, bad_mov, count_acc, bad_acc ]
 
     Accounts.dump
     count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
-    assert_equal [ 4, 0, 21, 0 ],
+    assert_equal [ 4, 0, 19, 0 ],
       [ count_mov, bad_mov, count_acc, bad_acc ]
   end
   
@@ -91,7 +91,7 @@ class TC_Account < Test::Unit::TestCase
     dputs(3){@lending.inspect}
     ACaccess.post( 'account_put', @u1.merge( 'account' => @lending.to_s ) )
     assert_equal '', ACaccess.get('accounts_get/user1,pass')
-    assert_equal @lending.to_s, ACaccess.get('accounts_get/user2,pass').chop
+    assert_equal @lending.to_s, ACaccess.get('accounts_get/user2,pass').chomp
   end
   
   def test_merge_account_change
@@ -102,7 +102,7 @@ class TC_Account < Test::Unit::TestCase
     dputs(3){@lending.inspect}
     ACaccess.post( 'account_put', @u1.merge( 'account' => @lending.to_s ) )
     assert_equal '', ACaccess.get('accounts_get/user1,pass')
-    assert_equal @lending.to_s, ACaccess.get('accounts_get/user2,pass').chop
+    assert_equal @lending.to_s, ACaccess.get('accounts_get/user2,pass').chomp
     
     assert_equal 1, @lending.account_id
   end

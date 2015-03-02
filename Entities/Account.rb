@@ -141,6 +141,7 @@ class Accounts < Entities
     if global_id == ''
       a.global_id = Users.match_by_name('local').full + '-' + a.id.to_s
     end
+    a.new_index
     dputs(2) { "Created account #{a.path_id} - #{a.inspect}" }
     a
   end

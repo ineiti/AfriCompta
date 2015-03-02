@@ -4,11 +4,15 @@
 %w( QooxView AfriCompta LibNet ).each{|l|
   $LOAD_PATH.push "../../#{l}"
 }
-$LOAD_PATH.push "."
+$LOAD_PATH.push '.'
 
 require 'test/unit'
+require 'fileutils'
 
-CONFIG_FILE="config_test.yaml"
+FileUtils.rm_rf('data/')
+FileUtils.rm_rf('data2/')
+
+CONFIG_FILE='config_test.yaml'
 DEBUG_LVL=0
 
 require 'QooxView'
@@ -27,6 +31,7 @@ qooxView = QooxView.init( '../Entities', '../Views' )
 tests = %w( africompta account movement sqlite )
 #tests = %w( africompta )
 #tests = %w( sqlite )
+#tests = %w( big )
 tests.each{|t|
   require "ac_#{t}"
 }

@@ -64,6 +64,38 @@ class ACaccess < RPCQooxdooPath
     ret
   end
 
+  def self.accounts_fetch_old(user)
+    ret = ''
+
+    Accounts.matches_by_account_id(0).to_a.concat(
+        Accounts.matches_by_account_id(nil)).sort { |a, b|
+      a.global_id <=> b.global_id }.each { |a|
+      dputs(2) { "Found one root-account #{a.rev_index} - #{a.path_id}" }
+      if a.global_id
+        dputs(3) { "It's global" }
+        a.get_tree { |acc|
+          dputs(4) { "In get_tree #{acc.path_id}: #{acc.deleted == true} - #{acc.rev_index}" }
+          if acc.rev_index > user.account_index
+            dputs(4) { "Found account #{acc.name} with index #{acc.rev_index}" }
+            ret += "#{acc.to_s}\n"
+          end
+        }
+      else
+        dputs(3) { "It's not global" }
+      end
+      dputs(3) { 'Will search for next' }
+    }
+    ret
+  end
+
+  def self.accounts_fetch(user)
+    Accounts.data.select { |_k, v| v._rev_index > user.account_index }.
+        collect { |k, _v| Accounts.get_data_instance(k) }.
+        sort_by { |a| a.path }.
+        collect { |a| a.to_s }.
+        join("\n")
+  end
+
   def self.get(p)
     # Two cases:
     # path/arg/user,pass - arg is used
@@ -73,7 +105,7 @@ class ACaccess < RPCQooxdooPath
     user, pass = id.split(",")
 
     log_msg 'ACaccess.get', "get-merge-path #{path} - #{arg} with " +
-        "user #{user} and pass #{pass}"
+                              "user #{user} and pass #{pass}"
     u = Users.match_by_name(user)
     u_local = Users.match_by_name('local')
     if not (u and u.pass == pass)
@@ -93,10 +125,10 @@ class ACaccess < RPCQooxdooPath
         end
         if $1 == '_all'
           dputs(2) { 'Putting all accounts' }
-          Accounts.search_all.each { |acc|
+          ret = Accounts.search_all.collect { |acc|
             dputs(4) { "Found account #{acc.name} with index #{acc.rev_index}" }
-            ret += "#{acc.to_s(true)}\n"
-          }
+            acc.to_s(true)
+          }.join("\n")
         elsif $1 == '_count'
           ret += Accounts.search_all.size.to_s
         elsif $1 == '_part'
@@ -110,24 +142,9 @@ class ACaccess < RPCQooxdooPath
           }
         else
           dputs(2) { 'Starting to search accounts' }
-          Accounts.matches_by_account_id(0).to_a.concat(
-              Accounts.matches_by_account_id(nil)).sort { |a, b|
-            a.global_id <=> b.global_id }.each { |a|
-            dputs(2) { "Found one root-account #{a.rev_index} - #{a.path_id}" }
-            if a.global_id
-              dputs(3) { "It's global" }
-              a.get_tree { |acc|
-                dputs(4) { "In get_tree #{acc.path_id}: #{acc.deleted == true} - #{acc.rev_index}" }
-                if acc.rev_index > u.account_index
-                  dputs(4) { "Found account #{acc.name} with index #{acc.rev_index}" }
-                  ret += "#{acc.to_s}\n"
-                end
-              }
-            else
-              dputs(3) { "It's not global" }
-            end
-            dputs(3) { 'Will search for next' }
-          }
+          t = Time.now
+          ret += ACaccess.accounts_fetch(u)
+          dputs(2) { "Found #{ret.count("\n")} after #{Time.now - t} seconds" }
         end
         dputs(3) { 'Finished search' }
         return ret
@@ -178,7 +195,7 @@ class ACaccess < RPCQooxdooPath
           dputs(3) { "Found movement #{mov.inspect}" }
           mov.delete
         end
-        dputs(3) { "Finished deleting" }
+        dputs(3) { 'Finished deleting' }
     end
     return ''
   end
@@ -186,7 +203,7 @@ class ACaccess < RPCQooxdooPath
   def self.post(path, input)
     dputs(5) { "self.post with #{path} and #{input.inspect}" }
     log_msg 'ACaccess.post', "post-merge-path #{path} with " +
-        "user #{input['user']} and pass #{input['pass']}"
+                               "user #{input['user']} and pass #{input['pass']}"
     user, pass = input['user'], input['pass']
     u = Users.match_by_name(user)
     if not (u and u.pass == pass)

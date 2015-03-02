@@ -363,7 +363,7 @@ class TC_AfriCompta < Test::Unit::TestCase
                   :id => 6,
                   :deleted => false,
                   :keep_total => true,
-                  :rev_index => 23}, box.to_hash)
+                  :rev_index => 21}, box.to_hash)
 
     course = Accounts.create_path('Root::Income::Course', 'course')
     assert_equal 'Root::Income::Course', course.get_path
@@ -431,7 +431,7 @@ class TC_AfriCompta < Test::Unit::TestCase
                      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0.000\t" +
                      "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\n" +
                      "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.000\t" +
-                     "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse\n", rep
+                     "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse", rep
 
     ACaccess.get('reset_user_account_indexes/foo,bar')
     rep = ACaccess.get('accounts_get/foo,bar')
@@ -447,7 +447,7 @@ class TC_AfriCompta < Test::Unit::TestCase
                      "Full description\r5544436cf81115c6faf577a7e2307e92-4\t-60.000\t" +
                      "Outcome\t1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\tfalse\tRoot::Outcome\n" +
                      "Full description\r5544436cf81115c6faf577a7e2307e92-5\t0.000\t" +
-                     "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\tRoot::Lending\n", rep
+                     "Lending\t-1\t5544436cf81115c6faf577a7e2307e92-1\tfalse\ttrue\tRoot::Lending", rep
 
     rep = ACaccess.get('movements_get_one/5544436cf81115c6faf577a7e2307e92-4/foo,bar')
     assert_equal "Restaurant\r5544436cf81115c6faf577a7e2307e92-4\t20.000\t" +
