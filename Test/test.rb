@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 ##!/usr/local/bin/ruby -I.
 ##!/usr/bin/ruby -I.. -I../../QooxView -I../../AfriCompta -I../../LibNet -I. -wKU
-%w( QooxView AfriCompta LibNet ).each{|l|
+%w( QooxView AfriCompta HelperClasses/lib ).each{|l|
   $LOAD_PATH.push "../../#{l}"
 }
 $LOAD_PATH.push '.'
@@ -29,7 +29,7 @@ Permission.add( 'secretary', 'PersonModify', 'professor' )
 qooxView = QooxView.init( '../Entities', '../Views' )
 
 tests = %w( africompta account movement sqlite )
-#tests = %w( africompta )
+tests = %w( africompta )
 #tests = %w( sqlite )
 #tests = %w( big )
 tests.each{|t|
