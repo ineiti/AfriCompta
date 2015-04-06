@@ -42,11 +42,15 @@ class Date
     [ 'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
       'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][month-1]
   end
-  
+
   def to_s_eu
     strftime('%d/%m/%y')
   end
-  
+
+  def to_s_euy
+    strftime('%d/%m/%Y')
+  end
+
   def Date.from_s(s)
     # Do some date-magic, so that we can give either the day, day and month or
     # a complete date. The rest is filled up with todays date.

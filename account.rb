@@ -83,12 +83,13 @@ module Compta::Models
       debug 5, 'Account::movements'
       timer_start
       movs = ( movements_src + movements_dst )
-      if ( from != nil and to != nil )
+      if ( from != nil && to != nil )
         movs.delete_if{ |m|
           ( m.date < from or m.date > to )
         }
         debug 3, 'Rejected some elements'
       end
+      movs.delete_if{|m| m.value == 0 }
       timer_read('rejected elements')
       sorted = movs.sort{ |a,b|
         ret = 0

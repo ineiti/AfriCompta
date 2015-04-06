@@ -183,7 +183,7 @@ module Compta::Controllers
         end
       else
         @date_from = Date.from_s('1/1/0')
-        @date_to = Date.today
+        @date_to = Date.from_s('31/12/9999')
       end
       debug 4, "From: #{@date_from} to: #{@date_to}"
     end
@@ -265,10 +265,12 @@ module Compta::Controllers
           debug 3, 'Setting ' + input.mid + ' to ' + credit.to_s
         when 'add'
           p input.date
-          date = Date.strptime(input.date, '%d/%m/%Y')
+          date = Date.strptime(input.date, '%d/%m/%y')
           if date > Date.today
+            debug 3, "In future: #{date} for #{Date.today}"
             date = Date.today
           elsif date < Date.today - 14
+            debug 3, "Too early: #{date} smaller than #{Date.today - 14}"
             date = Date.today
           end
           mov = Movement.create(input.desc, date.strftime('%d/%m/%Y'),
@@ -324,6 +326,8 @@ module Compta::Controllers
               }
           end
           @account = Account.find_by_id(account_src)
+        else
+          mov = @account.movements[0]
       end
       if not mov
         mov = Movement.new(:date => Date.today)
@@ -466,7 +470,7 @@ module Compta::Views
             list_years
             list_accounts('account_src', @account)
             input :type => 'text', :name => 'date_from', :size => '10', :value => @date_from.to_s_eu
-            input :type => 'text', :name => 'date_to', :size => '10', :value => @date_to.to_s_eu
+            input :type => 'text', :name => 'date_to', :size => '10', :value => @date_to.to_s_euy
             input :type => 'hidden', :name => 'sort', :value => @sort if @sort
             input :type => 'submit', :value => 'Afficher'
           end
