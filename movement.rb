@@ -42,23 +42,27 @@ module Compta::Models
       account_src == account ? account_dst : account_src
     end
 
+    def self.date_from_s(d_str)
+        # Do some date-magic, so that we can give either the day, day and month or
+        # a complete date. The rest is filled up with todays date.
+        date = d_str.split('/')
+        da = Date.today
+        d = [da.day, da.month, da.year]
+        date += d.last(3 - date.size)
+        if date[2].to_s.size > 2
+          Date.strptime(date.join('/'), '%d/%m/%Y')
+        else
+          Date.strptime(date.join('/'), '%d/%m/%y')
+        end
+    end
+
     def set(desc, date, value, source, dest)
       debug 3, 'self.value ' + self.value.to_s + ' - ' + value.to_s
       self.value = 0
       self.account_src, self.account_dst =
           Account.find_by_id(source), Account.find_by_id(dest)
-      if false
-        # Do some date-magic, so that we can give either the day, day and month or
-        # a complete date. The rest is filled up with todays date.
-        date = date.split('/')
-        da = Date.today
-        d = [da.day, da.month, da.year]
-        date += d.last(3 - date.size)
-        if date[2].to_s.size > 2
-          self.date = Date.strptime(date.join('/'), '%d/%m/%Y')
-        else
-          self.date = Date.strptime(date.join('/'), '%d/%m/%y')
-        end
+      if true
+        self.date = Movement.date_from_s(date)
       else
         self.date = Date.from_s(date)
       end
@@ -265,12 +269,13 @@ module Compta::Controllers
           debug 3, 'Setting ' + input.mid + ' to ' + credit.to_s
         when 'add'
           p input.date
-          date = Date.strptime(input.date, '%d/%m/%y')
+          #date = Date.strptime(input.date, '%d/%m/%y')
+          date = Movement.date_from_s(input.date)
           if date > Date.today
             debug 3, "In future: #{date} for #{Date.today}"
             date = Date.today
-          elsif date < Date.today - 14
-            debug 3, "Too early: #{date} smaller than #{Date.today - 14}"
+          elsif date < Date.today - 31
+            debug 3, "Too early: #{date} smaller than #{Date.today - 31}"
             date = Date.today
           end
           mov = Movement.create(input.desc, date.strftime('%d/%m/%Y'),
