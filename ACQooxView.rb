@@ -74,6 +74,10 @@ module ACQooxView
       require(f)
       dputs(2) { "Adding #{f}" }
     }
+    %w(Users Accounts Movements Remotes Schema_Infos).each{|e|
+      RPCQooxdooService.add_prime_service(eval(e),
+                                          "Entities.#{e}")
+    }
   end
 
   def self.check_db
