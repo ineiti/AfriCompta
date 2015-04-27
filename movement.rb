@@ -215,6 +215,7 @@ module Compta::Controllers
           @movement = Movement.find_by_id(arg3)
         when 'del'
           mov = Movement.find_by_id(arg3)
+          debug 1, "Deleting movement #{mov.to_s.inspect}"
           @movements.delete(mov)
           mov.value = 0
           mov.new_index
