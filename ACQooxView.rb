@@ -68,16 +68,18 @@ class Float
 end
 
 module ACQooxView
-  def self.load_entities
+  def self.load_entities(prime = true)
     require 'ACaccess'
     Dir[File.dirname(__FILE__) + '/Entities/*.rb'].each { |f|
       require(f)
       dputs(2) { "Adding #{f}" }
     }
-    %w(Users Accounts Movements Remotes Schema_Infos).each{|e|
-      RPCQooxdooService.add_prime_service(eval(e),
-                                          "Entities.#{e}")
-    }
+    if prime
+      %w(Users Accounts Movements Remotes Schema_Infos).each { |e|
+        RPCQooxdooService.add_prime_service(eval(e),
+                                            "Entities.#{e}")
+      }
+    end
   end
 
   def self.check_db
