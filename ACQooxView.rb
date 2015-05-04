@@ -52,8 +52,7 @@ end
 
 class SQLiteAC < SQLite
   def configure(config)
-    filename = get_config('compta.db', :AfriCompta, :filename)
-    super(config, 'compta', filename)
+    super(config, 'compta', 'compta.db')
   end
 end
 
