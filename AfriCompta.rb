@@ -1,16 +1,16 @@
 #!/usr/bin/ruby -I../QooxView -wKU
 
 DEBUG_LVL=5
-VERSION_AFRICOMPTA="1.1.2"
+VERSION_AFRICOMPTA='1.1.2'
 require 'fileutils'
 
 AFRICOMPTA_DIR=File.dirname(__FILE__)
-CONFIG_FILE="config.yaml"
+CONFIG_FILE='config.yaml'
 if not FileTest.exists? CONFIG_FILE
   puts "Config-file doesn't exist"
-  print "Do you want me to copy a standard one? [Y/n] "
-  if gets.chomp.downcase != "n"
-    FileUtils.cp "config.yaml.default", "config.yaml"
+  print 'Do you want me to copy a standard one? [Y/n] '
+  if gets.chomp.downcase != 'n'
+    FileUtils.cp 'config.yaml.default', 'config.yaml'
   end
 end
 
@@ -33,11 +33,11 @@ end
 Welcome.nologin
 QooxView::init( 'Entities', 'Views' )
 
-dputs( 0 ){ "Loading database" }
+dputs( 0 ){ 'Loading database' }
 ACQooxView::check_db
 
 # Autosave every 2 minutes
-if get_config( true, :autosave )
+if ConfigBase.autosave == %w(true)
   $autosave = Thread.new{
     loop {
       sleep 2 * 60
@@ -46,7 +46,7 @@ if get_config( true, :autosave )
   }
 end
 
-trap("SIGINT") { 
+trap('SIGINT') {
   throw :ctrl_c
 }
 
@@ -68,7 +68,7 @@ catch :ctrl_c do
   dputs( 0 ){ "#{e.inspect}" }
   dputs( 0 ){ "#{e.to_s}" }
   puts e.backtrace
-    dputs( 0 ){ "Saving all" }
+    dputs( 0 ){ 'Saving all' }
     Entities.save_all
   end
 end
