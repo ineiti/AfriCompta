@@ -102,6 +102,8 @@ class AccountRoot
 end
 
 class Accounts < Entities
+  self.needs %w(Users Movements)
+
   attr_reader :check_state, :check_progress
 
   def setup_data
@@ -535,6 +537,23 @@ class Accounts < Entities
     AccountRoot.accounts.each { |a|
       dputs(1) { "Root-Account: #{a.inspect}" }
     }
+  end
+
+  def load
+    super
+    if Accounts.search_by_name('Root').count == 0
+      dputs(1) { "Didn't find 'Root' in database - creating base" }
+      root = Accounts.create('Root', 'Initialisation')
+      %w( Income Outcome Lending Cash ).each { |a|
+        Accounts.create(a, 'Initialisation', root)
+      }
+      %w( Lending Cash ).each { |a|
+        acc = Accounts.match_by_name(a)
+        acc.multiplier = -1
+        acc.keep_total = true
+      }
+      Accounts.save
+    end
   end
 
   def migration_1(a)

@@ -67,37 +67,11 @@ class Float
 end
 
 module ACQooxView
-  def self.load_entities(prime = true)
+  def self.load_entities(preload = true)
     require 'ACaccess'
     Dir[File.dirname(__FILE__) + '/Entities/*.rb'].each { |f|
       require(f)
       dputs(2) { "Adding #{f}" }
     }
-    if prime
-      %w(Users Accounts Movements Remotes Schema_Infos).each { |e|
-        RPCQooxdooService.add_prime_service(eval(e),
-                                            "Entities.#{e}")
-      }
-    end
-  end
-
-  def self.check_db
-    if Users.search_by_name('local').count == 0
-      Users.create('local', Digest::MD5.hexdigest((rand 2**128).to_s).to_s,
-                   rand(2 ** 128).to_s)
-    end
-    if Accounts.search_by_name('Root').count == 0
-      dputs(1) { "Didn't find 'Root' in database - creating base" }
-      root = Accounts.create('Root', 'Initialisation')
-      %w( Income Outcome Lending Cash ).each { |a|
-        Accounts.create(a, 'Initialisation', root)
-      }
-      %w( Lending Cash ).each { |a|
-        acc = Accounts.match_by_name(a)
-        acc.multiplier = -1
-        acc.keep_total = true
-      }
-      Accounts.save
-    end
   end
 end

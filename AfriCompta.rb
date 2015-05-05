@@ -33,9 +33,6 @@ end
 Welcome.nologin
 QooxView::init( 'Entities', 'Views' )
 
-dputs( 0 ){ 'Loading database' }
-ACQooxView::check_db
-
 # Autosave every 2 minutes
 if ConfigBase.autosave == %w(true)
   $autosave = Thread.new{

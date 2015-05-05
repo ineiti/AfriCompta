@@ -761,13 +761,12 @@ class TC_AfriCompta < Test::Unit::TestCase
   end
 
   def test_creation
-    Entities.delete_all_data()
-    ACQooxView::check_db
+    Entities.delete_all_data
   end
 
   def load_big_data
     dputs(1) { 'Setting up big data' }
-    Entities.delete_all_data()
+    Entities.delete_all_data
 
     dputs(2) { 'Resetting SQLite' }
     SQLite.dbs_close_all
