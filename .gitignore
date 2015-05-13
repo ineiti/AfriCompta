@@ -10,3 +10,5 @@ tmp/
 .idea
 compta.db.*
 test/test.pdf
+test/*db
+test/data*

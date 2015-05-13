@@ -1,7 +1,7 @@
 #!/usr/bin/ruby -I../QooxView -wKU
 
 DEBUG_LVL=5
-VERSION_AFRICOMPTA='1.1.2'
+VERSION_AFRICOMPTA='1.9.8'
 require 'fileutils'
 
 AFRICOMPTA_DIR=File.dirname(__FILE__)
@@ -16,7 +16,7 @@ end
 
 begin
   require 'QooxView'
-  require 'ACQooxView'
+  require 'acqooxview'
 rescue Exception => e
   puts e.inspect
   puts e.to_s
