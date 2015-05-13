@@ -1,3 +1,0 @@
-hg push
-ssh root@buzz.wifi "cd /var/www/AfriCompta; hg up"
-ssh root@buzz.wifi "killall -9 ruby; screen -S compta -d -m sudo -s -- -c /var/www/AfriCompta/startAfriCompta"

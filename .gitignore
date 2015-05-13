@@ -1,5 +1,4 @@
 Backups
-Test
 db.*
 camping-1.5.old
 nohup.out
@@ -10,4 +9,4 @@ data
 tmp/
 .idea
 compta.db.*
-Test/test.pdf
+test/test.pdf

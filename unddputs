@@ -1,3 +1,0 @@
-#!/bin/bash
-
-find . -name "*rb" -exec perl -pi -e "s/ddputs/dputs/" {} \;
