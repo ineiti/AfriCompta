@@ -12,3 +12,4 @@ compta.db.*
 test/test.pdf
 test/*db
 test/data*
+/*gem

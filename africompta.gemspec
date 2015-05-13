@@ -16,5 +16,5 @@ Gem::Specification.new do |s|
       'https://github.com/ineiti/AfriCompta'
   s.license = 'GPLv3'
 
-  spec.add_dependency 'qooxview'
+  s.add_dependency 'qooxview'
 end
