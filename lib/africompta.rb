@@ -1,2 +1,2 @@
-require 'builder/setup'
+require 'bundler/setup'
 require 'africompta/africompta'
