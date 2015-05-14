@@ -15,8 +15,8 @@ if not FileTest.exists? CONFIG_FILE
 end
 
 begin
-  require 'QooxView'
-  require 'acqooxview'
+  require 'qooxview'
+  require 'africompta/acqooxview'
 rescue Exception => e
   puts e.inspect
   puts e.to_s
@@ -31,7 +31,7 @@ rescue Exception => e
 end
 
 Welcome.nologin
-QooxView::init( 'Entities', 'Views' )
+QooxView::init( 'entities', 'views')
 
 # Autosave every 2 minutes
 if ConfigBase.autosave == %w(true)
