@@ -68,10 +68,10 @@ end
 
 module ACQooxView
   def self.load_entities(preload = true)
-    require 'acaccess'
-    Dir[File.dirname(__FILE__) + '/Entities/*.rb'].each { |f|
-      require(f)
+    require 'africompta/acaccess'
+    Dir[File.dirname(__FILE__) + '/entities/*.rb'].each { |f|
       dputs(2) { "Adding #{f}" }
+      require(f)
     }
   end
 end
