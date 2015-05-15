@@ -10,7 +10,7 @@ see http://github.com/ineiti/AfriCompta_client .'
   s.authors = ['Linus Gasser']
   s.email = 'ineiti@linusetviviane.ch'
 
-  s.files         = `git ls-files -z`.split("\x0")
+  s.files         = `if [ -d '.git' ]; then git ls-files -z; fi`.split("\x0")
   s.executables   = s.files.grep(%r{^bin/}) { |f| File.basename(f) }
   s.test_files    = s.files.grep(%r{^(test|spec|features)/})
   s.require_paths = ['lib']
