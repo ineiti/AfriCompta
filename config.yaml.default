@@ -1,0 +1,19 @@
+# Uncomment to automatically login admin
+#autologin: admin
+# Together with autologin, allows for more than one at the same time,
+# for example for chat
+#multilogin: true
+
+StorageType:
+  CSV:
+    backup_count: 5
+
+#profiling: profile.txt
+#  duration: 30
+
+Webrick:
+#  port: 3302
+
+Views:
+#  CourseTabs:
+#    order: 0

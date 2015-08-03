@@ -20,4 +20,5 @@ see http://github.com/ineiti/AfriCompta_client .'
   s.license = 'GPLv3'
 
   s.add_dependency 'qooxview', '1.9.10'
+  s.add_dependency 'prawn', '1.0.0'
 end

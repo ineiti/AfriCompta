@@ -1,3 +1,0 @@
-class ReportAnnual < View
-  
-end
