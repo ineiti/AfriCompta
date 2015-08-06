@@ -67,7 +67,7 @@ class Float
 end
 
 module ACQooxView
-  def self.load_entities(preload = true)
+  def self.load_entities_old(preload = true)
     require 'africompta/acaccess'
     Dir[File.dirname(__FILE__) + '/entities/*.rb'].each { |f|
       dputs(2) { "Adding #{f}" }

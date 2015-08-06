@@ -1,7 +1,7 @@
 class ComptaEditAccounts < View
   def layout
     @rpc_update = true
-    @order = 100
+    @order = 200
     @functions_need = [:accounting]
 
     gui_hboxg do

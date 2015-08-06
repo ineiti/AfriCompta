@@ -16,15 +16,14 @@ Encoding.default_external = Encoding::UTF_8
 
 require 'fileutils'
 
-CONFIG_FILE=File.join('..', 'config.yaml')
-if not FileTest.exists? CONFIG_FILE
-  puts "Config-file doesn't exist, copying a standard one"
-  FileUtils.cp "#{CONFIG_FILE}.default", CONFIG_FILE
-end
-
 begin
-  require 'qooxview'
   require 'africompta'
+  if not FileTest.exists? $config_file
+    puts "Config-file doesn't exist, copying a standard one"
+    FileUtils.cp "#{File.join(AFRICOMPTA_DIR, '..', '..', 'config.yaml')}.default",
+                 $config_file
+    load_config_yaml
+  end
 rescue Exception => e
   puts "#{e.inspect}"
   puts "#{e.to_s}"
@@ -92,9 +91,11 @@ else
 
   # Catch SIGINT signal so we can save everything before quitting
   trap('SIGINT') {
+    dp 'ctrl-c pressed'
     throw :ctrl_c
   }
 
+  ConfigBase.set_functions(%w(accounting))
   # Finally start QooxView
   catch :ctrl_c do
     rescue_all 'Error: QooxView aborted' do

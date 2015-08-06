@@ -8,8 +8,12 @@ config.yaml
 data
 tmp/
 .idea
+*.mo
+*.pot
 compta.db.*
 test/test.pdf
 test/*db
 test/data*
 /*gem
+
+afri_compta.conf

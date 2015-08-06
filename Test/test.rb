@@ -12,7 +12,7 @@ require 'fileutils'
 FileUtils.rm_rf('data/')
 FileUtils.rm_rf('data2/')
 
-CONFIG_FILE='config_test.yaml'
+$config_file='config_test.yaml'
 DEBUG_LVL=0
 
 require 'QooxView'
