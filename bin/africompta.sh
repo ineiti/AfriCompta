@@ -8,8 +8,9 @@ which ruby
 ./afri_compta.rb &
 #AFRICOMPTA=$!
 sleep 5
-open -a Safari.app http://localhost:3302
+open -Wn -a Safari.app http://localhost:3302
 #kill $!
 #open -a Safari.app http://localhost:3302/$!
 pkill -f "afri_compta.rb"
+echo Done with AfriCompta
 read a
