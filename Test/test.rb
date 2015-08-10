@@ -1,11 +1,6 @@
 #!/usr/bin/env ruby
-##!/usr/local/bin/ruby -I.
-##!/usr/bin/ruby -I.. -I../../QooxView -I../../AfriCompta -I../../LibNet -I. -wKU
-%w( QooxView AfriCompta HelperClasses/lib ).each{|l|
-  $LOAD_PATH.push "../../#{l}"
-}
-$LOAD_PATH.push '.'
 
+require 'bundler/setup'
 require 'test/unit'
 require 'fileutils'
 
@@ -16,8 +11,7 @@ $config_file='config_test.yaml'
 DEBUG_LVL=0
 
 require 'QooxView'
-require 'ACQooxView'
-require 'ACaccess'
+require 'africompta'
 
 Permission.add( 'default', 'View,Welcome' )
 Permission.add( 'admin', '.*', '.*' )
@@ -33,7 +27,7 @@ tests = %w( africompta account movement sqlite )
 #tests = %w( sqlite )
 #tests = %w( big )
 tests.each{|t|
-  require "ac_#{t}"
+  require_relative "ac_#{t}"
 }
 
 # Fails test_archive_sum_up

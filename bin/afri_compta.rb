@@ -95,7 +95,7 @@ else
     throw :ctrl_c
   }
 
-  ConfigBase.set_functions(%w(accounting))
+  ConfigBase.set_functions(%w(accounting accounting_standalone))
   # Finally start QooxView
   catch :ctrl_c do
     rescue_all 'Error: QooxView aborted' do

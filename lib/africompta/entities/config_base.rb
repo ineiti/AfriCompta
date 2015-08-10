@@ -4,6 +4,6 @@ class ConfigBases < Entities
 
     value_block :vars_wide
 
-    @@functions = %i( accounting )
+    @@functions = %i( accounting accounting_standalone )
   end
 end
