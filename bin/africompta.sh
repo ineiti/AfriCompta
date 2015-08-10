@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 cd $( dirname ${BASH_SOURCE[0]} )
 echo "DATA_DIR=$HOME/Library/AfriCompta" > ../afri_compta.conf
+PATH="../../ruby/bin:$PATH"
 echo $PATH
 ruby --version
 which ruby
