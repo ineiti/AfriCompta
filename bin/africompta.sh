@@ -9,7 +9,7 @@ echo $PATH
 ruby --version
 which ruby
 pkill -f "afri_compta.rb"
-./afri_compta.rb &
+bin/afri_compta.rb &
 AFRICOMPTA=$!
 sleep 5
 echo $AFRICOMPTA
