@@ -14,8 +14,8 @@ AFRICOMPTA=$!
 sleep 5
 echo $AFRICOMPTA
 open -Wn -a Safari.app http://localhost:3302
-#kill $!
+kill $!
 #open -a Safari.app http://localhost:3302/$!
-pkill -f "afri_compta.rb"
+#pkill -f "afri_compta.rb"
 echo Done with AfriCompta
-read a
+#read a
