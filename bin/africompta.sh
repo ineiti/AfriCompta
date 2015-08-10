@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-cd $( dirname ${BASH_SOURCE[0]} )
-DIR_AC="$(pwd)/.."
+cd "$( dirname ${BASH_SOURCE[0]} )/.."
+DIR_AC="$(pwd)"
 DIR_RES="$DIR_AC/.."
 
 echo "DATA_DIR=$HOME/Library/AfriCompta" > ../afri_compta.conf
