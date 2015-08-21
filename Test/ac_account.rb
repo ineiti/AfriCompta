@@ -12,8 +12,7 @@ class TC_Account < Test::Unit::TestCase
     FileUtils.cp( 'db.testGestion', 'data/compta.db')
     SQLite.dbs_open_load_migrate
     
-    dputs(2){ 'And searching for some accounts'
-    }
+    dputs(2){ 'And searching for some accounts'  }
     @root = Accounts.match_by_name('Root')
     @cash = Accounts.match_by_name('Cash')
     @lending = Accounts.match_by_name('Lending')
@@ -26,6 +25,7 @@ class TC_Account < Test::Unit::TestCase
   end
 
   def teardown
+    Entities.save_all
   end
   
   def test_path
@@ -60,7 +60,7 @@ class TC_Account < Test::Unit::TestCase
   
   def test_clean
     Accounts.create_path('Test')
-    Accounts.dump
+    Accounts.dump true
     count_mov, bad_mov, count_acc, bad_acc = AccountRoot.clean
     assert_equal [ 4, 0, 19, 1 ],
       [ count_mov, bad_mov, count_acc, bad_acc ]

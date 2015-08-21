@@ -25,7 +25,7 @@ qooxView = QooxView.init( '../Entities', '../Views' )
 tests = %w( africompta account movement sqlite )
 #tests = %w( africompta )
 #tests = %w( sqlite )
-#tests = %w( big )
+tests = %w( merge )
 tests.each{|t|
   require_relative "ac_#{t}"
 }
