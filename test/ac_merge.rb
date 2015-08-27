@@ -10,8 +10,13 @@ class TC_Merge < Test::Unit::TestCase
     dputs(1) { 'Closing all' }
     SQLite.dbs_close_all
     FileUtils.rm_f('data2/compta.db')
+    start_other
+    FileUtils.cp('thread1/data/compta.db', 'data2/compta.db')
     dputs(1) { 'Loading and migrating' }
     SQLite.dbs_open_load_migrate
+
+    # Re-create the local user to get a new random id
+    Users.reset_id
 
     #Entities.Accounts.load
 
@@ -75,27 +80,60 @@ class TC_Merge < Test::Unit::TestCase
   end
 
   def test_start_other
-    start_other
     assert Net::HTTP.get(URI('http://localhost:3303'))
   end
 
   def test_remote
-    start_other
     @remote.check_version
   end
 
   def test_copied
-    start_other
     assert_equal 4, get_form('accounts_get').split("\n").count
     @remote.do_copied
     assert_equal '5,0', get_form('index')
     assert_equal 0, get_form('accounts_get').split("\n").count
   end
 
-  def test_send_account
-    start_other
-    other_accounts =
-        Accounts.create('Salaries', 'salaries', @outcome)
+  def test_check_versions
+    assert @remote.check_version
+    oldversion = $VERSION
+    $VERSION = 0
+    assert_raise RuntimeError do
+      @remote.check_version
+    end
+    $VERSION = oldversion
+  end
+
+  def print_remote_accounts
+    get_form('accounts_get_all').split("\n").each { |a| p a }
+  end
+
+  def print_accounts
+    Accounts.search_all.each{|a| p a.to_s}
+  end
+
+  def test_get_remote_accounts
+    #p Accounts.search_all.last.to_s
+    @remote.do_copied
+    post_form('account_put',
+              account: "Initialisation\r27d1cfc78ed2ae03109b8963707b18f2-10\t"+
+                  "0.000\tNewAccount\t1\t#{AccountRoot.current.global_id}\tfalse\tfalse",
+              debug: true)
+    assert_equal 0, Accounts.search_by_name('NewAccount').count
+    @remote.get_remote_accounts
+    assert_equal 1, Accounts.search_by_name('NewAccount').count
+  end
+
+  def test_send_accounts
+    @remote.do_copied
+
+    Accounts.create('Salaries', 'salaries', @outcome)
+    remote_count = get_form('accounts_get_all').split("\n").count
+    @remote.setup_instance
+    @remote.send_accounts
+    assert_equal remote_count + 1,
+                 get_form('accounts_get_all').split("\n").count
+    assert_equal 0, get_form('accounts_get').split("\n").count
   end
 
 end

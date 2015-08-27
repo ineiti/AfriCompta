@@ -17,6 +17,16 @@ class Remotes < Entities
 end
 
 class Remote < Entity
+  def setup_instance
+    u = Users.find_by_name('local')
+    @step = 'preparation'
+    @account_index_stop, @movement_index_stop,
+        @got_accounts, @put_accounts,
+        @got_movements, @put_movements, @put_movements_changes =
+        [0] * 7
+    @account_index_stop = u.account_index - 1
+  end
+
   def update_movement_index
     self.movement_index = Users.match_by_name('local').movement_index - 1
   end
@@ -35,7 +45,7 @@ class Remote < Entity
   def get_form(path)
     url_parsed = URI.parse(url)
     dputs(4) { "Starting getForm with path #{path} - #{url_parsed.inspect}" }
-    dputs(4) { "Finished parsing #{@remote.url}" }
+    dputs(4) { "Finished parsing #{url}" }
     ret = Net::HTTP.get(url_parsed.host, "#{url_parsed.path}/merge/#{path}/#{name},#{pass}", url_parsed.port)
     dputs(4) { "Ending getForm with path #{path}" }
     ret
@@ -51,16 +61,11 @@ class Remote < Entity
   # 5: update the indexes
   # The variable +step+ can be used to watch the progress if it is called
   # in a thread
-  def do_merge(remote_id)
-    @step = 'preparation'
-    @account_index_stop, @movement_index_stop,
-        @got_accounts, @put_accounts,
-        @got_movements, @put_movements, @put_movements_changes =
-        [0] * 7
+  def do_merge
+    setup_instance
 
-    @remote = Remotes.find_by_id(remote_id)
     u = Users.find_by_name('local')
-    log_msg :Merging, "Starting to merge for #{@remote}"
+    log_msg :Merging, "Starting to merge for #{url}"
 
     @step = 'checking remote'
     check_version
@@ -79,7 +84,7 @@ class Remote < Entity
 
     @step = 'updating all indexes'
     # Update the pointer
-    @remote.update_movement_index
+    update_movement_index
     # Update the remote pointers
     get_form('reset_user_indexes')
 
@@ -104,11 +109,11 @@ class Remote < Entity
         raise 'Wrong version'
       end
     end
+    return true
   end
 
   def get_remote_accounts
     dputs(2) { 'Getting remotes' }
-    @account_index_stop = u.account_index - 1
     accounts = get_form('accounts_get')
     accounts.split("\n").each { |a|
       acc = Accounts.from_s(a)
@@ -117,8 +122,32 @@ class Remote < Entity
     }
   end
 
+  def send_accounts
+    @account_index_start = account_index + 1
+    if @account_index_start <= @account_index_stop
+      dputs(1) { "Accounts to send: #{@account_index_start}..#{@account_index_stop}" }
+      # We have to start at the bottom, else we can get into trouble with regard
+      # to children not having their parents yet...
+      AccountRoot.accounts.each { |a|
+        dputs(2) { "Root is #{a.inspect}" }
+        a.get_tree { |acc|
+          dputs(3){"Index of #{acc.name} is #{acc.rev_index}"}
+          if (@account_index_start..@account_index_stop) === acc.rev_index
+            dputs(2) { "Account with index #{acc.rev_index} is being transferred" }
+            post_form('account_put', {'account' => acc.to_s})
+            @put_accounts += 1
+          end
+        }
+      }
+    else
+      dputs(1) { 'No accounts to send' }
+    end
+    # Update the pointer
+    update_account_index
+  end
+
   def send_movements
-    @movement_index_start = @remote.movement_index + 1
+    @movement_index_start = movement_index + 1
     @movement_count = 0
     if @movement_index_start <= @movement_index_stop
       dputs(1) { "Movements to send: #{@movement_index_start}.." +
@@ -162,31 +191,6 @@ class Remote < Entity
     }
   end
 
-  def send_accounts
-    @account_index_start = @remote.account_index + 1
-    if @account_index_start <= @account_index_stop
-      dputs(1) { "Accounts to send: #{@account_index_start}..#{@account_index_stop}" }
-      # We have to start at the bottom, else we can get into trouble with regard
-      # to children not having their parents yet...
-      Accounts.find_all_by_account_id(0).to_a.concat(
-          Accounts.find_all_by_account_id(nil)).each { |a|
-        dputs(2) { "Root is #{a.inspect}" }
-        a.get_tree { |acc|
-          debug(3, "Index of #{acc.name} is #{acc.get_index}")
-          if (@account_index_start..@account_index_stop) === acc.rev_index
-            dputs(2) { "Account with index #{acc.rev_index} is being transferred" }
-            post_form('account_put', {'account' => acc.to_s})
-            @put_accounts += 1
-          end
-        }
-      }
-    else
-      dputs(1) { 'No accounts to send' }
-    end
-    # Update the pointer
-    @remote.update_account_index
-  end
-
   # Is used to reset the pointers, supposes both databases are equal -
   # Should probably be used with care
   def do_copied
@@ -211,6 +215,7 @@ class Remote < Entity
       dputs(0) { "Trying to do 'copied' with wrong movement-indexes" }
       dputs(0) { "#{mov.to_i} - #{u.movement_index}" }
     end
+
     return true
   end
 

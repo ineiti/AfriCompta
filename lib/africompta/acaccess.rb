@@ -230,7 +230,7 @@ class ACaccess < RPCQooxdooPath
             else
               dputs(0) { "Error: couldn't create movement from #{m.inspect}" }
             end
-            u.update_movement_index
+            u.update_movement_index unless input._debug
           }
         end
       when 'movement_delete'
@@ -243,7 +243,7 @@ class ACaccess < RPCQooxdooPath
       when 'account_put'
         dputs(3) { "Going to put account #{input['account'].inspect}" }
         acc = Accounts.from_s(input['account'])
-        u.update_account_index
+        u.update_account_index unless input._debug
         dputs(2) { "Saved account #{acc.global_id}" }
       when 'account_delete'
         dputs(3) { 'Going to delete account' }

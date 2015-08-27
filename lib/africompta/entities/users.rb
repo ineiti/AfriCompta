@@ -14,6 +14,11 @@ class Users < Entities
     value_int :movement_index
   end
 
+  def reset_id
+    Users.find_by_name('local').full =
+        Digest::MD5.hexdigest((rand 2**128).to_s).to_s
+  end
+
   def init
     user = Users.create('local', Digest::MD5.hexdigest((rand 2**128).to_s).to_s,
                         rand(2 ** 128).to_s)
