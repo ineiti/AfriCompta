@@ -100,9 +100,9 @@ class ACaccess < RPCQooxdooPath
     # Two cases:
     # path/arg/user,pass - arg is used
     # path/user,pass - arg is nil
-    path, arg, id = p.split("/")
+    path, arg, id = p.split('/')
     arg, id = id, arg if not id
-    user, pass = id.split(",")
+    user, pass = id.split(',')
 
     log_msg 'ACaccess.get', "get-merge-path #{path} - #{arg} with " +
                               "user #{user} and pass #{pass}"
@@ -120,35 +120,34 @@ class ACaccess < RPCQooxdooPath
         ret = ''
         dputs(2) { "user index is: #{u.account_index}" }
         # Returns only one account
-        if $1 == '_one'
-          return Accounts.match_by_global_id(arg).to_s
-        end
-        if $1 == '_all'
-          dputs(2) { 'Putting all accounts' }
-          ret = Accounts.search_all.collect { |acc|
-            dputs(4) { "Found account #{acc.name} with index #{acc.rev_index}" }
-            acc.to_s(true)
-          }.join("\n")
-        elsif $1 == '_count'
-          ret += Accounts.search_all.size.to_s
-        elsif $1 == '_part'
-          acc_start, acc_end = arg.split(",")
-          dputs(2) { "Putting accounts #{acc_start}..#{acc_end}" }
-          Accounts.search_all.select { |acc|
-            acc.rev_index >= acc_start.to_i and acc.rev_index <= acc_end.to_i
-          }.each { |acc|
-            dputs(4) { "Found account #{acc.name} with index #{acc.rev_index}" }
-            ret += "#{acc.to_s(true)}\n"
-          }
-        else
-          dputs(2) { 'Starting to search accounts' }
-          t = Time.now
-          ret += ACaccess.accounts_fetch(u)
-          dputs(2) { "Found #{ret.count("\n")} after #{Time.now - t} seconds" }
+        case $1
+          when '_one'
+            return Accounts.match_by_global_id(arg).to_s
+          when '_all'
+            dputs(2) { 'Putting all accounts' }
+            ret = Accounts.search_all.collect { |acc|
+              dputs(4) { "Found account #{acc.name} with index #{acc.rev_index}" }
+              acc.to_s(true)
+            }.join("\n")
+          when '_count'
+            ret += Accounts.search_all.size.to_s
+          when '_part'
+            acc_start, acc_end = arg.split(',')
+            dputs(2) { "Putting accounts #{acc_start}..#{acc_end}" }
+            Accounts.search_all.select { |acc|
+              acc.rev_index >= acc_start.to_i and acc.rev_index <= acc_end.to_i
+            }.each { |acc|
+              dputs(4) { "Found account #{acc.name} with index #{acc.rev_index}" }
+              ret += "#{acc.to_s(true)}\n"
+            }
+          else
+            dputs(2) { 'Starting to search accounts' }
+            t = Time.now
+            ret += ACaccess.accounts_fetch(u)
+            dputs(2) { "Found #{ret.count("\n")} after #{Time.now - t} seconds" }
         end
         dputs(3) { 'Finished search' }
         return ret
-
       # Gets all movements (for the accounts of that user)
       when /movements_get(.*)/
         dputs(2) { "movements_get#{$1} with #{arg.inspect}" }
@@ -174,7 +173,7 @@ class ACaccess < RPCQooxdooPath
         return $VERSION.to_s
 
       when 'index'
-        return [u_local.account_index, u_local.movement_index].join(",")
+        return [u_local.account_index, u_local.movement_index].join(',')
 
       when 'local_id'
         return u_local.full

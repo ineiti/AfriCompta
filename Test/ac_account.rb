@@ -6,8 +6,7 @@ class TC_Account < Test::Unit::TestCase
     }
     Entities.delete_all_data()
 
-    dputs(2){ 'Resetting SQLite'
-    }
+    dputs(2){ 'Resetting SQLite' }
     SQLite.dbs_close_all
     FileUtils.cp( 'db.testGestion', 'data/compta.db')
     SQLite.dbs_open_load_migrate

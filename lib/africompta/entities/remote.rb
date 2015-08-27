@@ -27,16 +27,16 @@ class Remote < Entity
 
   def post_form(path, hash)
     dputs(4) { "Starting postForm with path #{path}" }
-    Net::HTTP.post_form(URI.parse(@remote.url + "/merge/#{path}"),
-                        {'user' => @remote.name, 'pass' => @remote.pass}.merge(hash))
+    Net::HTTP.post_form(URI.parse(url + "/merge/#{path}"),
+                        {'user' => name, 'pass' => pass}.merge(hash))
     dputs(4) { "Ending postForm with path #{path}" }
   end
 
   def get_form(path)
-    url = URI.parse(@remote.url)
-    dputs(4) { "Starting getForm with path #{path} - #{url.inspect}" }
+    url_parsed = URI.parse(url)
+    dputs(4) { "Starting getForm with path #{path} - #{url_parsed.inspect}" }
     dputs(4) { "Finished parsing #{@remote.url}" }
-    ret = Net::HTTP.get(url.host, "#{url.path}/merge/#{path}/#{@remote.name},#{@remote.pass}", url.port)
+    ret = Net::HTTP.get(url_parsed.host, "#{url_parsed.path}/merge/#{path}/#{name},#{pass}", url_parsed.port)
     dputs(4) { "Ending getForm with path #{path}" }
     ret
   end
@@ -63,7 +63,7 @@ class Remote < Entity
     log_msg :Merging, "Starting to merge for #{@remote}"
 
     @step = 'checking remote'
-    check_remote
+    check_version
 
     @step = 'getting remote accounts'
     get_remote_accounts
@@ -86,7 +86,7 @@ class Remote < Entity
     @step = 'done'
   end
 
-  def check_remote
+  def check_version
     local_id = Users.find_by_name('local').full
     dputs(2) { "Local id is: #{local_id}" }
     if (local_id == get_form('local_id'))
@@ -126,7 +126,7 @@ class Remote < Entity
       movements = []
       Movements.data.select { |k, v| v._rev_index.between(
           @movement_index_start, @movement_index_stop
-      ) }.each{|k,v|
+      ) }.each { |k, v|
       }
       Movements.find(:all, :conditions =>
                              {:rev_index => @movement_index_start..@movement_index_stop}).each { |m|
@@ -188,22 +188,29 @@ class Remote < Entity
   end
 
   # Is used to reset the pointers, supposes both databases are equal -
-  # Should probably used with care
-  def do_copied(path, arg)
-    @remote = Remotes.find_by_id(arg)
+  # Should probably be used with care
+  def do_copied
+    check_version
 
-    check_remote
-
-    # First get the remote accounts
+    # Update local indexes
     u = Users.find_by_name('local')
-    dputs(1) { 'Getting remotes' }
-    @remote.update_account_index
+    update_account_index
+    update_movement_index
 
-    dputs(1) { 'Getting movements' }
-    @remote.update_movement_index
-
-    dputs(1) { 'Asking remote to clean us' }
+    # Update remote indexes
     get_form('reset_user_indexes')
+
+    # Check if everything is OK
+    acc, mov = get_form('index').split(',')
+
+    if acc.to_i != u.account_index
+      dputs(0) { "Trying to do 'copied' with wrong account-indexes" }
+      dputs(0) { "#{acc.to_i} - #{u.account_index}" }
+    end
+    if mov.to_i != u.movement_index
+      dputs(0) { "Trying to do 'copied' with wrong movement-indexes" }
+      dputs(0) { "#{mov.to_i} - #{u.movement_index}" }
+    end
     return true
   end
 

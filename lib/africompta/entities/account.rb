@@ -126,7 +126,7 @@ class Accounts < Entities
   def self.create(name, desc = 'Too lazy', parent = nil, global_id = '', mult = nil)
     dputs(5) { "Parent is #{parent.inspect}" }
     if parent
-      if parent.class != Account and parent != AccountRoot
+      if parent.class != Account && parent != AccountRoot
         parent = Accounts.matches_by_id(parent).first
       end
       mult ||= parent.multiplier
@@ -539,20 +539,24 @@ class Accounts < Entities
     }
   end
 
+  def init
+    root = Accounts.create('Root', 'Initialisation')
+    %w( Income Outcome Lending Cash ).each { |a|
+      Accounts.create(a, 'Initialisation', root)
+    }
+    %w( Lending Cash ).each { |a|
+      acc = Accounts.match_by_name(a)
+      acc.multiplier = -1
+      acc.keep_total = true
+    }
+    Accounts.save
+  end
+
   def load
     super
     if Accounts.search_by_name('Root').count == 0
-      dputs(1) { "Didn't find 'Root' in database - creating base" }
-      root = Accounts.create('Root', 'Initialisation')
-      %w( Income Outcome Lending Cash ).each { |a|
-        Accounts.create(a, 'Initialisation', root)
-      }
-      %w( Lending Cash ).each { |a|
-        acc = Accounts.match_by_name(a)
-        acc.multiplier = -1
-        acc.keep_total = true
-      }
-      Accounts.save
+      dputs(0) { "Didn't find 'Root' in database - creating base" }
+      Accounts.init
     end
   end
 
@@ -656,8 +660,8 @@ class Account < Entity
 
   def data_set(f, v)
     if !@proxy.loading
-      if !%w( _total _rev_index ).index(f.to_s)
-        dputs(4) { "Updating index for field #{f.inspect} - #{@pre_init} - #{@proxy.loading} - #{caller}" }
+      if !%w( _total _rev_index _global_id ).index(f.to_s)
+        dputs(4) { "Updating index for field #{f.inspect} - #{@pre_init} - #{@proxy.loading}" }
         new_index
       end
     end
@@ -714,7 +718,7 @@ class Account < Entity
     end
     self.rev_index = u_l.account_index
     u_l.account_index += 1
-    dputs(3) { "Index for account #{name} is #{index}" }
+    dputs(3) { "Index for account #{name} is #{rev_index}" }
   end
 
   def update_total(precision = 3)

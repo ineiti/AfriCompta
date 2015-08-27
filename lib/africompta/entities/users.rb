@@ -14,12 +14,17 @@ class Users < Entities
     value_int :movement_index
   end
 
+  def init
+    user = Users.create('local', Digest::MD5.hexdigest((rand 2**128).to_s).to_s,
+                        rand(2 ** 128).to_s)
+    dputs(1) { "Created local user #{user}" }
+  end
+
   def load
     super
     if Users.search_by_name('local').count == 0
-      user = Users.create('local', Digest::MD5.hexdigest((rand 2**128).to_s).to_s,
-                          rand(2 ** 128).to_s)
-      dputs(1) { "Created local user #{user}" }
+      dputs(0) { 'User init not here' }
+      init
     end
   end
 

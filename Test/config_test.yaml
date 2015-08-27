@@ -1,6 +1,5 @@
 StorageType:
-  CSV:
-    csv_dir: ./data2/
+  data_dir: ./data2/
 
 #autologin: linus
 #autologin: admin
@@ -25,7 +24,3 @@ AfriCompta:
 
 DiplomaDir: Diplomas
 
-Entities:
-  LogActions:
-    logging: false
-    

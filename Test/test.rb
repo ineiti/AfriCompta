@@ -4,7 +4,6 @@ require 'bundler/setup'
 require 'test/unit'
 require 'fileutils'
 
-FileUtils.rm_rf('data/')
 FileUtils.rm_rf('data2/')
 
 $config_file='config_test.yaml'
