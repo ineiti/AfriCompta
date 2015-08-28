@@ -152,19 +152,23 @@ class ACaccess < RPCQooxdooPath
       when /movements_get(.*)/
         dputs(2) { "movements_get#{$1} with #{arg.inspect}" }
         start, stop = u.movement_index + 1, u_local.movement_index - 1
-        # Returns only one account
-        if $1 == '_one'
-          return Movements.match_by_global_id(arg).to_s
-        end
-        if $1 == '_all_actual'
-          start, stop = arg.split(/,/)
-          ret = print_movements_actual(start, stop)
-        else
-          if $1 == '_all'
-            start, stop = arg.split(/,/)
-          end
-          ret = print_movements(start, stop)
-        end
+        ret = case $1
+                when '_one'
+                  # Returns only one account
+                  Movements.match_by_global_id(arg).to_s
+                when '_all_actual'
+                  start, stop = arg.split(/,/)
+                  print_movements_actual(start, stop)
+                when '_all'
+                  Movements.search_all.collect { |m|
+                    m.to_s
+                  }.join("\n")
+                when '_range'
+                  start, stop = arg.split(/,/)
+                  print_movements(start, stop)
+                else
+                  print_movements(start, stop)
+              end
         dputs(2) { "Sending a total of #{ret.length}" }
         dputs(3) { "Sending:\n #{ret.inspect}" }
         return ret
@@ -196,10 +200,12 @@ class ACaccess < RPCQooxdooPath
         end
         dputs(3) { 'Finished deleting' }
     end
+
     return ''
   end
 
   def self.post(path, input)
+    #dputs_func
     dputs(5) { "self.post with #{path} and #{input.inspect}" }
     log_msg 'ACaccess.post', "post-merge-path #{path} with " +
                                "user #{input['user']} and pass #{input['pass']}"
@@ -252,5 +258,6 @@ class ACaccess < RPCQooxdooPath
     end
     return 'ok'
   end
+
 end
 

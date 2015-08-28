@@ -99,7 +99,7 @@ class TC_Merge < Test::Unit::TestCase
     oldversion = $VERSION
     $VERSION = 0
     assert_raise RuntimeError do
-      @remote.check_version
+      @remote.check_version(false)
     end
     $VERSION = oldversion
   end
@@ -109,7 +109,15 @@ class TC_Merge < Test::Unit::TestCase
   end
 
   def print_accounts
-    Accounts.search_all.each{|a| p a.to_s}
+    Accounts.search_all.each { |a| p a.to_s }
+  end
+
+  def print_remote_movements
+    get_form('movements_get_all').split("\n").each { |a| p a }
+  end
+
+  def print_movements
+    Movements.search_all.each { |m| p m.to_json }
   end
 
   def test_get_remote_accounts
@@ -136,4 +144,31 @@ class TC_Merge < Test::Unit::TestCase
     assert_equal 0, get_form('accounts_get').split("\n").count
   end
 
+  def test_get_remote_movements
+    @remote.do_copied
+
+    @remote.get_remote_movements
+    assert_equal 0, Movements.search_all.count
+
+    mov_str = "{\"str\":\"new\\r62f7b25f8dc249a7d2af9e96809e1a38-1\\t"+
+        "1000.000\\t2015-01-02\\t#{@cash.global_id}\\t#{@outcome.global_id}\"}"
+    post_form('movements_put',
+                 movements: [mov_str].to_json,
+                 debug: true)
+    assert_equal 0, Movements.search_all.count
+    @remote.get_remote_movements
+    assert_equal 1, Movements.search_all.count
+  end
+
+  def test_send_movements
+    @remote.do_copied
+
+    Movements.create('new', '2015-01-02', 1000, @cash, @outcome)
+    assert_equal 0, get_form('movements_get_all').split("\n").count
+    @remote.setup_instance
+    @remote.send_movements
+    assert_equal 1, get_form('movements_get_all').split("\n").count
+    @remote.get_remote_movements
+    assert_equal 1, Movements.search_all.count
+  end
 end

@@ -25,6 +25,7 @@ class Remote < Entity
         @got_movements, @put_movements, @put_movements_changes =
         [0] * 7
     @account_index_stop = u.account_index - 1
+    @movement_index_stop = u.movement_index - 1
   end
 
   def update_movement_index
@@ -91,21 +92,21 @@ class Remote < Entity
     @step = 'done'
   end
 
-  def check_version
+  def check_version(show_error = true)
     local_id = Users.find_by_name('local').full
     dputs(2) { "Local id is: #{local_id}" }
     if (local_id == get_form('local_id'))
-      dputs(0) { 'Both locals have same ID' }
+      show_error and dputs(0) { 'Both locals have same ID' }
       raise 'Same ID for local'
     end
 
     # Check the versions
     if (vers = get_form('version')) != $VERSION.to_s
       if (vers =~ /not known/)
-        dputs(0) { 'Username / password not recognized' }
+        show_error and dputs(0) { 'Username / password not recognized' }
         raise 'Wrong credentials'
       else
-        dputs(0) { "Got version #{vers} instead of #{$VERSION.to_s}" }
+        show_error and dputs(0) { "Got version #{vers} instead of #{$VERSION.to_s}" }
         raise 'Wrong version'
       end
     end
@@ -146,19 +147,29 @@ class Remote < Entity
     update_account_index
   end
 
+  def get_remote_movements
+    dputs(1) { 'Getting movements' }
+    # Now merge the movements
+    movements = get_form('movements_get')
+    movements.split("\n").each { |m|
+      dputs(2) { "String is: \n#{m}" }
+      mov = Movements.from_s(m)
+      @got_movements += 1
+    }
+  end
+
   def send_movements
+    #dputs_func
     @movement_index_start = movement_index + 1
     @movement_count = 0
     if @movement_index_start <= @movement_index_stop
       dputs(1) { "Movements to send: #{@movement_index_start}.." +
           "#{@movement_index_stop}" }
       movements = []
-      Movements.data.select { |k, v| v._rev_index.between(
+      Movements.data.select { |k, v| v._rev_index.between?(
           @movement_index_start, @movement_index_stop
       ) }.each { |k, v|
-      }
-      Movements.find(:all, :conditions =>
-                             {:rev_index => @movement_index_start..@movement_index_stop}).each { |m|
+        m = Movements.get_data_instance(k)
         movements.push(m.to_json)
         @put_movements += 1
       }
@@ -177,18 +188,6 @@ class Remote < Entity
     else
       dputs(1) { 'No movements to send' }
     end
-  end
-
-  def get_remote_movements(u)
-    dputs(1) { 'Getting movements' }
-    # Now merge the movements
-    movements = get_form('movements_get')
-    @movement_index_stop = u.movement_index - 1
-    movements.split("\n").each { |m|
-      dputs(2) { "String is: \n#{m}" }
-      mov = Movements.from_s(m)
-      @got_movements += 1
-    }
   end
 
   # Is used to reset the pointers, supposes both databases are equal -
