@@ -29,7 +29,8 @@ class ComptaEditMovements < View
   def rpc_button_new_mov(session, data)
     if (acc_src = data._account_src).class == Account &&
         (acc_dst = data._account_dst).class == Account
-      value = data._value.delete(/[^0-9\.,]/).gsub(/,/, '.')
+      dp data._value
+      value = data._value.delete('^0123456789.,').gsub(/,/, '.').to_f
       Movements.create(data._desc, Date.from_web(data._date), value / 1000.0,
                        acc_src, acc_dst)
       reply(:window_hide) +
@@ -39,12 +40,12 @@ class ComptaEditMovements < View
 
   def rpc_button_save(session, data)
     if (mov = Movements.match_by_id(data._movement_list.first)).class == Movement
-      value = data._value.delete(/[^0-9\.,]/).gsub(/,/, '.')
+      value = data._value.delete('^0123456789,.').gsub(/,/, '.').to_f
       mov.desc, mov.value, mov.date =
           data._desc, value / 1000.0, Date.from_web(data._date)
 
       old = mov.get_other_account(data._account_src)
-      dputs(3){"Old account: #{old.get_path} - new account: #{data._account_dst.get_path}"}
+      dputs(3) { "Old account: #{old.get_path} - new account: #{data._account_dst.get_path}" }
       if old != data._account_dst
         mov.move_from_to(old, data._account_dst)
       end
@@ -88,11 +89,12 @@ class ComptaEditMovements < View
     }.to_i
     reply(:empty_nonlists, :movement_list) +
         reply(:update, :movement_list => account.movements.collect { |m|
+                       dp m
                        value = (m.get_value(account) * 1000).to_i
                        total_old = total
                        total -= value
                        other = m.get_other_account(account).get_path
-                       m.date ||= Date.today
+                       p m.date ||= Date.today
                        [m.id, [m.date.to_web, m.desc, other, value.separator,
                                total_old.separator]]
                      })

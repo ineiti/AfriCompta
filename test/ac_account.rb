@@ -8,7 +8,7 @@ class TC_Account < Test::Unit::TestCase
 
     dputs(2){ 'Resetting SQLite' }
     SQLite.dbs_close_all
-    FileUtils.cp( 'db.testGestion', 'data/compta.db')
+    FileUtils.cp( 'db.testGestion', 'data2/compta.db')
     SQLite.dbs_open_load_migrate
     
     dputs(2){ 'And searching for some accounts'  }
@@ -123,5 +123,13 @@ class TC_Account < Test::Unit::TestCase
     assert_equal %w(Archive::2012::Outcome Archive::2013::Outcome),
       Accounts.get_by_path('Root::Outcome').get_archives.collect{|a|
       a.path }.sort
+  end
+
+  def test_delete
+    acc = Accounts.create('newaccount', 123, @cash, @income)
+    assert acc.rev_index > 0
+    rindex = acc.rev_index
+    acc.delete
+    assert acc.rev_index > rindex
   end
 end

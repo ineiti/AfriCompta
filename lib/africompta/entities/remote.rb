@@ -14,9 +14,48 @@ class Remotes < Entities
     value_int :account_index
     value_int :movement_index
   end
+
+  def self.get_db(url, name, pass)
+    dp vers = Net::HTTP.get(URI.parse("#{url}/merge/version/#{name},#{pass}"))
+    if vers != $VERSION.to_s
+      return (vers =~ /not known/) ? 'User and/or password wrong' : 'Version mismatch'
+    end
+
+    db = Net::HTTP.get(URI.parse("#{url}/merge/get_db/#{name},#{pass}"))
+
+    SQLite.dbs_close_all
+    # All accounting-stuff is stored in the same database
+    IO.write(Accounts.storage[:SQLiteAC].db_file, db)
+    IO.write('/tmp/compta.db', db)
+    SQLite.dbs_open_load_migrate
+
+    # Delete all users except for the 'local' who needs a new id
+    Users.search_all_.each { |u|
+      if u.name == 'local'
+        u.reset_id
+      else
+        u.delete
+      end
+    }
+
+    # Delete all other remotes and add ourselves
+    Remotes.search_all_.each { |r| r.delete }
+    remote = Remotes.create(url: url, name: name, pass: pass)
+
+    # Update all indexes
+    ret = remote.do_copied
+    if ret == true
+      remote
+    else
+      ret
+    end
+  end
 end
 
 class Remote < Entity
+  attr_reader :step, :got_accounts, :put_accounts, :got_movements,
+              :put_movements, :put_movements_changes
+
   def setup_instance
     u = Users.find_by_name('local')
     @step = 'preparation'
@@ -69,7 +108,12 @@ class Remote < Entity
     log_msg :Merging, "Starting to merge for #{url}"
 
     @step = 'checking remote'
-    check_version
+    begin
+      check_version
+    rescue StandardError => e
+      @step = "done - error: #{e.to_s}"
+      return
+    end
 
     @step = 'getting remote accounts'
     get_remote_accounts
@@ -78,7 +122,7 @@ class Remote < Entity
     send_accounts
 
     @step = 'getting remote movements'
-    get_remote_movements(u)
+    get_remote_movements
 
     @step = 'sending movements'
     send_movements
@@ -124,21 +168,18 @@ class Remote < Entity
   end
 
   def send_accounts
-    @account_index_start = account_index + 1
+    @account_index_start = account_index.to_i + 1
     if @account_index_start <= @account_index_stop
       dputs(1) { "Accounts to send: #{@account_index_start}..#{@account_index_stop}" }
-      # We have to start at the bottom, else we can get into trouble with regard
-      # to children not having their parents yet...
-      AccountRoot.accounts.each { |a|
-        dputs(2) { "Root is #{a.inspect}" }
-        a.get_tree { |acc|
-          dputs(3){"Index of #{acc.name} is #{acc.rev_index}"}
-          if (@account_index_start..@account_index_stop) === acc.rev_index
-            dputs(2) { "Account with index #{acc.rev_index} is being transferred" }
-            post_form('account_put', {'account' => acc.to_s})
-            @put_accounts += 1
-          end
-        }
+      # Just search all accounts for indexes and sort them
+      Accounts.data.select { |k, v|
+        v._rev_index.between?(@account_index_start, @account_index_stop)
+      }.collect { |k, v| Accounts.get_data_instance(k) }.
+          sort_by { |a| a.rev_index }.each { |acc|
+        dputs(2) { "Account with index #{acc.rev_index} is being transferred" }
+        post_form('account_put', {'account' => acc.to_s})
+        @put_accounts += 1
+
       }
     else
       dputs(1) { 'No accounts to send' }
@@ -160,7 +201,7 @@ class Remote < Entity
 
   def send_movements
     #dputs_func
-    @movement_index_start = movement_index + 1
+    @movement_index_start = movement_index.to_i + 1
     @movement_count = 0
     if @movement_index_start <= @movement_index_stop
       dputs(1) { "Movements to send: #{@movement_index_start}.." +
@@ -217,5 +258,4 @@ class Remote < Entity
 
     return true
   end
-
 end

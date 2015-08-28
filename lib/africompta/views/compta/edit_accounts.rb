@@ -66,9 +66,13 @@ class ComptaEditAccounts < View
 
   def rpc_button_delete(session, data)
     if (acc = data._account_list).class == Account
-      return unless acc.is_empty
-      acc.delete
-      update_list(data._account_archive)
+      if acc.is_empty
+        acc.delete
+        update_list(data._account_archive)
+      else
+        reply(:window_show, :msg_win) +
+            reply(:update, msg: "The account #{acc.name} is not empty!")
+      end
     end
   end
 
@@ -82,12 +86,12 @@ class ComptaEditAccounts < View
   def update_archive
     reply(:empty_nonlists, :account_archive) +
         reply(:update_silent, :account_archive => [[0, "Actual"]].concat(
-            if archive = AccountRoot.archive
-              archive.accounts.collect { |a|
-                [a.id, a.path] }.sort_by { |a| a[1] }
-            else
-              []
-            end))
+                                if archive = AccountRoot.archive
+                                  archive.accounts.collect { |a|
+                                    [a.id, a.path] }.sort_by { |a| a[1] }
+                                else
+                                  []
+                                end))
   end
 
   def rpc_update_view(session)

@@ -38,18 +38,18 @@ class AccountRoot
       end
     }
     Accounts.search_all_.each { |a|
-      if (a.account_id and (a.account_id > 0)) and (not a.account)
+      if (a.account_id && (a.account_id > 0)) && (!a.account)
         log_msg 'Account.clean', "Account has unexistent parent: #{a.inspect}"
         a.delete
         bad_acc += 1
       end
-      if !(a.account_id or a.deleted)
+      if !(a.account_id || a.deleted)
         log_msg 'Account.clean', "Account has undefined parent: #{a.inspect}"
         a.delete
         bad_acc += 1
       end
-      if a.account_id == 0
-        if !((a.name =~ /(Root|Archive)/) or a.deleted)
+      if a.account_id == 0 || a.account_id == nil
+        if !((a.name =~ /(Root|Archive)/) || a.deleted)
           log_msg 'Account.clean', 'Account is in root but neither ' +
                                      "'Root' nor 'Archive': #{a.inspect}"
           a.delete
@@ -661,7 +661,7 @@ class Account < Entity
   def data_set(f, v)
     if !@proxy.loading
       if !%w( _total _rev_index _global_id ).index(f.to_s)
-        dputs(4) { "Updating index for field #{f.inspect} - #{@pre_init} - #{@proxy.loading}" }
+        dputs(4) { "Updating index for field #{f.inspect} - #{@pre_init} - #{@proxy.loading}: #{v}" }
         new_index
       end
     end
@@ -878,7 +878,7 @@ class Account < Entity
   end
 
   def delete(force = false)
-    if not is_empty and force
+    if not is_empty && force
       movements_src.each { |m|
         dputs(3) { "Deleting movement #{m.to_json}" }
         m.delete

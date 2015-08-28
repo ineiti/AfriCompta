@@ -1,6 +1,6 @@
 class ComptaCheck < View
   def layout
-    @order = 300
+    @order = 300*0
     gui_vbox do
       gui_hbox :nogroup do
         gui_vbox :nogroup do

@@ -7,7 +7,7 @@ class TC_Movement < Test::Unit::TestCase
 
     dputs(2) { 'Resetting SQLite' }
     SQLite.dbs_close_all
-    FileUtils.cp('db.testGestion', 'data/compta.db')
+    FileUtils.cp('db.testGestion', 'data2/compta.db')
     SQLite.dbs_open_load_migrate
 
     dputs(2) { 'And searching for some accounts' }
@@ -55,5 +55,18 @@ class TC_Movement < Test::Unit::TestCase
     assert_equal 2, res.length
     assert_equal Movement, res.first.class
     assert_equal [2, 3], res.map { |m| m.rev_index }
+  end
+
+  def test_date
+    Movements.create('newmov', '2015-01-02', 100, @income, @cash)
+    Entities.reload
+    assert_equal Date, Movements.find_by_desc('newmov').date.class
+
+    Entities.delete_all_data
+    Entities.load_all
+    Movements.create('newmov', '2015-01-02', 100, @income, @cash)
+    Entities.reload
+
+    assert_equal Date, Movements.find_by_desc('newmov').date.class
   end
 end

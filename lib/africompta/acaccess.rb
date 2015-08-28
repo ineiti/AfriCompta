@@ -64,30 +64,6 @@ class ACaccess < RPCQooxdooPath
     ret
   end
 
-  def self.accounts_fetch_old(user)
-    ret = ''
-
-    Accounts.matches_by_account_id(0).to_a.concat(
-        Accounts.matches_by_account_id(nil)).sort { |a, b|
-      a.global_id <=> b.global_id }.each { |a|
-      dputs(2) { "Found one root-account #{a.rev_index} - #{a.path_id}" }
-      if a.global_id
-        dputs(3) { "It's global" }
-        a.get_tree { |acc|
-          dputs(4) { "In get_tree #{acc.path_id}: #{acc.deleted == true} - #{acc.rev_index}" }
-          if acc.rev_index > user.account_index
-            dputs(4) { "Found account #{acc.name} with index #{acc.rev_index}" }
-            ret += "#{acc.to_s}\n"
-          end
-        }
-      else
-        dputs(3) { "It's not global" }
-      end
-      dputs(3) { 'Will search for next' }
-    }
-    ret
-  end
-
   def self.accounts_fetch(user)
     Accounts.data.select { |_k, v| v._rev_index > user.account_index }.
         collect { |k, _v| Accounts.get_data_instance(k) }.
@@ -199,6 +175,10 @@ class ACaccess < RPCQooxdooPath
           mov.delete
         end
         dputs(3) { 'Finished deleting' }
+
+      when 'get_db'
+        Entities.save_all
+        return IO.read(Accounts.storage[:SQLiteAC].db_file)
     end
 
     return ''

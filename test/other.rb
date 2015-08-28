@@ -14,4 +14,5 @@ dputs(2) { "Starting at port #{webrick_port}" }
 ConfigBase.set_functions(%w(accounting accounting_standalone))
 Welcome.nologin
 Users.create(name:'other', pass:'other')
+Users.create(name:'other2', pass:'other2')
 QooxView::startWeb(webrick_port)

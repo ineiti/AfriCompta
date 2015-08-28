@@ -14,15 +14,12 @@ class Users < Entities
     value_int :movement_index
   end
 
-  def reset_id
-    Users.find_by_name('local').full =
-        Digest::MD5.hexdigest((rand 2**128).to_s).to_s
-  end
-
   def init
     user = Users.create('local', Digest::MD5.hexdigest((rand 2**128).to_s).to_s,
                         rand(2 ** 128).to_s)
+    user.account_index, user.movement_index = 0, 0
     dputs(1) { "Created local user #{user}" }
+    user
   end
 
   def load
@@ -34,8 +31,8 @@ class Users < Entities
   end
 
   def migration_1(u)
-    u.account_index ||= 0
-    u.movement_index ||= 0
+    u.account_index ||= -1
+    u.movement_index ||= -1
   end
 
   def create(name, full = nil, pass = nil)
@@ -44,7 +41,7 @@ class Users < Entities
       name, full, pass = name[:name], name[:full], name[:pass]
     end
     new_user = super(:name => name, :full => full, :pass => pass)
-    new_user.account_index, new_user.movement_index = 0, 0
+    new_user.account_index, new_user.movement_index = -1, -1
     new_user
   end
 end
@@ -62,4 +59,9 @@ class User < Entity
     update_movement_index
     update_account_index
   end
+
+  def reset_id
+    self.full = Digest::MD5.hexdigest((rand 2**128).to_s).to_s
+  end
+
 end
