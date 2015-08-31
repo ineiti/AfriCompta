@@ -1,6 +1,7 @@
 class ComptaAdmin < View
   def layout
     @order = 300
+    @rsync_log = '/tmp/update_africompta'
 
     gui_vbox do
       gui_hbox do
@@ -86,9 +87,10 @@ class ComptaAdmin < View
         ret = @remote.step =~ /^done/ ? reply(:auto_update, 0) : []
         ret + reply(:update, txt: "Merge-step: #{@remote.step}<br>" + stat_str)
       when :update_program
-        stat = IO.read('/tmp/update_africompta').split("\r")
+        stat = IO.read(@rsync_log).split("\r")
         if Process.waitpid(session.s_data._update_program, Process::WNOHANG)
-          reply(:update, txt: 'Update finished<br>' + stat.last(2).join("<br>")) +
+          reply(:update, txt: 'Update finished<br>eventual non-100% total is normal<br>' +
+                           stat.last(2).join('<br>')) +
               reply(:auto_update, 0)
         else
           reply(:update, txt: 'Updating<br>' + stat.last.to_s)
@@ -98,13 +100,28 @@ class ComptaAdmin < View
     end
   end
 
+  def rpc_button_close(session, data)
+    if session.s_data._compta_admin == :update_program
+      log_msg :update_program, 'Killing rsync'
+      Process.kill('KILL', session.s_data._update_program)
+    end
+    reply(:window_hide)
+  end
+
   def rpc_button_update_program(session, data)
     session.s_data._compta_admin = :update_program
-    bwlimit = '--bwlimit=10k'
-    #path = '../../../..'
-    path = '/Users/ineiti/tmp'
-    ac_cmd = "rsync -az --info=progress2 #{bwlimit} profeda.org::africompta-mac #{path}"
-    session.s_data._update_program = spawn(ac_cmd, :out => '/tmp/update_africompta')
+    remote_path = 'profeda.org::africompta-mac'
+    if System.run_str('pwd') =~ /AfriCompta\.app/
+      log_msg :update_africompta, 'Updating real app'
+      bwlimit = ''
+      local_path = '../../../..'
+    else
+      log_msg :update_africompta, 'Simulating update in /tmp'
+      bwlimit = '--bwlimit=10k'
+      local_path = '/tmp'
+    end
+    ac_cmd = "rsync -az --info=progress2 #{bwlimit} #{remote_path} #{local_path}"
+    session.s_data._update_program = spawn(ac_cmd, :out => @rsync_log)
 
     reply(:window_show, :result) +
         reply(:update, txt: 'Starting update') +
