@@ -88,10 +88,10 @@ class ComptaAdmin < View
       when :update_program
         stat = IO.read('/tmp/update_africompta').split("\r")
         if Process.waitpid(session.s_data._update_program, Process::WNOHANG)
-          reply(:update, txt: 'Update finished<br>' + stat.last(2)) +
+          reply(:update, txt: 'Update finished<br>' + stat.last(2).join("<br>")) +
               reply(:auto_update, 0)
         else
-          reply(:update, txt: 'Updating<br>' + stat.last)
+          reply(:update, txt: 'Updating<br>' + stat.last.to_s)
         end
       else
         dputs(0) { "Updating with #{data.inspect} and #{session.inspect}" }
@@ -100,7 +100,10 @@ class ComptaAdmin < View
 
   def rpc_button_update_program(session, data)
     session.s_data._compta_admin = :update_program
-    ac_cmd = 'rsync -az --info=progress2 --bwlimit=10k profeda.org::africompta-mac ../../../..'
+    bwlimit = '--bwlimit=10k'
+    #path = '../../../..'
+    path = '/Users/ineiti/tmp'
+    ac_cmd = "rsync -az --info=progress2 #{bwlimit} profeda.org::africompta-mac #{path}"
     session.s_data._update_program = spawn(ac_cmd, :out => '/tmp/update_africompta')
 
     reply(:window_show, :result) +
