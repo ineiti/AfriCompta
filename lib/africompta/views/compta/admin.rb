@@ -1,6 +1,6 @@
 class ComptaAdmin < View
   def layout
-    @order = 500
+    @order = 300
 
     gui_hbox do
       show_button :archive, :clean_up, :connect_server, :merge
