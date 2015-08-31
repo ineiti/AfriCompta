@@ -89,6 +89,7 @@ class ComptaAdmin < View
       when :update_program
         stat = IO.read(@rsync_log).split("\r")
         if Process.waitpid(session.s_data._update_program, Process::WNOHANG)
+          session.s_data._update_program = nil
           reply(:update, txt: 'Update finished<br>eventual non-100% total is normal<br>' +
                            stat.last(2).join('<br>')) +
               reply(:auto_update, 0)
@@ -102,10 +103,14 @@ class ComptaAdmin < View
 
   def rpc_button_close(session, data)
     if session.s_data._compta_admin == :update_program
-      log_msg :update_program, 'Killing rsync'
-      Process.kill('KILL', session.s_data._update_program)
+      if (pid = session.s_data._update_program) &&
+          !Process.waitpid(pid, Process::WNOHANG)
+        log_msg :update_program, 'Killing rsync'
+        Process.kill('KILL', pid)
+      end
     end
-    reply(:window_hide)
+    reply(:window_hide) +
+        reply(:auto_update, 0)
   end
 
   def rpc_button_update_program(session, data)
