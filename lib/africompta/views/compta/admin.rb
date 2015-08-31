@@ -86,7 +86,7 @@ class ComptaAdmin < View
         ret = @remote.step =~ /^done/ ? reply(:auto_update, 0) : []
         ret + reply(:update, txt: "Merge-step: #{@remote.step}<br>" + stat_str)
       when :update_program
-        stat = IO.readlines('/tmp/update_africompta')
+        stat = IO.read('/tmp/update_africompta').split("\r")
         if Process.waitpid(session.s_data._update_program, Process::WNOHANG)
           reply(:update, txt: 'Update finished<br>' + stat.last(2)) +
               reply(:auto_update, 0)
