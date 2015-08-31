@@ -91,8 +91,7 @@ else
 
   # Catch SIGINT signal so we can save everything before quitting
   trap('SIGINT') {
-    dp 'ctrl-c pressed'
-    throw :ctrl_c
+Unde    throw :ctrl_c
   }
 
   ConfigBase.set_functions(%w(accounting accounting_standalone))

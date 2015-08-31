@@ -16,7 +16,7 @@ class Remotes < Entities
   end
 
   def self.get_db(url, name, pass)
-    dp vers = Net::HTTP.get(URI.parse("#{url}/merge/version/#{name},#{pass}"))
+    vers = Net::HTTP.get(URI.parse("#{url}/merge/version/#{name},#{pass}"))
     if vers != $VERSION.to_s
       return (vers =~ /not known/) ? 'User and/or password wrong' : 'Version mismatch'
     end

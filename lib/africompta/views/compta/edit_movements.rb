@@ -29,7 +29,6 @@ class ComptaEditMovements < View
   def rpc_button_new_mov(session, data)
     if (acc_src = data._account_src).class == Account &&
         (acc_dst = data._account_dst).class == Account
-      dp data._value
       value = data._value.delete('^0123456789.,').gsub(/,/, '.').to_f
       Movements.create(data._desc, Date.from_web(data._date), value / 1000.0,
                        acc_src, acc_dst)
@@ -89,7 +88,6 @@ class ComptaEditMovements < View
     }.to_i
     reply(:empty_nonlists, :movement_list) +
         reply(:update, :movement_list => account.movements.collect { |m|
-                       dp m
                        value = (m.get_value(account) * 1000).to_i
                        total_old = total
                        total -= value
