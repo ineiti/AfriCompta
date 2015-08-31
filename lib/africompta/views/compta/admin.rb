@@ -86,6 +86,13 @@ class ComptaAdmin < View
         ret = @remote.step =~ /^done/ ? reply(:auto_update, 0) : []
         ret + reply(:update, txt: "Merge-step: #{@remote.step}<br>" + stat_str)
       when :update_program
+        stat = IO.readlines('/tmp/update_africompta')
+        if Process.waitpid(session.s_data._update_program, Process::WNOHANG)
+          reply(:update, txt: 'Update finished<br>' + stat.last(2)) +
+              reply(:auto_update, 0)
+        else
+          reply(:update, txt: 'Updating<br>' + stat.last)
+        end
       else
         dputs(0) { "Updating with #{data.inspect} and #{session.inspect}" }
     end
@@ -93,7 +100,9 @@ class ComptaAdmin < View
 
   def rpc_button_update_program(session, data)
     session.s_data._compta_admin = :update_program
-    session.s_data._update_program = spawn('pwd', :out => '/tmp/update_africompta')
+    ac_cmd = 'rsync -az --info=progress2 --bwlimit=10k profeda.org::africompta-mac ../../../..'
+    session.s_data._update_program = spawn(ac_cmd, :out => '/tmp/update_africompta')
+
     reply(:window_show, :result) +
         reply(:update, txt: 'Starting update') +
         reply(:auto_update, -1)
