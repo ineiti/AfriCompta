@@ -2,8 +2,16 @@ class ComptaAdmin < View
   def layout
     @order = 300
 
-    gui_hbox do
-      show_button :archive, :clean_up, :connect_server, :merge
+    gui_vbox do
+      gui_hbox do
+        show_button :merge
+      end
+      gui_hbox do
+        show_button :update_program
+      end
+      gui_hbox do
+        show_button :archive, :clean_up, :connect_server
+      end
       gui_window :result do
         show_html :txt
         show_button :close
@@ -19,8 +27,9 @@ class ComptaAdmin < View
   end
 
   def rpc_update_view(session)
-    super(session) + (ConfigBase.has_function?(:accounting_standalone) ?
-        [] : reply(:hide, :connect_server))
+    super(session) +
+        reply_visible(ConfigBase.has_function?(:accounting_standalone),
+                      [:connect_server, :update_program])
   end
 
   def rpc_button_archive(session, data)
@@ -62,16 +71,31 @@ class ComptaAdmin < View
         (@remote = Remotes.search_all_.first).do_merge
       end
     end
+    session.s_data._compta_admin = :merge
     reply(:window_show, :result) +
         reply(:update, txt: 'Starting merge') +
         reply(:auto_update, -1)
   end
 
   def rpc_update_with_values(session, data)
-    stat_str = %w(got_accounts put_accounts got_movements put_movements
+    case session.s_data._compta_admin
+      when :merge
+        stat_str = %w(got_accounts put_accounts got_movements put_movements
                 put_movements_changes).collect { |v| "#{v}: #{@remote.send(v)}" }.
-        join('<br>')
-    ret = @remote.step =~ /^done/ ? reply(:auto_update, 0) : []
-    ret + reply(:update, txt: "Merge-step: #{@remote.step}<br>" + stat_str)
+            join('<br>')
+        ret = @remote.step =~ /^done/ ? reply(:auto_update, 0) : []
+        ret + reply(:update, txt: "Merge-step: #{@remote.step}<br>" + stat_str)
+      when :update_program
+      else
+        dputs(0) { "Updating with #{data.inspect} and #{session.inspect}" }
+    end
+  end
+
+  def rpc_button_update_program(session, data)
+    session.s_data._compta_admin = :update_program
+    session.s_data._update_program = spawn('pwd', :out => '/tmp/update_africompta')
+    reply(:window_show, :result) +
+        reply(:update, txt: 'Starting update') +
+        reply(:auto_update, -1)
   end
 end

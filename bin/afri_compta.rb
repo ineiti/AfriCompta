@@ -91,7 +91,7 @@ else
 
   # Catch SIGINT signal so we can save everything before quitting
   trap('SIGINT') {
-Unde    throw :ctrl_c
+    throw :ctrl_c
   }
 
   ConfigBase.set_functions(%w(accounting accounting_standalone))
