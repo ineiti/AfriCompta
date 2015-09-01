@@ -80,7 +80,13 @@ class ComptaEditMovements < View
 
   def update_list(account_root = nil, account = nil)
     if !(account_root && account)
-      return reply(:empty_nonlists, :movement_list)
+      return reply(:empty_nonlists, [:movement_list, :account_src]) +
+          if account_root
+            reply(:update_silent, account_src: account_root.listp_path) +
+                reply(:update_silent, account_dst: account_root.listp_path)
+          else
+            []
+          end
     end
 
     total = account.movements.inject(0.0) { |sum, m|
@@ -92,7 +98,7 @@ class ComptaEditMovements < View
                        total_old = total
                        total -= value
                        other = m.get_other_account(account).get_path
-                       p m.date ||= Date.today
+                       m.date ||= Date.today
                        [m.id, [m.date.to_web, m.desc, other, value.separator,
                                total_old.separator]]
                      })
@@ -100,15 +106,17 @@ class ComptaEditMovements < View
 
   def update_accounts()
     reply(:empty_nonlists, [:account_archive, :account_src, :account_dst]) +
-        reply(:update_silent, :account_archive => [[0, 'Actual']].concat(
-                                if archive = AccountRoot.archive
-                                  archive.accounts.collect { |a|
-                                    [a.id, a.path] }.sort_by { |a| a[1] }
-                                else
-                                  []
-                                end)) +
-        reply(:update, :account_src => AccountRoot.actual.listp_path,
-              :account_dst => AccountRoot.actual.listp_path)
+        reply(:update_silent, :account_archive =>
+                                [[AccountRoot.actual.id, 'Actual']].concat(
+                                    if archive = AccountRoot.archive
+                                      archive.accounts.collect { |a|
+                                        [a.id, a.path] }.sort_by { |a| a[1] }
+                                    else
+                                      []
+                                    end)) +
+        update_list(AccountRoot.actual)
+#          reply(:update, :account_src => AccountRoot.actual.listp_path,
+#                :account_dst => AccountRoot.actual.listp_path)
   end
 
   def rpc_update_view(session)
