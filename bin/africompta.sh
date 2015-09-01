@@ -5,7 +5,9 @@ DIR_RES="$DIR_AC/.."
 
 echo "DATA_DIR=$HOME/Library/AfriCompta" > ../afri_compta.conf
 PATH="$DIR_RES/ruby/bin:$PATH"
-echo $PATH
+GEM_PATH="$DIR_RES/ruby/lib/ruby"
+echo path: $PATH
+echo gem_path: $GEM_PATH
 ruby --version
 which ruby
 pkill -f "afri_compta.rb"
