@@ -14,7 +14,8 @@ class ComptaEditAccounts < View
       gui_vbox :nogroup do
         show_str :name
         show_str :desc, :width => 300
-        show_int :total
+        #show_list_drop :multiplier, '%w(passive active)'
+        #show_list_drop :keep_total, '%w(true false)'
         show_button :save, :account_update
       end
 
@@ -40,6 +41,8 @@ class ComptaEditAccounts < View
   def rpc_button_save(session, data)
     if (acc = data._account_list).class == Account
       acc.desc, acc.name = data._desc, data._name
+      #acc.multiplier = data._multiplier.first == 'active' ? -1 : 1
+      #acc.keep_total = data._keep_total.first == 'true'
       update_list
     end
   end
@@ -103,9 +106,13 @@ class ComptaEditAccounts < View
   def rpc_list_choice_account_list(session, data)
     reply(:empty_nonlists) +
         if (acc = data._account_list) != []
+          mult = acc.multiplier == -1 ? 'active' : 'passive'
+          kt = acc.keep_total ? 'true' : 'false'
           reply(:update, {total: acc.total_form,
                           desc: acc.desc,
-                          name: acc.name})
+                          name: acc.name,
+                          multiplier: mult,
+                          keep_total: kt})
         else
           []
         end

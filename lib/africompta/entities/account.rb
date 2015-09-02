@@ -1,106 +1,6 @@
 require 'prawn'
 require 'prawn/measurement_extensions'
 
-class AccountRoot
-
-  def self.actual
-    self.accounts.find { |a| a.name == 'Root' }
-  end
-
-  def self.current
-    AccountRoot.actual
-  end
-
-  def self.archive
-    self.accounts.find { |a| a.name == 'Archive' }
-  end
-
-  def self.accounts
-    Accounts.matches_by_account_id(0)
-  end
-
-  def self.clean
-    count_mov, count_acc = 0, 0
-    bad_mov, bad_acc = 0, 0
-    log_msg 'Account.clean', 'starting to clean up'
-    Movements.search_all_.each { |m|
-      dputs(4) { "Testing movement #{m.inspect}" }
-      if not m or not m.date or not m.desc or not m.value or
-          not m.rev_index or not m.account_src or not m.account_dst
-        if m and m.desc
-          log_msg 'Account.clean', "Bad movement: #{m.inspect}"
-        end
-        m.delete
-        bad_mov += 1
-      end
-      if m.rev_index
-        count_mov = [count_mov, m.rev_index].max
-      end
-    }
-    Accounts.search_all_.each { |a|
-      if (a.account_id && (a.account_id > 0)) && (!a.account)
-        log_msg 'Account.clean', "Account has unexistent parent: #{a.inspect}"
-        a.delete
-        bad_acc += 1
-      end
-      if !(a.account_id || a.deleted)
-        log_msg 'Account.clean', "Account has undefined parent: #{a.inspect}"
-        a.delete
-        bad_acc += 1
-      end
-      if a.account_id == 0 || a.account_id == nil
-        if !((a.name =~ /(Root|Archive)/) || a.deleted)
-          log_msg 'Account.clean', 'Account is in root but neither ' +
-                                     "'Root' nor 'Archive': #{a.inspect}"
-          a.delete
-          bad_acc += 1
-        end
-      end
-      if !a.rev_index
-        log_msg 'Account.clean', "Didn't find rev_index for #{a.inspect}"
-        a.new_index
-        bad_acc += 1
-      end
-      count_acc = [count_acc, a.rev_index].max
-    }
-
-    # Check also whether our counters are OK
-    u_l = Users.match_by_name('local')
-    dputs(1) { "Movements-index: #{count_mov} - #{u_l.movement_index}" }
-    dputs(1) { "Accounts-index: #{count_acc} - #{u_l.account_index}" }
-    @ul_mov, @ul_acc = u_l.movement_index, u_l.account_index
-    if count_mov > u_l.movement_index
-      log_msg 'Account.clean', 'Error, there is a bigger movement! Fixing'
-      u_l.movement_index = count_mov + 1
-    end
-    if count_acc > u_l.account_index
-      log_msg 'Account.clean', 'Error, there is a bigger account! Fixing'
-      u_l.account_index = count_acc + 1
-    end
-    return [count_mov, bad_mov, count_acc, bad_acc]
-  end
-
-  def self.path_id
-    return ''
-  end
-
-  def self.id
-    0
-  end
-
-  def self.mult
-    1
-  end
-
-  def self.keep_total
-    false
-  end
-
-  def self.multiplier
-    1
-  end
-end
-
 class Accounts < Entities
   self.needs %w(Users Movements)
 
@@ -653,6 +553,106 @@ class Accounts < Entities
 
     @check_state = 'Done'
     [in_db, diff, in_local]
+  end
+end
+
+class AccountRoot
+
+  def self.actual
+    self.accounts.find { |a| a.name == 'Root' }
+  end
+
+  def self.current
+    AccountRoot.actual
+  end
+
+  def self.archive
+    self.accounts.find { |a| a.name == 'Archive' }
+  end
+
+  def self.accounts
+    Accounts.matches_by_account_id(0)
+  end
+
+  def self.clean
+    count_mov, count_acc = 0, 0
+    bad_mov, bad_acc = 0, 0
+    log_msg 'Account.clean', 'starting to clean up'
+    Movements.search_all_.each { |m|
+      dputs(4) { "Testing movement #{m.inspect}" }
+      if not m or not m.date or not m.desc or not m.value or
+          not m.rev_index or not m.account_src or not m.account_dst
+        if m and m.desc
+          log_msg 'Account.clean', "Bad movement: #{m.inspect}"
+        end
+        m.delete
+        bad_mov += 1
+      end
+      if m.rev_index
+        count_mov = [count_mov, m.rev_index].max
+      end
+    }
+    Accounts.search_all_.each { |a|
+      if (a.account_id && (a.account_id > 0)) && (!a.account)
+        log_msg 'Account.clean', "Account has unexistent parent: #{a.inspect}"
+        a.delete
+        bad_acc += 1
+      end
+      if !(a.account_id || a.deleted)
+        log_msg 'Account.clean', "Account has undefined parent: #{a.inspect}"
+        a.delete
+        bad_acc += 1
+      end
+      if a.account_id == 0 || a.account_id == nil
+        if !((a.name =~ /(Root|Archive)/) || a.deleted)
+          log_msg 'Account.clean', 'Account is in root but neither ' +
+                                     "'Root' nor 'Archive': #{a.inspect}"
+          a.delete
+          bad_acc += 1
+        end
+      end
+      if !a.rev_index
+        log_msg 'Account.clean', "Didn't find rev_index for #{a.inspect}"
+        a.new_index
+        bad_acc += 1
+      end
+      count_acc = [count_acc, a.rev_index].max
+    }
+
+    # Check also whether our counters are OK
+    u_l = Users.match_by_name('local')
+    dputs(1) { "Movements-index: #{count_mov} - #{u_l.movement_index}" }
+    dputs(1) { "Accounts-index: #{count_acc} - #{u_l.account_index}" }
+    @ul_mov, @ul_acc = u_l.movement_index, u_l.account_index
+    if count_mov > u_l.movement_index
+      log_msg 'Account.clean', 'Error, there is a bigger movement! Fixing'
+      u_l.movement_index = count_mov + 1
+    end
+    if count_acc > u_l.account_index
+      log_msg 'Account.clean', 'Error, there is a bigger account! Fixing'
+      u_l.account_index = count_acc + 1
+    end
+    return [count_mov, bad_mov, count_acc, bad_acc]
+  end
+
+  def self.path_id
+    return ''
+  end
+
+  def self.id
+    0
+  end
+
+  def self.mult
+    1
+  end
+
+  def self.keep_total
+    false
+  end
+
+  def self.multiplier
+    1
   end
 end
 
