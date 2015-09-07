@@ -7,7 +7,7 @@ require 'fileutils'
 FileUtils.rm_rf('data2/')
 
 $config_file='config_test.yaml'
-DEBUG_LVL=0
+DEBUG_LVL=1
 
 require 'QooxView'
 require 'africompta'

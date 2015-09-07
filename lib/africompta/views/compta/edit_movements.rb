@@ -12,7 +12,8 @@ class ComptaEditMovements < View
         show_table :movement_list, :headings => [:Date, :Description, :Account, :Sub, :Total],
                    :widths => [80, 300, 200, 75, 75], :height => 400,
                    :columns => [:align_right, 0, :align_right, :align_right],
-                   :callback => 'dblClick'
+                   :callback => :edit,
+                   :edit => [0, 1, 3]
         show_button :edit, :delete, :new
       end
 
@@ -38,7 +39,8 @@ class ComptaEditMovements < View
   end
 
   def rpc_button_save(session, data)
-    if (mov = Movements.match_by_id(data._movement_list.first)).class == Movement
+    dp data
+    if (mov = Movements.match_by_id(data._movement_list.first._element_id)).class == Movement
       value = data._value.delete('^0123456789,.').gsub(/,/, '.').to_f
       mov.desc, mov.value, mov.date =
           data._desc, value / 1000.0, Date.from_web(data._date)
@@ -55,7 +57,7 @@ class ComptaEditMovements < View
   end
 
   def rpc_button_edit(session, data)
-    if (mov = Movements.match_by_id(data._movement_list.first)).class == Movement
+    if (mov = Movements.match_by_id(data._movement_list.first._element_id)).class == Movement
       other = mov.get_other_account(data._account_src).id
       reply(:window_show, :movement_edit) +
           reply(:update, :desc => mov.desc, :value => (mov.value*1000).to_i,
@@ -72,18 +74,18 @@ class ComptaEditMovements < View
   end
 
   def rpc_button_delete(session, data)
-    if (mov = Movements.match_by_id(data._movement_list.first)).class == Movement
+    if (mov = Movements.match_by_id(data._movement_list.first._element_id)).class == Movement
       mov.delete
       update_list(data._account_archive, data._account_src)
     end
   end
 
-  def update_list(account_root = nil, account = nil)
-    if !(account_root && account)
+  def update_list(archive = nil, account = nil)
+    if !(archive && account)
       return reply(:empty_nonlists, [:movement_list, :account_src]) +
-          if account_root
-            reply(:update_silent, account_src: account_root.listp_path) +
-                reply(:update_silent, account_dst: account_root.listp_path)
+          if archive
+            reply(:update_silent, account_src: archive.listp_path) +
+                reply(:update_silent, account_dst: archive.listp_path)
           else
             []
           end
@@ -114,9 +116,9 @@ class ComptaEditMovements < View
                                     else
                                       []
                                     end)) +
-        update_list(AccountRoot.actual)
-#          reply(:update, :account_src => AccountRoot.actual.listp_path,
-#                :account_dst => AccountRoot.actual.listp_path)
+        update_list(AccountRoot.actual, AccountRoot.actual) +
+        reply(:update, :account_src => AccountRoot.actual.listp_path,
+              :account_dst => AccountRoot.actual.listp_path)
   end
 
   def rpc_update_view(session)
@@ -147,8 +149,12 @@ class ComptaEditMovements < View
   end
 
   def rpc_table_movement_list(session, data)
-    if (mov = Movements.match_by_id(data._movement_list.first)).class == Movement
-      rpc_button_edit(session, data)
-    end
+    ml = data._movement_list.first
+    rpc_button_save(session, data.merge('value' => ml._Sub, 'desc' => ml._Description,
+                           'date' => ml._Date, 'account_dst' => 1))
+    #if (mov = Movements.match_by_id(data._movement_list.first)).class == Movement
+    #  rpc_button_edit(session, data)
+    #end
   end
 end
+
