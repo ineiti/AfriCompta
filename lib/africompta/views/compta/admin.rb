@@ -125,7 +125,7 @@ class ComptaAdmin < View
       bwlimit = '--bwlimit=10k'
       local_path = '/tmp'
     end
-    ac_cmd = "rsync -az --info=progress2 #{bwlimit} #{remote_path} #{local_path}"
+    ac_cmd = "rsync -az --delete --info=progress2 #{bwlimit} #{remote_path} #{local_path}"
     session.s_data._update_program = spawn(ac_cmd, :out => @rsync_log)
 
     reply(:window_show, :result) +
