@@ -40,7 +40,6 @@ class ComptaEditMovements < View
   end
 
   def rpc_button_save(session, data)
-    dp data
     if (mov = Movements.match_by_id(data._movement_list.first._element_id)).class == Movement
       value = to_money(data._value)
       mov.desc, mov.value, mov.date =
