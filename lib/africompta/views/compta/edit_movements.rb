@@ -1,4 +1,5 @@
 class ComptaEditMovements < View
+
   def layout
     @rpc_update = true
     @order = 100
@@ -30,7 +31,7 @@ class ComptaEditMovements < View
   def rpc_button_new_mov(session, data)
     if (acc_src = data._account_src).class == Account &&
         (acc_dst = data._account_dst).class == Account
-      value = data._value.delete('^0123456789.,').gsub(/,/, '.').to_f
+      value = to_money(data._value)
       Movements.create(data._desc, Date.from_web(data._date), value / 1000.0,
                        acc_src, acc_dst)
       reply(:window_hide) +
@@ -41,7 +42,7 @@ class ComptaEditMovements < View
   def rpc_button_save(session, data)
     dp data
     if (mov = Movements.match_by_id(data._movement_list.first._element_id)).class == Movement
-      value = data._value.delete('^0123456789,.').gsub(/,/, '.').to_f
+      value = to_money(data._value)
       mov.desc, mov.value, mov.date =
           data._desc, value / 1000.0, Date.from_web(data._date)
 
@@ -150,11 +151,18 @@ class ComptaEditMovements < View
 
   def rpc_table_movement_list(session, data)
     ml = data._movement_list.first
+    dst = Accounts.get_by_path(ml._Account)
     rpc_button_save(session, data.merge('value' => ml._Sub, 'desc' => ml._Description,
-                           'date' => ml._Date, 'account_dst' => 1))
+                           'date' => ml._Date, 'account_dst' => dst))
     #if (mov = Movements.match_by_id(data._movement_list.first)).class == Movement
     #  rpc_button_edit(session, data)
     #end
+  end
+
+  # Delete all non-number characters, but also accept european
+  # 10,5 == 10.5
+  def to_money(str)
+    return str.delete('^0123456789.,-').gsub(/,/, '.').to_f
   end
 end
 
