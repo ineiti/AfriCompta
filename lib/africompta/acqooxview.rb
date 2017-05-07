@@ -5,15 +5,15 @@
 require 'digest/md5'
 
 # We want a simple time-print
-class Time
-  def to_s
-    day.to_s + '/' + month.to_s
-  end
-
-  def to_ss
-    to_s + '/' + year.to_s
-  end
-end
+# class Time
+#   def to_s
+#     day.to_s + '/' + month.to_s
+#   end
+#
+#   def to_ss
+#     to_s + '/' + year.to_s
+#   end
+# end
 
 class Date
   def month_s
