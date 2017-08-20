@@ -1,11 +1,4 @@
 PATH
-  remote: .
-  specs:
-    africompta (1.9.10)
-      prawn (= 1.0.0)
-      qooxview (= 1.9.10)
-
-PATH
   remote: ../HelperClasses
   specs:
     helper_classes (0.3.5)
@@ -13,58 +6,68 @@ PATH
 PATH
   remote: ../QooxView
   specs:
-    qooxview (1.9.10)
-      activemodel (= 3.1.1)
-      activerecord (= 3.1.1)
-      activesupport (= 3.1.1)
-      arel (= 2.2.1)
+    qooxview (1.9.11)
+      activemodel (= 5.1.0)
+      activerecord (= 5.1.0)
+      activesupport (= 5.1.0)
+      arel (= 8.0)
       chunky_png (= 1.3.4)
       docsplit (= 0.7.6)
       gettext (= 3.0.0)
       helper_classes (= 0.3.5)
-      i18n (= 0.6.0)
+      i18n (= 0.7.0)
       iconv (= 1.0.3)
       iniparse (= 1.4.0)
       json (= 2.1.0)
       locale (= 2.0.8)
       multi_json (= 1.0.3)
-      net-ldap (= 0.5.1)
+      net-ldap (= 0.16)
       rqrcode (= 0.4.2)
       rqrcode-with-patches (= 0.5.4)
       rubyzip (= 1.1.7)
       serialport (= 1.3.1)
       sqlite3 (= 1.3.10)
+      test-unit (= 3.2.3)
       text (= 1.2.3)
+
+PATH
+  remote: .
+  specs:
+    africompta (1.9.11)
+      prawn (= 1.0.0)
+      qooxview (= 1.9.11)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    activemodel (3.1.1)
-      activesupport (= 3.1.1)
-      builder (~> 3.0.0)
-      i18n (~> 0.6)
-    activerecord (3.1.1)
-      activemodel (= 3.1.1)
-      activesupport (= 3.1.1)
-      arel (~> 2.2.1)
-      tzinfo (~> 0.3.29)
-    activesupport (3.1.1)
-      multi_json (~> 1.0)
-    arel (2.2.1)
-    builder (3.0.4)
+    activemodel (5.1.0)
+      activesupport (= 5.1.0)
+    activerecord (5.1.0)
+      activemodel (= 5.1.0)
+      activesupport (= 5.1.0)
+      arel (~> 8.0)
+    activesupport (5.1.0)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (~> 0.7)
+      minitest (~> 5.1)
+      tzinfo (~> 1.1)
+    arel (8.0.0)
     chunky_png (1.3.4)
+    concurrent-ruby (1.0.5)
     docsplit (0.7.6)
     gettext (3.0.0)
       locale (>= 2.0.5)
       text
-    i18n (0.6.0)
+    i18n (0.7.0)
     iconv (1.0.3)
     iniparse (1.4.0)
     json (2.1.0)
     locale (2.0.8)
+    minitest (5.10.2)
     multi_json (1.0.3)
-    net-ldap (0.5.1)
-    pdf-core (0.2.5)
+    net-ldap (0.16.0)
+    pdf-core (0.2.2)
+    power_assert (1.0.2)
     prawn (1.0.0)
       pdf-core (~> 0.2.2)
       ttfunk (~> 1.1.1)
@@ -74,9 +77,13 @@ GEM
     rubyzip (1.1.7)
     serialport (1.3.1)
     sqlite3 (1.3.10)
+    test-unit (3.2.3)
+      power_assert
     text (1.2.3)
+    thread_safe (0.3.6)
     ttfunk (1.1.1)
-    tzinfo (0.3.53)
+    tzinfo (1.2.3)
+      thread_safe (~> 0.1)
 
 PLATFORMS
   ruby
@@ -85,3 +92,6 @@ DEPENDENCIES
   africompta!
   helper_classes!
   qooxview!
+
+BUNDLED WITH
+   1.15.0

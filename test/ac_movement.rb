@@ -25,6 +25,13 @@ class TC_Movement < Test::Unit::TestCase
   def teardown
   end
 
+  def test_rm_add
+    m = Movements.create('test', Date.today, 1000, @cash, @lending)
+    m.delete
+    Movements.create('test', Date.today, 1000, @cash, @lending)
+    assert_equal 2040, @cash.total.to_i
+  end
+
   def test_move
     value_cash = @cash.total.to_f
     value_lending = @lending.total.to_f

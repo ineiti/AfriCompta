@@ -10,6 +10,10 @@ class TC_AfriCompta < Test::Unit::TestCase
     dputs(2) { 'Resetting SQLite' }
     SQLite.dbs_close_all
     dputs(2) { 'Putting testGestion' }
+    begin
+      Dir.mkdir('data')
+    rescue Errno::EEXIST
+    end
     FileUtils.cp('db.testGestion', 'data/compta.db')
     SQLite.dbs_open_load_migrate
 
