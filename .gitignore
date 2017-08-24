@@ -16,5 +16,6 @@ test/*db
 test/data*
 test/thread*
 /*gem
+.ruby-version
 
 afri_compta.conf
