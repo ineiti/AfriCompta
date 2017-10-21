@@ -177,7 +177,7 @@ class Accounts < Entities
     years = Hash.new(0)
     acc.movements.each { |mov|
       if not mov.desc =~ /^-- Sum of/
-        y, m, d = mov.date.to_s.split('-').collect { |d| d.to_i }
+        y, m, _ = mov.date.to_s.split('-').collect { |d| d.to_i }
         dputs(5) { "Date of #{mov.desc} is #{mov.date}" }
         m < month_start and y -= 1
         years[y] += 1
@@ -207,7 +207,7 @@ class Accounts < Entities
   def move_movements(acc, years, month_start)
     acc.movements.each { |mov|
       dputs(5) { 'Start of each' }
-      y, m, d = mov.date.to_s.split('-').collect { |d| d.to_i }
+      y, m, _ = mov.date.to_s.split('-').collect { |d| d.to_i }
       dputs(5) { "Date of #{mov.desc} is #{mov.date}" }
       m < month_start and y -= 1
       if years.has_key? y
@@ -455,7 +455,7 @@ class Accounts < Entities
   def load
     super
     if Accounts.search_by_name('Root').count == 0
-      dputs(0) { "Didn't find 'Root' in database - creating base" }
+      dputs(1) { "Didn't find 'Root' in database - creating base" }
       Accounts.init
     end
   end
@@ -513,7 +513,7 @@ class Accounts < Entities
         #dputs(3) { "Looking at #{row}" }
         @check_progress += progress_step
 
-        id_, acc_id_, name_, desc_, gid_, tot_, mult_, ind_, revind_, del_, keep_, = row
+        _, acc_id_, name_, desc_, gid_, tot_, mult_, _, _, del_, keep_, = row
         parent = if acc_id_
                    acc_id_ == 0 ? '' :
                        db.execute("select * from compta_accounts where id=#{acc_id_}").first[4]
@@ -756,7 +756,7 @@ class Account < Entity
     set_child_multiplier_total(multiplier, total)
   end
 
-  # Sort first regarding inverse date (newest first), then description, 
+  # Sort first regarding inverse date (newest first), then description,
   # and finally the value
   def movements(from = nil, to = nil)
     dputs(5) { 'Account::movements' }
@@ -775,7 +775,7 @@ class Account < Entity
       end
       if ret == 0
         ret = a.rev_index <=> b.rev_index
-=begin        
+=begin
         if a.desc and b.desc
           ret = a.desc <=> b.desc
         end
@@ -853,7 +853,7 @@ class Account < Entity
     Accounts.match_by_id(self.account_id)
   end
 
-  def account= (a)
+  def account=(a)
     self.account_id = a.class == Account ? a.id : a
   end
 
@@ -861,7 +861,7 @@ class Account < Entity
     account
   end
 
-  def parent= (a)
+  def parent=(a)
     self.account = a
   end
 
