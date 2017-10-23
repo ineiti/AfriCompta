@@ -29,6 +29,8 @@ class TC_Account < Test::Unit::TestCase
 
   def test_path
     assert_equal 'Root::Cash', @cash.path
+    assert_equal 0, @root.account_id
+    assert_equal nil, @root.account
   end
 
   def test_del_account
@@ -146,7 +148,7 @@ class TC_Account < Test::Unit::TestCase
           Movements.create("Mov for #{src}_#{sub} - #{mov}", date, 100 * src,
                            accs[src][sub], @cash)
         }
-        assert_equal -300 * src, accs[src][sub].total
+        assert_equal( -300 * src, accs[src][sub].total)
       }
     }
 
@@ -172,5 +174,11 @@ class TC_Account < Test::Unit::TestCase
 
     line = report.print_account_monthly(reportAccount, Date.new(2014, 6), 1, 1)
     dp line
+  end
+
+  def test_add_account
+    subacc = Accounts.create_path("Root::Test")
+    Entities.reload
+    assert_equal 6, Accounts.search_all_.count
   end
 end

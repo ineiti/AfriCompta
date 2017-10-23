@@ -107,7 +107,8 @@ class ComptaEditMovements < View
   end
 
   def update_accounts()
-    reply(:empty_nonlists, [:account_archive, :account_src, :account_dst]) +
+    if AccountRoot.actual
+      reply(:empty_nonlists, [:account_archive, :account_src, :account_dst]) +
         reply(:update_silent, :account_archive =>
                                 [[AccountRoot.actual.id, 'Actual']].concat(
                                     if archive = AccountRoot.archive
@@ -119,6 +120,7 @@ class ComptaEditMovements < View
         update_list(AccountRoot.actual, AccountRoot.actual) +
         reply(:update, :account_src => AccountRoot.actual.listp_path,
               :account_dst => AccountRoot.actual.listp_path)
+    end
   end
 
   def rpc_update_view(session)
@@ -164,4 +166,3 @@ class ComptaEditMovements < View
     return str.delete('^0123456789.,-').gsub(/,/, '.').to_f
   end
 end
-

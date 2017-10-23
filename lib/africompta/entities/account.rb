@@ -473,6 +473,18 @@ class Accounts < Entities
     a.rev_index = a.id
   end
 
+  def migration_3(m)
+    # dp "Migrating #{m.inspect}"
+    if m.id == 1 && m.account_id != nil
+      dp 'Root-account has parent...'
+      m.account_id = 0
+      m.name = 'Root'
+      m.desc = 'Root'
+      m.global_id = Digest::MD5.hexdigest((rand 2**128).to_s).to_s + '-1'
+      m.total = 0.0
+    end
+  end
+
   def listp_path
     dputs(3) { 'Being called' }
     Accounts.search_all.select { |a| !a.deleted }.collect { |a| [a.id, a.path] }.

@@ -24,7 +24,7 @@ qooxView = QooxView.init('../Entities', '../Views')
 tests = Dir.glob('ac_*.rb')
 # tests = %w( africompta account movement sqlite )
 #tests = %w( africompta )
-tests = %w( movement )
+tests = %w( account )
 #tests = %w( merge )
 dp tests
 tests.each { |t|
