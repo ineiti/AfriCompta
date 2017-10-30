@@ -846,7 +846,7 @@ class Account < Entity
     }
     self
   end
-
+  
   def accounts
     # Some hand-optimized stuff. This would be written shorter like this:
     # Accounts.matches_by_account_id( self.id )
