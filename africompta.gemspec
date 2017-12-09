@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'africompta'
-  s.version = '1.9.13-11'
+  s.version = '1.9.1312'
   s.date = '2017-10-30'
   s.summary = 'Africompta-module for QooxView'
   s.description = 'With this module you can have a simple accounting-system.
@@ -19,6 +19,6 @@ see http://github.com/ineiti/AfriCompta_client .'
       'https://github.com/ineiti/AfriCompta'
   s.license = 'GPL-3.0'
 
-  s.add_dependency 'qooxview', '1.9.11'
+  s.add_dependency 'qooxview', '1.9.1312'
   s.add_dependency 'prawn', '1.0.0'
 end
