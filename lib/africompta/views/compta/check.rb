@@ -1,6 +1,8 @@
 class ComptaCheck < View
   def layout
     @order = 400
+    @functions_need = %w( africompta )
+
     gui_vbox do
       gui_hbox :nogroup do
         gui_vbox :nogroup do

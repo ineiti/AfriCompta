@@ -2,7 +2,8 @@ class ComptaRemotes < View
   include VTListPane
   def layout
     @order = 500
-    
+    @functions_need = %w( africompta )
+
     set_data_class :Remotes
 
     gui_hbox do

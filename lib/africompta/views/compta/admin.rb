@@ -2,6 +2,7 @@ class ComptaAdmin < View
   def layout
     @order = 300
     @rsync_log = '/tmp/update_africompta'
+    @functions_need = %w( africompta )
 
     gui_vbox do
       gui_hbox do

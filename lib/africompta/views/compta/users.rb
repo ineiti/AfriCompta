@@ -2,7 +2,8 @@ class ComptaUsers < View
   include VTListPane
   def layout
     @order = 600
-    
+    @functions_need = %w( africompta )
+
     set_data_class :Users
 
     gui_hbox do
